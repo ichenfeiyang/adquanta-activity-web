@@ -1,0 +1,1480 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f8f6f6;
+  color: #111827;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.welfare-container {
+  max-width: 414px;
+  margin: 0 auto;
+  background-color: #000000;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.status-time {
+  font-weight: 500;
+}
+
+.status-icons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.header-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.header-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.user-greeting {
+  margin-top: 4px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.assets-section {
+  position: relative;
+  margin: 16px 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #7ed321 0%, #ffffff 100%);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.assets-header {
+  margin-bottom: 16px;
+}
+
+.assets-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+}
+
+.assets-content {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.asset-item {
+  flex: 1;
+}
+
+.asset-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333333;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.asset-label {
+  font-size: 13px;
+  color: rgba(51, 51, 51, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: rgba(51, 51, 51, 0.2);
+  font-size: 11px;
+  color: rgba(51, 51, 51, 0.8);
+  cursor: pointer;
+}
+
+.withdraw-btn {
+  padding: 10px 20px;
+  background-color: #ffffff;
+  color: #333333;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.withdraw-btn:active {
+  transform: scale(0.95);
+}
+
+.assets-decoration {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 120px;
+  height: 120px;
+  z-index: 1;
+}
+
+.coin-icon {
+  font-size: 80px;
+  opacity: 0.3;
+  transform: rotate(-15deg);
+}
+
+.tasks-section {
+  padding: 0 20px;
+  margin-top: 24px;
+}
+
+.tasks-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.task-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.task-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.task-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.task-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.coin-icon-small {
+  font-size: 16px;
+}
+
+.task-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.task-btn {
+  align-self: flex-start;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+  margin-top: 4px;
+}
+
+.task-btn:active {
+  transform: scale(0.95);
+}
+
+.task-btn.can-claim {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.task-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.signin-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.timer-icon {
+  font-size: 24px;
+}
+
+.timer-btn {
+  padding: 6px 16px;
+  background-color: #ffd700;
+  color: #333333;
+  border: none;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toast.success {
+  background-color: rgba(81, 207, 102, 0.9);
+}
+
+.toast.error {
+  background-color: rgba(255, 107, 107, 0.9);
+}
+
+.toast.warning {
+  background-color: rgba(255, 149, 0, 0.9);
+}
+
+@media (max-width: 414px) {
+  .welfare-container {
+    max-width: 100%;
+  }
+  
+  .assets-content {
+    flex-wrap: wrap;
+  }
+  
+  .withdraw-btn {
+    width: 100%;
+    margin-top: 12px;
+  }
+}
+
+/* 签到成功弹框（原型：活动中心-签到成功弹框） */
+.signin-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  z-index: 1500;
+}
+
+.signin-dialog-sheet {
+  background: #f8f6f6;
+  border-radius: 2rem 2rem 0 0;
+  box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.2);
+  border-top: 1px solid rgba(236, 91, 19, 0.1);
+  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.signin-dialog-handle {
+  flex-shrink: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.signin-dialog-handle::after {
+  content: "";
+  width: 48px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.signin-dialog-body {
+  padding: 0 24px 40px;
+}
+
+.signin-dialog-celebration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0 32px;
+  position: relative;
+}
+
+.signin-dialog-celebration-ring {
+  position: absolute;
+  inset: -24px;
+  border-radius: 50%;
+  background: rgba(236, 91, 19, 0.1);
+  filter: blur(24px);
+  transform: scale(1.5);
+}
+
+.signin-dialog-celebration-icon {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  background: #ec5b13;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  box-shadow: 0 0 30px rgba(236, 91, 19, 0.4);
+}
+
+.signin-dialog-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+.signin-dialog-title--muted {
+  color: #9ca3af;
+}
+
+.signin-dialog-base-coins-wrap {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.signin-dialog-base-coins-wrap .signin-dialog-base-coins {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(236, 91, 19, 0.1);
+  border-radius: 9999px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ec5b13;
+}
+.signin-dialog-base-coins-wrap .signin-dialog-base-coins.signin-dialog-base-coins--muted {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.signin-dialog-boost-card {
+  border: 2px solid rgba(236, 91, 19, 0.2);
+  background: rgba(236, 91, 19, 0.05);
+  border-radius: 1rem;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.signin-dialog-boost-card::before {
+  content: "";
+  position: absolute;
+  right: -16px;
+  top: -16px;
+  width: 120px;
+  height: 120px;
+  background: rgba(236, 91, 19, 0.08);
+  border-radius: 50%;
+  opacity: 0.5;
+  transform: rotate(12deg);
+}
+
+.signin-dialog-boost-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.signin-dialog-boost-desc {
+  font-size: 1rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.signin-dialog-boost-strong {
+  color: #ec5b13;
+  font-weight: 700;
+}
+
+.signin-dialog-watch-btn {
+  width: 100%;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 24px;
+  border-radius: 0.75rem;
+  border: none;
+  background: #ec5b13;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(236, 91, 19, 0.3);
+}
+
+.signin-dialog-watch-btn:hover {
+  background: rgba(236, 91, 19, 0.9);
+}
+
+.signin-dialog-watch-btn:active {
+  transform: scale(0.98);
+}
+
+.signin-dialog-watch-btn.tc-signin-watch-loading {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.signin-dialog-watch-icon {
+  flex-shrink: 0;
+}
+
+.signin-dialog-claim-base {
+  width: 100%;
+  height: 40px;
+  margin-top: 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-dialog-claim-base:hover {
+  color: #334155;
+}
+
+/* ==================== 新版活动中心 UI（基于 /Downloads/活动中心/code.html） ==================== */
+
+.task-center-root {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background-color: #f8f6f6;
+  display: flex;
+  flex-direction: column;
+}
+
+.tc-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #f8f6f6;
+  border-bottom: 1px solid rgba(236, 91, 19, 0.08);
+}
+
+.tc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tc-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #ffe7d5, #ec5b13);
+  border: 2px solid #ec5b13;
+}
+
+.tc-user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tc-user-name {
+  min-height: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.tc-user-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background-color: rgba(236, 91, 19, 0.12);
+}
+
+.tc-user-tag-icon {
+  font-size: 12px;
+  color: #ec5b13;
+}
+
+.tc-user-tag-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ec5b13;
+}
+
+.tc-main {
+  flex: 1;
+  padding: 12px 16px 24px;
+}
+
+.tc-section {
+  margin-bottom: 16px;
+}
+
+.tc-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+/* 三步流程卡片：Complete → Earn → Redeem */
+.tc-flow-card {
+  background-color: #fff7f2;
+  border-color: rgba(236, 91, 19, 0.2);
+}
+
+.tc-flow-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  color: #ec5b13;
+  margin-bottom: 10px;
+}
+
+.tc-flow-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.tc-flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.tc-flow-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background-color: #ffffff;
+  border: 1px solid rgba(236, 91, 19, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(236, 91, 19, 0.12);
+}
+
+.tc-flow-icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.tc-flow-text {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  color: #374151;
+}
+
+.tc-flow-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(236, 91, 19, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tc-flow-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background-color: rgba(236, 91, 19, 0.12);
+  color: #ec5b13;
+}
+
+.tc-flow-desc {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.tc-card {
+  border-radius: 16px;
+  padding: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.tc-balance-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tc-balance-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tc-balance-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tc-balance-icon-inner {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tc-balance-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tc-balance-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.tc-balance-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tc-balance-unit {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+
+.tc-primary-btn {
+  padding: 8px 18px;
+  border-radius: 12px;
+  border: none;
+  background-color: #ec5b13;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(236, 91, 19, 0.35);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.tc-primary-btn:hover {
+  background-color: #d44f10;
+}
+
+.tc-primary-btn:active {
+  transform: scale(0.97);
+}
+
+.tc-primary-btn--full {
+  width: 100%;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tc-icon--large {
+  width: 24px;
+  height: 24px;
+}
+
+.tc-icon-play {
+  width: 18px;
+  height: 18px;
+}
+
+.tc-icon-calendar {
+  width: 18px;
+  height: 18px;
+}
+
+.tc-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: rgba(236, 91, 19, 0.12);
+  color: #ec5b13;
+}
+
+.tc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tc-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tc-card-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.tc-checkin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tc-checkin-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.tc-checkin-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tc-checkin-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ec5b13;
+  border: 1px dashed rgba(236, 91, 19, 0.4);
+  background-color: rgba(236, 91, 19, 0.06);
+}
+
+.tc-checkin-day--done .tc-checkin-dot {
+  background-color: #ec5b13;
+  color: #ffffff;
+  border-style: solid;
+}
+
+.tc-checkin-dot--reward {
+  font-size: 10px;
+}
+
+.tc-checkin-day--super .tc-checkin-dot--super {
+  position: relative;
+  background: linear-gradient(135deg, #facc15, #ec5b13);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(236, 91, 19, 0.3);
+}
+
+.tc-checkin-super-icon {
+  font-size: 14px;
+}
+
+.tc-checkin-super-icon-img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.tc-checkin-super-reward {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.tc-checkin-label {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.tc-checkin-label--super {
+  color: #ec5b13;
+  font-weight: 700;
+}
+
+.tc-checkin-tip {
+  margin-top: 4px;
+  font-size: 11px;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.tc-video-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 18px;
+  border: 1px solid #f0e4d9;
+  box-shadow: none;
+}
+
+.tc-video-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tc-video-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  background-color: #f7d9c3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.tc-video-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tc-video-text .tc-card-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tc-video-text .tc-card-subtitle {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.tc-video-badge {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 46px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #f4b400;
+  background: linear-gradient(180deg, #ffe55b 0%, #ffcf24 100%);
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+}
+
+.tc-video-play-chip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #ff7a16;
+  padding: 2px 0 3px;
+}
+
+.tc-video-reward {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ec5b13;
+}
+
+.tc-coin-icon {
+  font-size: 16px;
+}
+
+.tc-ad-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  color: #ec5b13;
+}
+
+.tc-ad-coin-inline {
+  font-size: 12px;
+}
+
+.tc-ad-coin-inline-img {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tc-video-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.tc-video-stats {
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.tc-video-progress-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.tc-video-progress-item {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #111827;
+  font-weight: 800;
+}
+
+.tc-video-progress-item-right {
+  text-align: right;
+}
+
+.tc-video-progress-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tc-video-progress-value {
+  color: #ec5b13;
+  font-weight: 800;
+}
+
+.tc-video-progress-bar {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background-color: #dbe4ee;
+  overflow: hidden;
+}
+
+.tc-video-progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background-color: #ec5b13;
+}
+
+.tc-video-spin-count {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  min-height: 18px;
+  padding: 2px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tc-secondary-btn {
+  margin-top: 8px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid #ec5b13;
+  background-color: transparent;
+  color: #ec5b13;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tc-secondary-btn:hover {
+    background-color: #ec5b13;
+    color: #ffffff;
+  }
+
+  .tc-secondary-btn:disabled:hover,
+  .tc-secondary-btn.is-completed:hover {
+    border-color: #d1d5db;
+    background-color: #f3f4f6;
+    color: #9ca3af;
+  }
+
+  .tc-spin-entry-btn:hover {
+    background-color: #ec5b13;
+    color: #ffffff;
+  }
+}
+
+.tc-secondary-btn:active {
+  transform: scale(0.97);
+}
+
+.tc-secondary-btn:disabled,
+.tc-secondary-btn.is-completed {
+  border-color: #d1d5db;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.tc-video-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tc-video-actions--single {
+  grid-template-columns: 1fr;
+}
+
+.tc-video-actions .tc-secondary-btn {
+  margin-top: 8px;
+}
+
+.tc-spin-entry-btn {
+  border-color: #ec5b13;
+  color: #ec5b13;
+}
+
+.tc-watch-spin-btn {
+  height: 68px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 800;
+  border-color: #ef5a12;
+  color: #ef5a12;
+}
+
+body.tc-spin-wheel-open .task-center-root {
+  pointer-events: none;
+}
+
+.tc-spin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  background: rgba(71, 85, 105, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  touch-action: manipulation;
+}
+
+.tc-spin-modal {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, #ffffff, #f4f4f5);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+  padding: 18px 16px 20px;
+  position: relative;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.tc-spin-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.tc-spin-badge {
+  width: 54px;
+  height: 54px;
+  margin: 4px auto 8px;
+  border-radius: 999px;
+  background: #fde7cf;
+  color: #f97316;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.tc-spin-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.tc-spin-subtitle {
+  margin: 8px 0 14px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.tc-spin-wheel-wrap {
+  width: 280px;
+  height: 280px;
+  margin: 0 auto 14px;
+  position: relative;
+}
+
+.tc-spin-pointer {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 16px solid #f97316;
+  z-index: 5;
+}
+
+.tc-spin-wheel {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 8px solid #f5d6bf;
+  background: conic-gradient(
+    #ff8a2a 0deg 45deg,
+    #ff9b45 45deg 90deg,
+    #ff7d1a 90deg 135deg,
+    #ff9740 135deg 180deg,
+    #ff7d1a 180deg 225deg,
+    #ff9b45 225deg 270deg,
+    #ff7d1a 270deg 315deg,
+    #ff9b45 315deg 360deg
+  );
+  position: relative;
+  transition: transform 1.6s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.tc-spin-wheel-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
+  background: #fff7ed;
+  border: 6px solid #ffffff;
+}
+
+.tc-spin-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 13px;
+  transform-origin: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -50%);
+}
+
+.tc-spin-label-1 { transform: translate(-50%, -50%) rotate(22.5deg) translateY(-98px); }
+.tc-spin-label-2 { transform: translate(-50%, -50%) rotate(67.5deg) translateY(-98px); }
+.tc-spin-label-3 { transform: translate(-50%, -50%) rotate(112.5deg) translateY(-98px); }
+.tc-spin-label-4 { transform: translate(-50%, -50%) rotate(157.5deg) translateY(-98px); }
+.tc-spin-label-5 { transform: translate(-50%, -50%) rotate(202.5deg) translateY(-98px); }
+.tc-spin-label-6 { transform: translate(-50%, -50%) rotate(247.5deg) translateY(-98px); }
+.tc-spin-label-7 { transform: translate(-50%, -50%) rotate(292.5deg) translateY(-98px); }
+.tc-spin-label-8 { transform: translate(-50%, -50%) rotate(337.5deg) translateY(-98px); }
+
+.tc-spin-now-btn {
+  width: 100%;
+  height: 62px;
+  border: none;
+  border-radius: 14px;
+  background: #ff7a16;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 16px 34px rgba(249, 115, 22, 0.35);
+}
+
+.tc-spin-now-btn:active {
+  transform: scale(0.98);
+}
+
+.tc-spin-available {
+  margin-top: 12px;
+  color: #64748b;
+  letter-spacing: 2px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tc-spin-reward-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(71, 85, 105, 0.72);
+}
+
+.tc-spin-reward-modal {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, #fff, #f8fafc);
+  border-radius: 20px;
+  padding: 22px 16px 18px;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+  border-bottom: 4px solid #fb923c;
+}
+
+.tc-spin-reward-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.tc-spin-reward-icon {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 10px;
+  border-radius: 999px;
+  background: #ec5b13;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  color: #ffffff;
+  box-shadow: 0 0 30px rgba(236, 91, 19, 0.35);
+}
+
+.tc-spin-reward-celebration {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 10px;
+}
+
+.tc-spin-reward-celebration-ring {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: rgba(236, 91, 19, 0.12);
+  filter: blur(14px);
+}
+
+.tc-spin-reward-title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.tc-spin-reward-subtitle {
+  margin: 8px 0 12px;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.tc-spin-reward-coin-line {
+  margin: 0 auto 16px;
+  min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fdebd8;
+  border: 1px solid #f8c796;
+  border-radius: 12px;
+  padding: 12px 22px;
+  color: #ea580c;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tc-spin-reward-watch {
+  width: 100%;
+  height: 58px;
+  border-radius: 14px;
+  border: none;
+  background: #ff7a16;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.35);
+}
+
+.tc-spin-reward-watch img {
+  width: 22px;
+  height: 22px;
+}
+
+.tc-spin-reward-foot {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.tc-spin-reward-foot strong {
+  color: #f97316;
+}
+
