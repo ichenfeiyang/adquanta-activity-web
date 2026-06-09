@@ -1,41 +1,32 @@
-# AdQuanta Activity Web
+# AdQuanta Activity Web（Vue 3 + Vite）
 
-这是一个源码直出的 H5 工程，包含活动中心、金币兑换和充值结果页。
-
-## 页面入口
-
-- `activity-center.html`：活动中心主页面
-- `gold-coins-exchange.html`：金币兑换页面
-- `topup-status.html`：充值状态页
-- `index.html`：仅做入口跳转，默认跳到 `activity-center.html`
+活动中心、金币兑换和充值结果页的 H5 活动平台。
 
 ## 本地开发
 
-如果只需要查看静态页面，可以直接启动静态服务：
-
 ```bash
-python3 -m http.server 5173
+npm install
+npm run dev
 ```
 
-如果需要联调接口，使用项目内的 Flask 本地服务：
+如需联调接口，复制 `.env.example` 为 `.env.local` 并设置 `VITE_ACTIVITY_API_BASE_URL`。
+
+## 构建与部署
 
 ```bash
-python3 app.py
+npm run build
 ```
 
-默认访问地址：
+产物在 `dist/`。这是标准 Vue SPA：只有一个 HTML 入口 `index.html`，路由由 Vue Router 处理（`/activity-center`、`/gold-coins-exchange`、`/topup-status`）。
 
-- `http://127.0.0.1:8848/activity-center.html`
-- `http://127.0.0.1:8848/gold-coins-exchange.html`
-- `http://127.0.0.1:8848/topup-status.html`
+上传到 bucket 根目录即可。详见 [docs/cloudflare-r2-spa.md](./docs/cloudflare-r2-spa.md)。
 
-`app.py` 会同时提供静态文件服务和 `/api/*` 反向代理，便于本地避免 CORS 问题。
+| 环境 | 存储 | 建议入口 |
+|------|------|----------|
+| 测试 | R2 test bucket 公共开发 URL | `https://pub-xxxxx.r2.dev/index.html` |
+| 生产 | 火山 TOS prod bucket | `https://activity.moyoung.com` |
 
-## 部署说明
-
-当前仓库保留的是可直接部署到静态存储或 CDN 的源码文件。
-
-后续建议通过 GitHub Actions 自动发布到 OSS/CDN，不再维护手工部署目录或发布快照。
+R2 公共开发 URL 不支持默认首页和 SPA fallback，所以测试环境后端 `auth/code` 的 `url` 应返回完整 `index.html` 地址。页面加载后由 Vue Router 进入 `/activity-center`。
 
 ## GitHub Actions 自动部署
 
@@ -63,22 +54,4 @@ python3 app.py
 - `TOS_KEY_PREFIX`: 可留空，或填如 `activity-web`
 - `TOS_CDN_DOMAIN`: `https://ad-quanta-cdn.moyoung.com`
 
-### 实现细节
-
-上传脚本按火山引擎 TOS 的 S3 兼容方式实现：
-
-- 使用 `boto3`
-- 显式指定 `signature_version='s3v4'`
-- 使用 `s3={'addressing_style': 'virtual'}`
-
-默认会自动扫描仓库中的站点资源并上传，不再写死文件列表。
-
 上传排除规则由根目录的 `.tosignore` 控制。
-
-当前 `.tosignore` 已排除这类内容：
-
-- `.github/`、`scripts/`、虚拟环境、构建目录
-- `README.md`、`app.py`
-- `*.md`、`*.py`、日志和常见临时文件
-
-也就是说，后续你新增或删除 HTML、CSS、JS、图片、SVG 等静态资源，通常不需要再改部署脚本；如果只想调整部署范围，直接修改 `.tosignore` 即可。
