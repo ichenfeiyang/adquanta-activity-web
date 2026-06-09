@@ -1,0 +1,493 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f8f6f6;
+  color: #111827;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toast.success {
+  background-color: rgba(81, 207, 102, 0.9);
+}
+
+.toast.error {
+  background-color: rgba(255, 107, 107, 0.9);
+}
+
+.toast.warning {
+  background-color: rgba(255, 149, 0, 0.9);
+}
+
+.redeem-root {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background-color: #f8f6f6;
+  display: flex;
+  flex-direction: column;
+}
+
+.redeem-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f8f6f6;
+}
+
+.redeem-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background-color: rgba(148, 163, 184, 0.15);
+  color: #374151;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.redeem-main {
+  flex: 1;
+  padding: 12px 16px 24px;
+}
+
+.redeem-section {
+  margin-bottom: 18px;
+}
+
+.redeem-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.redeem-wallet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ec5b13, #f97316);
+  box-shadow: 0 14px 30px rgba(236, 91, 19, 0.4);
+  color: #ffffff;
+}
+
+.redeem-wallet-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.redeem-wallet-label {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.redeem-wallet-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.redeem-wallet-unit {
+  font-size: 12px;
+  margin-left: 4px;
+  opacity: 0.9;
+}
+
+.redeem-wallet-hint {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.redeem-wallet-icon span {
+  font-size: 32px;
+}
+
+.redeem-wallet-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.redeem-field {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.redeem-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.redeem-input-wrapper {
+  position: relative;
+}
+
+.redeem-input-prefix {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.redeem-countrycode-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  cursor: default;
+}
+.redeem-countrycode-btn:active {
+  opacity: 0.85;
+}
+.redeem-countrycode-btn:disabled {
+  opacity: 0.9;
+}
+
+.redeem-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px 0 96px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  font-size: 14px;
+  color: #111827;
+  position: relative;
+  z-index: 1;
+}
+
+.redeem-input:focus {
+  outline: none;
+  border-color: #ec5b13;
+  box-shadow: 0 0 0 1px rgba(236, 91, 19, 0.4);
+}
+
+.redeem-operator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.redeem-operator-single {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.redeem-operator-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.redeem-operator-btn {
+  padding: 8px 6px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  font-size: 12px;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.redeem-operator-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+}
+
+.redeem-amount-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.redeem-amount-btn {
+  height: 58px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 6px 4px;
+}
+
+.redeem-amount-main {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.redeem-amount-cost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: #6b7280;
+}
+
+.redeem-amount-coin-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+
+.redeem-amount-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+}
+
+.redeem-summary {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.redeem-powered {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #9ca3af;
+  letter-spacing: normal;
+}
+
+.redeem-powered-label {
+  font-weight: 400;
+}
+
+.redeem-powered-brand {
+  margin-left: 0.25em;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.redeem-primary-btn {
+  margin-top: 12px;
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ec5b13, #f97316);
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(236, 91, 19, 0.45);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.redeem-primary-btn--disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.redeem-primary-btn:not(.redeem-primary-btn--disabled):active {
+  transform: scale(0.97);
+}
+
+.redeem-history-section {
+  margin-top: 4px;
+}
+
+.redeem-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.redeem-history-view-all {
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ec5b13;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.redeem-history-view-all:active {
+  opacity: 0.8;
+}
+
+.redeem-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.redeem-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.redeem-history-item--clickable {
+  cursor: pointer;
+}
+
+.redeem-history-item--clickable:active {
+  transform: scale(0.995);
+}
+
+.redeem-history-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  font-size: 16px;
+}
+
+.redeem-history-icon--earn {
+  background-color: rgba(236, 91, 19, 0.12);
+  color: #ec5b13;
+}
+
+.redeem-history-icon--success {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.redeem-history-icon--processing {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
+.redeem-history-icon--fail {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.redeem-history-amount--earn {
+  color: #059669;
+}
+
+.redeem-countrycode-item--active {
+  border-color: rgba(236, 91, 19, 0.35) !important;
+  background-color: rgba(236, 91, 19, 0.04) !important;
+}
+
+.redeem-history-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.redeem-history-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.redeem-history-subtitle {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.redeem-history-phone {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.redeem-history-amount {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.redeem-history-coins {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.redeem-history-coin-icon img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+@media (max-width: 414px) {
+  .redeem-root {
+    max-width: 100%;
+  }
+}

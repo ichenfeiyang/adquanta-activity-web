@@ -1,0 +1,548 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.ts-root {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #f3f4f6;
+}
+
+.ts-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 12px;
+  background: #ffffff;
+}
+
+.ts-back-btn {
+  border: none;
+  background: transparent;
+  color: #ef5a12;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  width: 32px;
+}
+
+.ts-main {
+  padding: 16px;
+}
+
+.ts-status-card,
+.ts-detail-card,
+.ts-tip-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.ts-status-card {
+  text-align: center;
+}
+
+.ts-status-icon-wrap {
+  width: 94px;
+  height: 94px;
+  border-radius: 999px;
+  margin: 6px auto 12px;
+  background: #fef3ea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-status-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  border: 4px solid #f7c9a8;
+  color: #ef5a12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+/* Top-up status visual states */
+.ts-root[data-status="success"],
+.ts-root[data-status="failed"] {
+  background: #f6f6f8;
+}
+
+.ts-root[data-status="success"] .ts-main,
+.ts-root[data-status="failed"] .ts-main {
+  padding: 24px 24px 48px;
+}
+
+.ts-root[data-status="success"] .ts-tip-card,
+.ts-root[data-status="failed"] .ts-tip-card {
+  display: none;
+}
+
+.ts-root[data-status="success"] .ts-header,
+.ts-root[data-status="failed"] .ts-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+}
+
+.ts-root[data-status="success"] .ts-status-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 0 8px;
+  margin-bottom: 24px;
+}
+
+.ts-root[data-status="success"] .ts-status-icon-wrap {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 20px;
+  background: #f97316;
+  box-shadow: 0 10px 28px rgba(249, 115, 22, 0.22);
+}
+
+.ts-root[data-status="success"] .ts-status-icon {
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ts-root[data-status="failed"] .ts-status-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 0 8px;
+  margin-bottom: 24px;
+}
+
+.ts-root[data-status="failed"] .ts-status-icon-wrap {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 20px;
+  background: #ef4444;
+  box-shadow: 0 10px 28px rgba(239, 68, 68, 0.22);
+}
+
+.ts-root[data-status="failed"] .ts-status-icon {
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ts-status-title {
+  margin: 6px 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ts-root[data-status="success"] .ts-status-title,
+.ts-root[data-status="failed"] .ts-status-title {
+  margin: 0 0 4px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.ts-root[data-status="success"] .ts-status-desc,
+.ts-root[data-status="failed"] .ts-status-desc {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.ts-status-desc {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+/* Detail card — design: white card, subtle border & shadow, compact labels */
+.ts-root[data-status="success"] .ts-detail-card,
+.ts-root[data-status="failed"] .ts-detail-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.ts-root[data-status="success"] .ts-detail-card > .ts-row:first-child,
+.ts-root[data-status="failed"] .ts-detail-card > .ts-row:first-child {
+  align-items: center;
+  padding: 0 0 16px;
+  margin: 0 0 4px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.65);
+}
+
+/* Hide redundant divider; Transaction ID row uses border-bottom like design */
+.ts-root[data-status="success"] .ts-detail-card > .ts-divider:nth-child(2),
+.ts-root[data-status="failed"] .ts-detail-card > .ts-divider:nth-child(2) {
+  display: none;
+}
+
+.ts-root[data-status="success"] .ts-detail-card > .ts-row:not(:first-child),
+.ts-root[data-status="failed"] .ts-detail-card > .ts-row:not(:first-child) {
+  padding: 10px 0;
+}
+
+.ts-root[data-status="success"] .ts-detail-card .ts-label,
+.ts-root[data-status="failed"] .ts-detail-card .ts-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.ts-root[data-status="success"] .ts-detail-card .ts-value,
+.ts-root[data-status="failed"] .ts-detail-card .ts-value {
+  color: #0f172a;
+}
+
+#tsTransactionId {
+  font-size: 13px;
+}
+
+.ts-root[data-status="success"] #tsTransactionId,
+.ts-root[data-status="failed"] #tsTransactionId {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ts-root[data-status="success"] #tsAmount,
+.ts-root[data-status="failed"] #tsAmount {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ts-root[data-status="success"] #tsPhone,
+.ts-root[data-status="success"] #tsOperator,
+.ts-root[data-status="failed"] #tsPhone,
+.ts-root[data-status="failed"] #tsOperator {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Actions — design: taller primary, soft shadow; secondary outlined */
+.ts-root[data-status="success"] .ts-primary-btn,
+.ts-root[data-status="failed"] .ts-primary-btn {
+  height: 56px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.2);
+}
+
+.ts-root[data-status="failed"] .ts-primary-btn {
+  background: #ef4444;
+  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.2);
+}
+
+.ts-root[data-status="success"] .ts-primary-btn-icon,
+.ts-root[data-status="failed"] .ts-primary-btn-icon {
+  font-size: 18px;
+}
+
+.ts-root[data-status="success"] #tsReturnBtn,
+.ts-root[data-status="failed"] #tsReturnBtn {
+  display: none;
+}
+
+.ts-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0;
+}
+
+.ts-label {
+  color: #374151;
+}
+
+.ts-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+.ts-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0 8px;
+}
+
+.ts-tip-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #fff7f1;
+  border-color: #f9d1b6;
+}
+
+.ts-tip-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #ff7a16;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-tip-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ts-tip-desc {
+  color: #6b7280;
+}
+
+.ts-primary-btn,
+.ts-secondary-btn {
+  width: 100%;
+  height: 54px;
+  border-radius: 12px;
+  border: none;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ts-primary-btn {
+  background: #ff7a16;
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(249, 115, 22, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.ts-primary-btn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.ts-operator-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.ts-secondary-btn {
+  margin-top: 12px;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.92);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  z-index: 2000;
+}
+
+/* Help & Support modal (match H5 orange style) */
+.ts-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(17, 24, 39, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(6px);
+}
+
+.ts-help-overlay.is-open {
+  display: flex;
+}
+
+.ts-help-sheet {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  border-radius: 18px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  border: 1px solid rgba(236, 91, 19, 0.12);
+}
+
+.ts-help-header {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+}
+
+.ts-help-back-btn {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-help-title {
+  margin: 0;
+  flex: 1;
+  text-align: left;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.ts-help-header-spacer {
+  width: 36px;
+}
+
+.ts-help-body {
+  padding: 0 18px 8px;
+}
+
+.ts-help-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  font-weight: 800;
+  margin: 8px 0 16px;
+}
+
+.ts-help-field {
+  margin-bottom: 16px;
+}
+
+.ts-help-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.ts-help-required {
+  color: #f97316;
+  font-weight: 900;
+}
+
+.ts-help-input,
+.ts-help-textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  padding: 12px 12px;
+  outline: none;
+  font-size: 14px;
+}
+
+.ts-help-input::placeholder,
+.ts-help-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.ts-help-textarea {
+  resize: none;
+  padding: 12px 12px;
+}
+
+.ts-help-textarea-wrap {
+  position: relative;
+}
+
+.ts-help-counter {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.ts-help-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 10px 18px 18px;
+}
+
+.ts-help-cancel-btn {
+  width: 120px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ts-help-submit-btn {
+  width: 140px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #ec5b13;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(236, 91, 19, 0.35);
+}
