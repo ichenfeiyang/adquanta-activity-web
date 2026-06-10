@@ -8,10 +8,6 @@ import * as logger from "./activity-logger.js";
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
 
-function resolveApiBase() {
-  return BaseApiUrl;
-}
-
 function buildAuthHeaders(options = {}) {
   const token = options.token ?? "";
   if (!token) return {};
@@ -35,6 +31,38 @@ async function safeReadResponseBody(response) {
   if (json !== null) return { kind: "json", value: json };
   const text = await response.clone().text().catch(() => "");
   return { kind: "text", value: text };
+}
+
+async function parseResponseBody(response) {
+  const json = await response.json().catch(() => null);
+  if (json !== null) return { kind: "json", value: json };
+  const text = await response.text().catch(() => "");
+  return { kind: "text", value: text };
+}
+
+async function fetchApi(apiName, url, init = {}) {
+  if (!logger.isDebugEnabled()) {
+    let response;
+    try {
+      response = await fetch(url, init);
+    } catch (error) {
+      throw error;
+    }
+
+    const body = await parseResponseBody(response);
+    if (!response.ok) {
+      const message =
+        body.kind === "json" && body.value && body.value.message
+          ? body.value.message
+          : `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+
+    if (body.kind === "json") return body.value;
+    return { code: response.status, message: body.value };
+  }
+
+  return loggedFetch(apiName, url, init);
 }
 
 async function loggedFetch(apiName, url, init = {}) {
@@ -85,32 +113,15 @@ async function loggedFetch(apiName, url, init = {}) {
 }
 
 /**
- * 通过 code 换取 access_token（Web 端鉴权）
- * POST /api/v1/public/activity/auth/token
- * @param {Object} options - { baseUrl? } 覆盖默认 BaseApiUrl
- * @param {{ code: string }} body
- * @returns {Promise<{ code: number, data?: { success?: boolean, message?: string, access_token?: string, token_type?: string, expires_at?: number, expires_in?: number } }>}
- */
-export async function postAuthToken(options = {}, body = {}) {
-  const baseUrl = resolveApiBase(options);
-  const url = `${baseUrl}/api/v1/public/activity/auth/token`;
-  return loggedFetch("postAuthToken", url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code: body.code ?? "" }),
-  });
-}
-
-/**
  * 获取活动基础数据（activity_id / user 从 Bearer token 解析）
  * @param {Object} options
  * @param {string} [options.token]
  * @returns {Promise<{ code: number, data?: Object }>}
  */
 export async function getActivityInfo(options = {}) {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/info`;
-  return loggedFetch("getActivityInfo", url, { method: "GET", headers: { ...buildAuthHeaders(options) } });
+  return fetchApi("getActivityInfo", url, { method: "GET", headers: { ...buildAuthHeaders(options) } });
 }
 
 /**
@@ -121,9 +132,9 @@ export async function getActivityInfo(options = {}) {
  * @returns {Promise<{ code: number, data?: Object, message?: string }>}
  */
 export async function postCheckin(options = {}, body = {}) {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/checkin`;
-  return loggedFetch("postCheckin", url, {
+  return fetchApi("postCheckin", url, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...buildAuthHeaders(options) },
     body: JSON.stringify({
@@ -141,9 +152,9 @@ export async function postCheckin(options = {}, body = {}) {
  * @description data.coin 为本次看广告/转盘获得的金币数，前端转盘动画应对齐该值。
  */
 export async function postActivityVideo(options = {}, body = {}) {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/video`;
-  return loggedFetch("postActivityVideo", url, {
+  return fetchApi("postActivityVideo", url, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...buildAuthHeaders(options) },
     body: JSON.stringify({ video_id: body.video_id ?? "" }),
@@ -162,12 +173,12 @@ export async function postActivityVideo(options = {}, body = {}) {
  * @returns {Promise<{ code: number, data?: any }>}
  */
 export async function getCharges(options = {}, params = {}) {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/charges?${new URLSearchParams({
     country_code: params.country_code ?? "",
     phone_number: params.phone_number ?? "",
   }).toString()}`;
-  return loggedFetch("getCharges", url, {
+  return fetchApi("getCharges", url, {
     method: "GET",
     headers: { ...buildAuthHeaders(options) },
   });
@@ -181,9 +192,9 @@ export async function getCharges(options = {}, params = {}) {
  * @returns {Promise<{ code: number, data?: any, message?: string }>}
  */
 export async function postChargeRedeem(options = {}, body = {}) {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/charges`;
-  return loggedFetch("postChargeRedeem", url, {
+  return fetchApi("postChargeRedeem", url, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...buildAuthHeaders(options) },
     body: JSON.stringify({
@@ -202,10 +213,10 @@ export async function postChargeRedeem(options = {}, body = {}) {
  * @returns {Promise<{ code: number, data?: any, message?: string }>}
  */
 export async function getChargeStatus(options = {}, distributorRef = "") {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const ref = encodeURIComponent(String(distributorRef || ""));
   const url = `${baseUrl}/api/v1/ops/activity/charges/${ref}/status`;
-  return loggedFetch("getChargeStatus", url, {
+  return fetchApi("getChargeStatus", url, {
     method: "GET",
     headers: { ...buildAuthHeaders(options) },
   });
@@ -219,25 +230,13 @@ export async function getChargeStatus(options = {}, distributorRef = "") {
  * @returns {Promise<{ code: number, data?: { records?: Array, limit?: number, offset?: number }, message?: string }>}
  */
 export async function getChargeRecords(options = {}, params = {}) {
-  const baseUrl = resolveApiBase(options);
+  const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/charges/records?${new URLSearchParams({
     limit: String(params.limit ?? ""),
     offset: String(params.offset ?? ""),
   }).toString()}`;
-  return loggedFetch("getChargeRecords", url, {
+  return fetchApi("getChargeRecords", url, {
     method: "GET",
     headers: { ...buildAuthHeaders(options) },
   });
-}
-
-/**
- * 获取兑换记录
- * GET /api/v1/ops/activity/records
- * @param {Object} options - { baseUrl?, token? }
- * @returns {Promise<{ code: number, data?: Array }>}
- */
-export async function getActivityRecords(options = {}) {
-  const baseUrl = resolveApiBase(options);
-  const url = `${baseUrl}/api/v1/ops/activity/records`;
-  return loggedFetch("getActivityRecords", url, { method: "GET", headers: { ...buildAuthHeaders(options) } });
 }

@@ -85,3 +85,49 @@ export function stripTokenFromUrl() {
     history.replaceState(null, "", next);
   } catch (_) {}
 }
+
+/**
+ * Remove token from Vue Router state and the address bar.
+ * @param {import('vue-router').Router | undefined} router
+ * @param {import('vue-router').RouteLocationNormalizedLoaded | undefined} route
+ */
+export function stripEntryTokenFromRoute(router, route) {
+  if (!router || !route) {
+    stripTokenFromUrl();
+    return;
+  }
+
+  const query = { ...route.query };
+  let changed = false;
+  for (const key of ["token", "access_token"]) {
+    if (query[key] != null && query[key] !== "") {
+      delete query[key];
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    stripTokenFromUrl();
+    return;
+  }
+
+  router.replace({
+    path: route.path,
+    query,
+    hash: route.hash,
+  });
+}
+
+/**
+ * Resolve bearer token from route/URL and strip it from the address bar.
+ * @param {{
+ *   routeQuery?: Record<string, unknown>,
+ *   router?: import('vue-router').Router,
+ *   route?: import('vue-router').RouteLocationNormalizedLoaded,
+ * }} [options]
+ */
+export function resolveAndStripEntryToken({ routeQuery, router, route } = {}) {
+  const token = resolveEntryToken({ routeQuery });
+  stripEntryTokenFromRoute(router, route);
+  return token;
+}

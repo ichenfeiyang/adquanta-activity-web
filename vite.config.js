@@ -41,6 +41,15 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/vue-router')) {
               return 'vue-vendor'
             }
+            if (
+              id.includes('/lib/activity-api') ||
+              id.includes('/lib/activity-page-cache') ||
+              id.includes('/lib/activity-session') ||
+              id.includes('/lib/activity-auth') ||
+              id.includes('/lib/activity-cache-fingerprints')
+            ) {
+              return 'activity-core'
+            }
           },
         },
       },

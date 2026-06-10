@@ -3,6 +3,12 @@
  * Stale-while-revalidate: show cached data immediately, refresh in background.
  */
 
+import {
+  fingerprintActivityInfo,
+  fingerprintChargeRecords,
+  fingerprintCharges,
+} from "./activity-cache-fingerprints.js";
+
 const STORAGE_PREFIX = "activity_page_cache_v1";
 
 export const CACHE_TTL = {
@@ -100,6 +106,7 @@ async function loadWithSWR({
   isValidResponse,
   extractData,
   persist,
+  fingerprint,
 }) {
   if (!force) {
     const cached = getCachedData(cacheKey);
@@ -110,7 +117,8 @@ async function loadWithSWR({
           const res = await fetcher();
           if (isValidResponse(res)) {
             const data = extractData(res);
-            const unchanged = JSON.stringify(data) === JSON.stringify(cached);
+            const compare = fingerprint || ((value) => JSON.stringify(value));
+            const unchanged = compare(data) === compare(cached);
             if (!unchanged) {
               persist(data);
               onData?.(data, { fromCache: false });
@@ -141,6 +149,10 @@ async function loadWithSWR({
 
 export function getActivityInfoCache(token) {
   return getCachedData(scopedKey("activityInfo", token));
+}
+
+export function isActivityInfoCacheFresh(token) {
+  return isFresh(readEntry(scopedKey("activityInfo", token)));
 }
 
 export function setActivityInfoCache(token, data) {
@@ -196,6 +208,7 @@ export async function loadActivityInfoWithSWR(token, { force = false, fetcher, o
     isValidResponse: (res) => res?.code === 200 && res?.data,
     extractData: (res) => res.data,
     persist: (data) => setActivityInfoCache(token, data),
+    fingerprint: fingerprintActivityInfo,
   });
 }
 
@@ -210,6 +223,7 @@ export async function loadChargeRecordsWithSWR(token, { force = false, fetcher, 
     isValidResponse: (res) => res?.code === 200 && res?.data != null,
     extractData: (res) => res.data,
     persist: (data) => setChargeRecordsCache(token, data),
+    fingerprint: fingerprintChargeRecords,
   });
 }
 
@@ -224,9 +238,7 @@ export async function loadChargesWithSWR(token, phoneNumber, { force = false, fe
     isValidResponse: (res) => res?.code === 200 && res?.data != null,
     extractData: (res) => res.data,
     persist: (data) => setChargesCache(token, phoneNumber, data),
+    fingerprint: fingerprintCharges,
   });
 }
 
-export function isActivityInfoCacheFresh(token) {
-  return isFresh(readEntry(scopedKey("activityInfo", token)));
-}
