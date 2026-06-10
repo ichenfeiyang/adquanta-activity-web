@@ -1,12 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { resolveHistoryBase } from '../lib/router-base.js'
+import { ROUTE_NAMES, PAGE_TITLES } from '../lib/activity-pages.js'
 import ActivityCenterView from '../views/ActivityCenterView.vue'
 
-const PAGE_TITLES = {
-  'activity-center': 'Activity Center',
-  'gold-coins-exchange': 'Gold Coins Redeem',
-  'topup-status': 'Top-up Status',
-}
+const scrollPositions = new Map()
 
 const router = createRouter({
   history: createWebHistory(resolveHistoryBase()),
@@ -21,23 +18,42 @@ const router = createRouter({
     },
     {
       path: '/activity-center',
-      name: 'activity-center',
-      meta: { title: PAGE_TITLES['activity-center'] },
+      name: ROUTE_NAMES.ACTIVITY_CENTER,
+      meta: { title: PAGE_TITLES[ROUTE_NAMES.ACTIVITY_CENTER] },
       component: ActivityCenterView,
     },
     {
       path: '/gold-coins-exchange',
-      name: 'gold-coins-exchange',
-      meta: { title: PAGE_TITLES['gold-coins-exchange'] },
+      name: ROUTE_NAMES.GOLD_COINS_EXCHANGE,
+      meta: { title: PAGE_TITLES[ROUTE_NAMES.GOLD_COINS_EXCHANGE] },
       component: () => import('../views/GoldCoinsExchangeView.vue'),
     },
     {
       path: '/topup-status',
-      name: 'topup-status',
-      meta: { title: PAGE_TITLES['topup-status'] },
+      name: ROUTE_NAMES.TOPUP_STATUS,
+      meta: { title: PAGE_TITLES[ROUTE_NAMES.TOPUP_STATUS] },
       component: () => import('../views/TopupStatusView.vue'),
     },
   ],
+  scrollBehavior(to, from, savedPosition) {
+    if (from.name) {
+      scrollPositions.set(from.name, {
+        left: window.scrollX || document.documentElement.scrollLeft || 0,
+        top: window.scrollY || document.documentElement.scrollTop || 0,
+      })
+    }
+
+    if (savedPosition) {
+      return savedPosition
+    }
+
+    const cached = to.name ? scrollPositions.get(to.name) : null
+    if (cached) {
+      return { left: cached.left, top: cached.top }
+    }
+
+    return { left: 0, top: 0 }
+  },
 })
 
 router.afterEach((to) => {

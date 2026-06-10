@@ -1,8 +1,6 @@
-const APP_ROUTE_SEGMENTS = new Set([
-  "activity-center",
-  "gold-coins-exchange",
-  "topup-status",
-]);
+import { ROUTE_NAMES } from "./activity-pages.js";
+
+const APP_ROUTE_SEGMENTS = new Set(Object.values(ROUTE_NAMES));
 
 /**
  * Resolve vue-router history base when Vite uses relative base (`./`).
