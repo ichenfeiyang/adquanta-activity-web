@@ -1,5 +1,15 @@
 import { getActivityInfo, postCheckin, postActivityVideo } from "./activity-api.js";
 import { invalidateActivityInfoCache, loadActivityInfoWithSWR } from "./activity-page-cache.js";
+import { showToast } from "./activity-alert-ui.js";
+import {
+  ACTIVITY_LOAD_FAILED_MESSAGE,
+  CHECKIN_FAILED_MESSAGE,
+  CHECKIN_FAILED_RETRY_MESSAGE,
+  CLAIM_FAILED_MESSAGE,
+  CLAIM_FAILED_RETRY_MESSAGE,
+  NO_COINS_RECEIVED_MESSAGE,
+  VIDEO_CHECKIN_SUCCESS_MESSAGE,
+} from "./activity-messages.js";
 import * as logger from "./activity-logger.js";
 
 export const DAILY_AD_LIMIT_MESSAGE = "Daily ad watch limit reached";
@@ -9,7 +19,7 @@ export const DAILY_AD_LIMIT_MESSAGE = "Daily ad watch limit reached";
  * 负责：用户资产管理、任务状态管理、业务流程处理
  * 不依赖 DOM，只处理数据和业务逻辑
  */
-export class WelfareCenterBusiness {
+export class ActivityCenterBusiness {
   constructor(config = {}) {
     // 用户资产（未获取到服务端数据前缺省 0）
     this.userAssets = {
@@ -39,8 +49,6 @@ export class WelfareCenterBusiness {
       onTaskUpdate: config.onTaskUpdate || (() => {}),
       onCheckinUpdate: config.onCheckinUpdate || (() => {}),
       onFeatureVisibilityUpdate: config.onFeatureVisibilityUpdate || (() => {}),
-      onUserInfoUpdate: config.onUserInfoUpdate || (() => {}),
-      onToast: config.onToast || (() => {}),
       ...config,
     };
   }
@@ -53,13 +61,6 @@ export class WelfareCenterBusiness {
       remain_count: 0,
       roulette: null,
     };
-  }
-
-  /**
-   * 获取当前签到任务详情（含 days、continuous_days、super_reward_day）
-   */
-  getCheckinDetail() {
-    return this.checkinDetail ? { ...this.checkinDetail } : null;
   }
 
   /**
@@ -126,7 +127,6 @@ export class WelfareCenterBusiness {
 
     if (d.user_info != null && d.user_info.user_id != null) {
       this.userId = d.user_info.user_id;
-      this.config.onUserInfoUpdate({ user_id: this.userId });
     }
     if (d.wallet_info != null && typeof d.wallet_info.coin === "number") {
       this.userAssets.goldCoins = d.wallet_info.coin;
@@ -208,7 +208,7 @@ export class WelfareCenterBusiness {
       throw result.error || new Error("API returned an error");
     } catch (error) {
       logger.error("[Activity API] Request failed", error?.message ?? error);
-      this.config.onToast("Failed to load activity data, please try again", "warning");
+      showToast(ACTIVITY_LOAD_FAILED_MESSAGE, "warning");
       return { ok: false, error };
     }
   }
@@ -222,7 +222,7 @@ export class WelfareCenterBusiness {
     try {
       const res = await postCheckin(apiOptions, { type: "base" });
       if (res.code !== 200) {
-        this.config.onToast(res.message || "Check-in failed", "error");
+        showToast(res.message || CHECKIN_FAILED_MESSAGE, "error");
         return { ok: false };
       }
       const coinFromCheckin = res.data?.coin ?? res.coin ?? 0;
@@ -233,7 +233,7 @@ export class WelfareCenterBusiness {
       return { ok: true, coinFromCheckin, video_coin, multiplier };
     } catch (error) {
       logger.error("Do checkin failed", error);
-      this.config.onToast(error?.message || "Check-in failed, please try again", "error");
+      showToast(error?.message || CHECKIN_FAILED_RETRY_MESSAGE, "error");
       return { ok: false };
     }
   }
@@ -252,13 +252,13 @@ export class WelfareCenterBusiness {
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200) {
         success = true;
-        this.config.onToast("Video check-in successful", "success");
+        showToast(VIDEO_CHECKIN_SUCCESS_MESSAGE, "success");
       } else {
-        this.config.onToast(msg || "Claim failed", "error");
+        showToast(msg || CLAIM_FAILED_MESSAGE, "error");
       }
     } catch (error) {
       logger.error("Claim checkin video reward failed", error);
-      this.config.onToast(error?.message || "Claim failed, please try again", "error");
+      showToast(error?.message || CLAIM_FAILED_RETRY_MESSAGE, "error");
     }
     // Refresh only after successful reward claim.
     if (success) {
@@ -282,7 +282,7 @@ export class WelfareCenterBusiness {
         const coinValue = res.data?.coin;
         const rewardCoin = Number(coinValue);
         if (coinValue == null || coinValue === "" || !Number.isFinite(rewardCoin)) {
-          this.config.onToast("No coins received", "error");
+          showToast(NO_COINS_RECEIVED_MESSAGE, "error");
           return { ok: false };
         }
         return {
@@ -292,23 +292,16 @@ export class WelfareCenterBusiness {
           message: msg || "Video completed! Coins rewarded.",
         };
       } else {
-        this.config.onToast(this.resolveDailyAdMessage(msg, "Claim failed"), "error");
+        showToast(this.resolveDailyAdMessage(msg, CLAIM_FAILED_MESSAGE), "error");
       }
     } catch (error) {
       logger.error("Turntable / daily video reward failed", error);
-      this.config.onToast(
-        this.resolveDailyAdMessage(error?.message, "Claim failed, please try again"),
+      showToast(
+        this.resolveDailyAdMessage(error?.message, CLAIM_FAILED_RETRY_MESSAGE),
         "error",
       );
     }
     return { ok: false };
-  }
-
-  /**
-   * 获取用户资产
-   */
-  getUserAssets() {
-    return { ...this.userAssets };
   }
 
   /**

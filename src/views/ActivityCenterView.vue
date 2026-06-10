@@ -1,44 +1,17 @@
 <script setup>
-import { onMounted, onUnmounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import "../assets/activity-center.css";
 import { assetUrl } from "../lib/asset-url.js";
-import { showChunkLoadError } from "../lib/chunk-load-error.js";
+import { ROUTE_NAMES } from "../lib/activity-pages.js";
+import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 
-const route = useRoute();
-const router = useRouter();
-
-let disposeActivityCenter = null;
-
-onMounted(async () => {
-  try {
-    const { initActivityCenter } = await import("../boot/initActivityCenter.js");
-    disposeActivityCenter = initActivityCenter({ router, route });
-  } catch (error) {
-    console.error("[ActivityCenter] Failed to load page module", error);
-    showChunkLoadError("Activity Center");
-  }
-});
-
-onUnmounted(() => {
-  disposeActivityCenter?.();
-  disposeActivityCenter = null;
+useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
+  logTag: "ActivityCenter",
+  loadModule: () => import("../boot/initActivityCenter.js"),
+  bootstrap: (module, ctx) => module.initActivityCenter(ctx),
 });
 </script>
 
 <template>
-  <div id="authFailedModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:20px;">
-    <div style="width:100%;max-width:360px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.25);">
-      <div style="padding:18px 18px 10px;font-weight:800;font-size:16px;color:#111827;">Authorization Failed</div>
-      <div style="padding:0 18px 18px;color:#4b5563;font-size:14px;line-height:1.5;">
-        Missing token. Please reopen this page from the app and try again.
-      </div>
-      <div style="padding:0 18px 18px;display:flex;gap:10px;">
-        <button id="authFailedOk" type="button" style="flex:1;height:44px;border:none;border-radius:999px;background:linear-gradient(135deg,#ec5b13,#f97316);color:#fff;font-weight:800;cursor:pointer;">OK</button>
-      </div>
-    </div>
-  </div>
-
   <div class="task-center-root">
     <main class="tc-main">
       <section id="tc-checkin-section" class="tc-section">
@@ -63,7 +36,7 @@ onUnmounted(() => {
 
       <section id="tc-video-task-section" class="tc-section">
         <div class="tc-card tc-flow-card">
-          <h2 class="tc-flow-title">Turn your activities into rewards!</h2>
+          <h2 class="tc-flow-title">Earn coins, redeem rewards!</h2>
           <div class="tc-flow-steps">
             <div class="tc-flow-step">
               <div class="tc-flow-icon">
@@ -97,39 +70,7 @@ onUnmounted(() => {
             <h2 class="tc-card-title">Daily Check-in</h2>
             <span class="tc-pill" id="tc-checkin-pill">0/7 Days</span>
           </div>
-          <div id="tc-checkin-days-container" class="tc-checkin-days">
-            <div class="tc-checkin-day" data-day="1">
-              <div class="tc-checkin-dot tc-checkin-dot--reward">+0</div>
-              <span class="tc-checkin-label">Day 1</span>
-            </div>
-            <div class="tc-checkin-day" data-day="2">
-              <div class="tc-checkin-dot tc-checkin-dot--reward">+0</div>
-              <span class="tc-checkin-label">Day 2</span>
-            </div>
-            <div class="tc-checkin-day" data-day="3">
-              <div class="tc-checkin-dot tc-checkin-dot--reward">+0</div>
-              <span class="tc-checkin-label">Day 3</span>
-            </div>
-            <div class="tc-checkin-day" data-day="4">
-              <div class="tc-checkin-dot tc-checkin-dot--reward">+0</div>
-              <span class="tc-checkin-label">Day 4</span>
-            </div>
-            <div class="tc-checkin-day" data-day="5">
-              <div class="tc-checkin-dot tc-checkin-dot--reward">+0</div>
-              <span class="tc-checkin-label">Day 5</span>
-            </div>
-            <div class="tc-checkin-day" data-day="6">
-              <div class="tc-checkin-dot tc-checkin-dot--reward">+0</div>
-              <span class="tc-checkin-label">Day 6</span>
-            </div>
-            <div class="tc-checkin-day tc-checkin-day--super" data-day="7">
-              <div class="tc-checkin-dot tc-checkin-dot--super">
-                <img :src="assetUrl('icons/card_giftcard.svg')" alt="gift" class="tc-checkin-super-icon-img" width="20" height="20" loading="lazy" decoding="async">
-                <span class="tc-checkin-super-reward">+0</span>
-              </div>
-              <span class="tc-checkin-label tc-checkin-label--super">Day 7</span>
-            </div>
-          </div>
+          <div id="tc-checkin-days-container" class="tc-checkin-days" />
           <button id="signin-timer-btn" type="button" class="tc-primary-btn tc-primary-btn--full">
             <img :src="assetUrl('icons/calendar_today.svg')" class="tc-icon-calendar" alt="" width="20" height="20" loading="lazy" decoding="async">
             <span>Check-in Now</span>
@@ -150,7 +91,7 @@ onUnmounted(() => {
             <div class="tc-video-text">
               <h3 class="tc-card-title">Lucky Spin: Watch &amp; Win</h3>
               <p id="ad-task-desc" class="tc-card-subtitle">
-                Watch 0 videos to earn 0 spin chances.
+                Each video unlocks 1 lucky spin. Win up to 200 coins per spin!
               </p>
             </div>
           </div>
@@ -161,9 +102,12 @@ onUnmounted(() => {
                 <span id="ad-earned-text">0 Coins</span>
               </span>
               <span class="tc-video-progress-item tc-video-progress-item-right">
-                <span class="tc-video-progress-label">Spins Spun</span>
-                <span id="ad-progress-videos" class="tc-video-progress-value">0 Spins</span>
+                <span class="tc-video-progress-label">Progress</span>
+                <span id="ad-progress-videos" class="tc-video-progress-value">0 / 5 Spins</span>
               </span>
+            </div>
+            <div class="tc-video-progress-bar">
+              <div id="ad-progress-bar-fill" class="tc-video-progress-fill" />
             </div>
           </div>
           <div class="tc-video-actions tc-video-actions--single">
@@ -231,19 +175,17 @@ onUnmounted(() => {
           <span id="signinDialogBaseCoins" class="signin-dialog-base-coins">+0 Coins</span>
         </div>
         <div class="signin-dialog-boost-card">
-          <p class="signin-dialog-boost-title">Boost your reward!</p>
-          <p class="signin-dialog-boost-desc">
-            Watch a short video to get <strong id="signinDialogVideoCoin" class="signin-dialog-boost-strong">0</strong> extra coins
+          <p class="signin-dialog-boost-title">Double your reward!</p>
+          <p id="signinDialogBoostDesc" class="signin-dialog-boost-desc">
+            Watch a short video to turn <strong>5</strong> coins into <strong>10</strong> coins
           </p>
           <button id="signinDialogWatchBtn" type="button" class="signin-dialog-watch-btn">
             <img :src="assetUrl('icons/play_circle.svg')" alt="" class="signin-dialog-watch-icon" width="24" height="24">
-            <span>Get <span id="signinDialogMultiplier">0</span>x Extra Coins (Watch Video)</span>
+            <span id="signinDialogWatchBtnLabel">Double to 10 Coins · Watch Video</span>
           </button>
-          <button id="signinDialogClaimBaseOnly" type="button" class="signin-dialog-claim-base">Claim base reward only</button>
+          <button id="signinDialogClaimBaseOnly" type="button" class="signin-dialog-claim-base">No thanks, claim 5 coins</button>
         </div>
       </div>
     </div>
   </div>
-
-  <div id="toast" class="toast" style="display: none;" />
 </template>

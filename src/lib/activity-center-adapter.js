@@ -9,7 +9,7 @@ function isBridgeReady() {
   return !!(window.ActivityBridgeHelper?.isAvailable?.());
 }
 
-export class WelfareCenterAdapter {
+export class ActivityCenterAdapter {
   constructor(config = {}) {
     this.config = {
       activityId: config.activityId || "",
@@ -180,19 +180,5 @@ export class WelfareCenterAdapter {
    */
   getPlatform() {
     return window.ActivityBridgeHelper?.getPlatform?.() || "unknown";
-  }
-
-  /**
-   * 获取 SDK 版本
-   */
-  getVersion() {
-    return window.ActivityBridgeHelper?.getVersion?.() || "unknown";
-  }
-
-  /**
-   * 检查 SDK 是否可用
-   */
-  isAvailable() {
-    return this.isSDKReady && window.ActivityBridgeHelper?.isAvailable?.();
   }
 }

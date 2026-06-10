@@ -1,0 +1,170 @@
+import { DAILY_AD_LIMIT_MESSAGE } from "./activity-center-business.js";
+import { showToast } from "./activity-alert-ui.js";
+import * as logger from "./activity-logger.js";
+
+/**
+ * @param {{
+ *   business: import("./activity-center-business.js").ActivityCenterBusiness,
+ *   ui: import("./activity-center-ui.js").ActivityCenterUI,
+ *   adapter: import("./activity-center-adapter.js").ActivityCenterAdapter,
+ *   normalizeAdMessage: (message: string, fallback?: string) => string,
+ *   showDailyAdLimitToast: () => void,
+ *   checkinVideoClaimInFlight: { value: boolean },
+ *   checkinWatchAdInFlight: { value: boolean },
+ * }} ctx
+ */
+async function handleRewardAdEvent(ctx, result) {
+  const {
+    business,
+    ui,
+    adapter,
+    getLastRewardAdTaskId,
+    rewardAdTimeout,
+    normalizeAdMessage,
+    showDailyAdLimitToast,
+  } = ctx;
+
+  rewardAdTimeout?.clear();
+
+  const success = result.success;
+  const message = result.message || "";
+  const taskId = result.taskId || result.task_id || getLastRewardAdTaskId();
+
+  logger.log("[活动事件完成] reward_ad taskId=" + taskId + ", success=" + success, {
+    adStatusCode: result.adStatusCode,
+    adErrorCode: result.adErrorCode,
+    adDetail: result.adDetail,
+    message,
+  });
+
+  if (taskId !== "task_watch_ad") return;
+
+  if (success) {
+    if (business.isDailyAdLimitReached()) {
+      showDailyAdLimitToast();
+      adapter.trackEvent("daily_video_completed", {
+        taskId: "task_watch_ad",
+        success: false,
+        reason: DAILY_AD_LIMIT_MESSAGE,
+        platform: adapter.getPlatform(),
+      });
+      return;
+    }
+    if (ui.isWaitingAdForSpin()) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await ui.handleRewardAdCompletedForSpin();
+    } else if (!business.isDailyAdLimitReached()) {
+      ui.addSpinChance(1);
+    }
+    adapter.trackEvent("daily_video_completed", {
+      taskId: "task_watch_ad",
+      success: true,
+      platform: adapter.getPlatform(),
+    });
+    return;
+  }
+
+  const displayMessage = normalizeAdMessage(message, "Ad not completed");
+  ui.handleRewardAdFailedForSpin(displayMessage);
+  adapter.trackEvent("ad_watch_failed", {
+    taskId: "task_watch_ad",
+    reason: displayMessage,
+    adStatusCode: result.adStatusCode,
+    adErrorCode: result.adErrorCode,
+    adDetail: result.adDetail,
+  });
+}
+
+/**
+ * @param {Parameters<typeof handleRewardAdEvent>[0]} ctx
+ */
+async function handleInterstitialAdEvent(ctx, result) {
+  const {
+    business,
+    ui,
+    adapter,
+    apiOptions,
+    getLastInterstitialAdTaskId,
+    interstitialAdTimeout,
+    normalizeAdMessage,
+    checkinVideoClaimInFlight,
+    checkinWatchAdInFlight,
+  } = ctx;
+
+  interstitialAdTimeout?.clear();
+
+  const success = result.success;
+  const message = result.message || "";
+  const taskId = result.taskId || result.task_id || getLastInterstitialAdTaskId();
+
+  logger.log("[活动事件完成] interstitial_ad taskId=" + taskId + ", success=" + success, {
+    adStatusCode: result.adStatusCode,
+    adErrorCode: result.adErrorCode,
+    adDetail: result.adDetail,
+    message,
+  });
+
+  if (taskId !== "task_checkin") return;
+
+  if (success) {
+    const video_id = result.video_id ?? result.videoId ?? result.data?.video_id ?? "";
+    logger.log("[活动事件完成] 签到看视频领奖 video_id=" + video_id);
+    if (checkinVideoClaimInFlight.value) return;
+    checkinVideoClaimInFlight.value = true;
+    business
+      .claimCheckinVideoReward(apiOptions, video_id)
+      .then((claimResult) => {
+        if (claimResult?.ok) {
+          ui.markSigninVideoCompleted();
+        }
+      })
+      .finally(() => {
+        checkinVideoClaimInFlight.value = false;
+        checkinWatchAdInFlight.value = false;
+        if (!ui.isSigninVideoCompleted()) {
+          ui.setSigninWatchLoading(false);
+        }
+      });
+    adapter.trackEvent("checkin_video_completed", { taskId, success: true });
+    return;
+  }
+
+  checkinWatchAdInFlight.value = false;
+  ui.setSigninWatchLoading(false);
+  const displayMessage = normalizeAdMessage(message, "Ad not completed");
+  showToast(displayMessage, "warning");
+  adapter.trackEvent("checkin_video_failed", {
+    taskId,
+    reason: displayMessage,
+    adStatusCode: result.adStatusCode,
+    adErrorCode: result.adErrorCode,
+    adDetail: result.adDetail,
+  });
+}
+
+/**
+ * @param {Parameters<typeof handleRewardAdEvent>[0]} ctx
+ */
+export function createActivitySdkEventHandler(ctx) {
+  return async function handleSDKEventCompleted(result) {
+    logger.log("活动事件完成回调:", result);
+
+    if (!result || !result.eventType) {
+      logger.warn("事件完成回调数据格式错误:", result);
+      return;
+    }
+
+    const eventType = result.eventType;
+    const RewardAd = window.ActivityBridgeHelper?.EventType?.REWARD_AD;
+    const InterstitialAd = window.ActivityBridgeHelper?.EventType?.INTERSTITIAL_AD;
+
+    if (eventType === RewardAd) {
+      await handleRewardAdEvent(ctx, result);
+      return;
+    }
+
+    if (eventType === InterstitialAd) {
+      await handleInterstitialAdEvent(ctx, result);
+    }
+  };
+}
