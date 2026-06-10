@@ -13,32 +13,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.9);
-  color: #ffffff;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  z-index: 2000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.toast.success {
-  background-color: rgba(81, 207, 102, 0.9);
-}
-
-.toast.error {
-  background-color: rgba(255, 107, 107, 0.9);
-}
-
-.toast.warning {
-  background-color: rgba(255, 149, 0, 0.9);
-}
-
 .redeem-root {
   min-height: 100vh;
   max-width: 480px;
