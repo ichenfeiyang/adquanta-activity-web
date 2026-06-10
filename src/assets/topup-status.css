@@ -376,18 +376,6 @@ body {
   border: 1px solid #d1d5db;
 }
 
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  background: rgba(17, 24, 39, 0.92);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 10px;
-  z-index: 2000;
-}
-
 /* Help & Support modal (match H5 orange style) */
 .ts-help-overlay {
   position: fixed;
