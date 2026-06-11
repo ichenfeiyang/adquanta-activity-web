@@ -64,6 +64,7 @@ build/
 coverage/
 .npm-cache/
 .cache/
+.pnpm-store
 
 # 若将来由构建生成压缩资源，不参与版本控制
 *.min.js
