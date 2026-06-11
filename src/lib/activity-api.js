@@ -4,6 +4,7 @@
  * 日志带 [ActivityWeb] 前缀，便于在 Android WebView 的 Logcat 中查看
  */
 import * as logger from "./activity-logger.js";
+import { fetchWithRetry } from "./fetch-with-retry.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
@@ -24,92 +25,107 @@ function maskAuthHeaders(headers = {}) {
   return out;
 }
 
-async function safeReadResponseBody(response) {
-  // Clone so we can try json then fallback to text without consuming original
-  const cloned = response.clone();
-  const json = await cloned.json().catch(() => null);
+async function readParsedBody(source) {
+  const json = await source.json().catch(() => null);
+  if (json !== null) return { kind: "json", value: json };
+  const text = await source.text().catch(() => "");
+  return { kind: "text", value: text };
+}
+
+async function readResponseBody(response, { preserveOriginal = false } = {}) {
+  if (!preserveOriginal) {
+    return readParsedBody(response);
+  }
+  const json = await response.clone().json().catch(() => null);
   if (json !== null) return { kind: "json", value: json };
   const text = await response.clone().text().catch(() => "");
   return { kind: "text", value: text };
 }
 
-async function parseResponseBody(response) {
-  const json = await response.json().catch(() => null);
-  if (json !== null) return { kind: "json", value: json };
-  const text = await response.text().catch(() => "");
-  return { kind: "text", value: text };
+function getHttpErrorMessage(body, status) {
+  if (body.kind === "json" && body.value?.message) {
+    return body.value.message;
+  }
+  return `HTTP ${status}`;
+}
+
+function parseApiResponse(body, status) {
+  if (body.kind === "json") return body.value;
+  return { code: status, message: body.value };
+}
+
+function buildRetryLogger(apiName) {
+  if (!logger.isDebugEnabled()) return undefined;
+  return ({ nextAttempt, maxAttempts, error }) => {
+    logger.warn(`[API] Retry ${apiName} ${nextAttempt}/${maxAttempts}`, {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  };
 }
 
 async function fetchApi(apiName, url, init = {}) {
-  if (!logger.isDebugEnabled()) {
-    let response;
-    try {
-      response = await fetch(url, init);
-    } catch (error) {
-      throw error;
-    }
-
-    const body = await parseResponseBody(response);
-    if (!response.ok) {
-      const message =
-        body.kind === "json" && body.value && body.value.message
-          ? body.value.message
-          : `HTTP ${response.status}`;
-      throw new Error(message);
-    }
-
-    if (body.kind === "json") return body.value;
-    return { code: response.status, message: body.value };
-  }
-
-  return loggedFetch(apiName, url, init);
-}
-
-async function loggedFetch(apiName, url, init = {}) {
-  const requestId = `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+  const debug = logger.isDebugEnabled();
   const startedAt = Date.now();
+  const requestId = debug ? `${Date.now()}_${Math.random().toString(16).slice(2, 8)}` : "";
 
-  const headers = init.headers ? { ...init.headers } : {};
-  const reqLog = {
-    requestId,
-    api: apiName,
-    method: init.method || "GET",
-    url,
-    headers: maskAuthHeaders(headers),
-    body: typeof init.body === "string" ? init.body : init.body ?? null,
-  };
-  logger.log(`[API] Request ${apiName}\n` + JSON.stringify(reqLog, null, 2));
+  if (debug) {
+    const headers = init.headers ? { ...init.headers } : {};
+    logger.log(
+      `[API] Request ${apiName}\n` +
+        JSON.stringify(
+          {
+            requestId,
+            api: apiName,
+            method: init.method || "GET",
+            url,
+            headers: maskAuthHeaders(headers),
+            body: typeof init.body === "string" ? init.body : init.body ?? null,
+          },
+          null,
+          2,
+        ),
+    );
+  }
 
   let response;
   try {
-    response = await fetch(url, init);
-  } catch (e) {
-    const elapsedMs = Date.now() - startedAt;
-    logger.error(`[API] Network error ${apiName} (${elapsedMs}ms)\n` + JSON.stringify({ requestId, message: e?.message || String(e) }, null, 2));
-    throw e;
+    response = await fetchWithRetry(url, init, { onRetry: buildRetryLogger(apiName) });
+  } catch (error) {
+    if (debug) {
+      logger.error(
+        `[API] Network error ${apiName} (${Date.now() - startedAt}ms)\n` +
+          JSON.stringify({ requestId, message: error?.message || String(error) }, null, 2),
+      );
+    }
+    throw error;
   }
 
-  const elapsedMs = Date.now() - startedAt;
-  const body = await safeReadResponseBody(response);
-  const resLog = {
-    requestId,
-    api: apiName,
-    elapsedMs,
-    status: response.status,
-    statusText: response.statusText,
-    ok: response.ok,
-    responseBody: body.value,
-  };
-  logger.log(`[API] Response ${apiName}\n` + JSON.stringify(resLog, null, 2));
+  const body = await readResponseBody(response, { preserveOriginal: debug });
+
+  if (debug) {
+    logger.log(
+      `[API] Response ${apiName}\n` +
+        JSON.stringify(
+          {
+            requestId,
+            api: apiName,
+            elapsedMs: Date.now() - startedAt,
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            responseBody: body.value,
+          },
+          null,
+          2,
+        ),
+    );
+  }
 
   if (!response.ok) {
-    const message = (body.kind === "json" && body.value && body.value.message) ? body.value.message : `HTTP ${response.status}`;
-    throw new Error(message);
+    throw new Error(getHttpErrorMessage(body, response.status));
   }
 
-  // Return json if possible; otherwise return { code: response.status, message: text }
-  if (body.kind === "json") return body.value;
-  return { code: response.status, message: body.value };
+  return parseApiResponse(body, response.status);
 }
 
 /**
