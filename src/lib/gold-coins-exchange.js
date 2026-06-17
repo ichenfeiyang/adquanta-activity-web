@@ -120,6 +120,7 @@ export class GoldCoinsExchange {
     this.destroy();
     this.setCountryState(getInitialRedeemCountry());
     this.refreshCountryCodeUI();
+    this.closeCountryCodeDropdown();
     this.hydrateFromCache();
     this.initHistory();
     this.bindEvents();
