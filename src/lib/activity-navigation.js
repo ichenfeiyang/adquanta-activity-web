@@ -1,9 +1,23 @@
 import { ROUTE_NAMES } from "./activity-pages.js";
+import { saveTopupStatusPreview } from "./topup-status-preview.js";
 
 function compactQuery(query) {
   return Object.fromEntries(
     Object.entries(query).filter(([, value]) => value != null && value !== ""),
   );
+}
+
+function resolveTopupRefs(payload = {}) {
+  const businessId =
+    payload.business_id ||
+    payload.businessId ||
+    payload.distributor_ref ||
+    payload.distributorRef ||
+    "";
+  return {
+    businessId,
+    distributorRef: payload.distributor_ref || payload.distributorRef || businessId,
+  };
 }
 
 export function activityCenterQuery(activityId) {
@@ -25,17 +39,9 @@ export function goToGoldCoinsExchange(router, activityId) {
 }
 
 export function goToTopupStatus(router, payload = {}) {
-  const businessId =
-    payload.business_id ||
-    payload.businessId ||
-    payload.distributor_ref ||
-    payload.distributorRef ||
-    "";
-  const distributorRef =
-    payload.distributor_ref ||
-    payload.distributorRef ||
-    businessId ||
-    "";
+  const { businessId, distributorRef } = resolveTopupRefs(payload);
+
+  saveTopupStatusPreview(distributorRef, payload);
 
   return router.push({
     name: ROUTE_NAMES.TOPUP_STATUS,
@@ -43,10 +49,6 @@ export function goToTopupStatus(router, payload = {}) {
       business_id: businessId,
       distributor_ref: distributorRef,
       status: payload.status || "pending",
-      amount_label: payload.amount_label || "",
-      send_value: payload.send_value || "",
-      phone_number: payload.phone_number || "",
-      operator: payload.operator || "",
       activity_id: payload.activity_id || payload.activityId || "",
     }),
   });

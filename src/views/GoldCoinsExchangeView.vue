@@ -43,7 +43,19 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
         <div class="redeem-field">
           <label class="redeem-label" for="inputMobile">Mobile Number</label>
           <div class="redeem-input-wrapper">
-            <button id="countryCodeBtn" type="button" class="redeem-countrycode-btn" aria-label="Country code" disabled>+91</button>
+            <button
+              id="countryCodeBtn"
+              type="button"
+              class="redeem-countrycode-btn"
+              aria-label="Country code"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span class="redeem-countrycode-flag" aria-hidden="true">🇮🇳</span>
+              <span class="redeem-countrycode-dial">+91</span>
+              <span class="redeem-countrycode-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div id="countryCodeDropdown" class="redeem-countrycode-dropdown" role="listbox" hidden />
             <input
               id="inputMobile"
               class="redeem-input"

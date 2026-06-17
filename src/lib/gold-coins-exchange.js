@@ -15,6 +15,13 @@ import { escapeHtml } from "./escape-html.js";
 import { REDEEM_SUMMARY_DEFAULT } from "./activity-messages.js";
 import { redeemHistoryMethods } from "./redeem-history.js";
 import { bindPageElements } from "./bind-page-elements.js";
+import {
+  DEFAULT_REDEEM_COUNTRY,
+  getInitialRedeemCountry,
+  resolveRedeemCountry,
+  saveRedeemCountry,
+  SUPPORTED_REDEEM_COUNTRIES,
+} from "./redeem-country.js";
 
 /**
  * 金币兑换页面
@@ -54,11 +61,8 @@ export class GoldCoinsExchange {
     // 兑换状态
     this.state = {
       mobile: "",
-      // Fixed default country code (India)
-      countryCode: "+91",
-      // Backend country enum
-      countryCodeEnum: "IN",
-      countryCodeUserSelected: true,
+      countryCode: DEFAULT_REDEEM_COUNTRY.dialCode,
+      countryCodeEnum: DEFAULT_REDEEM_COUNTRY.iso,
       operator: "-",
       /** 是否已明确选中运营商（与 state.operator 展示名配合） */
       operatorSelected: false,
@@ -75,6 +79,7 @@ export class GoldCoinsExchange {
       userGoldCoins: "userGoldCoins",
       inputMobile: "inputMobile",
       countryCodeBtn: "countryCodeBtn",
+      countryCodeDropdown: "countryCodeDropdown",
       operatorGrid: "operatorGrid",
       operatorSection: "operatorSection",
       amountSection: "amountSection",
@@ -87,6 +92,7 @@ export class GoldCoinsExchange {
     });
 
     this._domDisposers = [];
+    this._countryDropdownOpen = false;
   }
 
   _addDomListener(target, type, handler, options) {
@@ -100,6 +106,7 @@ export class GoldCoinsExchange {
       clearTimeout(this._chargesDebounceTimer);
       this._chargesDebounceTimer = null;
     }
+    this.closeCountryCodeDropdown();
     for (const dispose of this._domDisposers) {
       dispose();
     }
@@ -111,12 +118,91 @@ export class GoldCoinsExchange {
    */
   async init() {
     this.destroy();
-    if (this.$.countryCodeBtn) this.$.countryCodeBtn.textContent = this.state.countryCode;
+    this.setCountryState(getInitialRedeemCountry());
+    this.refreshCountryCodeUI();
     this.hydrateFromCache();
     this.initHistory();
     this.bindEvents();
     await Promise.all([this.loadActivityInfo(), this.loadRecords()]);
     this.setChargesUIVisible(false);
+  }
+
+  setCountryState(country) {
+    this.state.countryCode = country.dialCode;
+    this.state.countryCodeEnum = country.iso;
+  }
+
+  refreshCountryCodeUI() {
+    this.updateCountryCodeBtnView();
+    this.renderCountryCodeDropdown();
+  }
+
+  getChargesLookupKey(mobile) {
+    return `${this.state.countryCodeEnum}:${String(mobile || "")}`;
+  }
+
+  setCountryDropdownOpen(isOpen) {
+    this._countryDropdownOpen = isOpen;
+    if (this.$.countryCodeDropdown) {
+      this.$.countryCodeDropdown.hidden = !isOpen;
+    }
+    if (this.$.countryCodeBtn) {
+      this.$.countryCodeBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+  }
+
+  renderCountryCodeButton(country) {
+    const btn = this.$.countryCodeBtn;
+    if (!btn) return;
+    btn.innerHTML = `
+      <span class="redeem-countrycode-flag" aria-hidden="true">${country.flag}</span>
+      <span class="redeem-countrycode-dial">${escapeHtml(country.dialCode)}</span>
+      <span class="redeem-countrycode-chevron" aria-hidden="true">▾</span>
+    `;
+  }
+
+  updateCountryCodeBtnView() {
+    this.renderCountryCodeButton(resolveRedeemCountry(this.state.countryCodeEnum));
+    if (this.$.countryCodeBtn) {
+      this.$.countryCodeBtn.setAttribute("aria-expanded", this._countryDropdownOpen ? "true" : "false");
+    }
+  }
+
+  renderCountryCodeDropdown() {
+    if (!this.$.countryCodeDropdown) return;
+    this.$.countryCodeDropdown.innerHTML = SUPPORTED_REDEEM_COUNTRIES.map((country) => {
+      const active = country.iso === this.state.countryCodeEnum ? " redeem-countrycode-item--active" : "";
+      return `<button
+        type="button"
+        class="redeem-countrycode-item${active}"
+        role="option"
+        data-country-iso="${escapeHtml(country.iso)}"
+        aria-selected="${country.iso === this.state.countryCodeEnum ? "true" : "false"}"
+      >
+        <span class="redeem-countrycode-item-flag" aria-hidden="true">${country.flag}</span>
+        <span class="redeem-countrycode-item-main">
+          <span class="redeem-countrycode-item-name">${escapeHtml(country.name)}</span>
+          <span class="redeem-countrycode-item-dial">${escapeHtml(country.dialCode)}</span>
+        </span>
+      </button>`;
+    }).join("");
+  }
+
+  toggleCountryCodeDropdown() {
+    this.setCountryDropdownOpen(!this._countryDropdownOpen);
+  }
+
+  closeCountryCodeDropdown() {
+    this.setCountryDropdownOpen(false);
+  }
+
+  selectCountry(iso) {
+    this.setCountryState(saveRedeemCountry(iso));
+    this.closeCountryCodeDropdown();
+    this.refreshCountryCodeUI();
+    this.resetChargesUI();
+    this.maybeLoadChargesForMobile(this.state.mobile);
+    this.updateRedeemState();
   }
 
   hydrateFromCache() {
@@ -171,9 +257,10 @@ export class GoldCoinsExchange {
     // debounce to avoid spamming while typing
     if (this._chargesDebounceTimer) clearTimeout(this._chargesDebounceTimer);
     this._chargesDebounceTimer = setTimeout(() => {
+      const lookupKey = this.getChargesLookupKey(m);
       if (this.chargesLoading) return;
-      if (this.lastChargesMobile === m && this.chargesLoaded) return;
-      this.lastChargesMobile = m;
+      if (this.lastChargesMobile === lookupKey && this.chargesLoaded) return;
+      this.lastChargesMobile = lookupKey;
       this.loadCharges();
     }, 350);
   }
@@ -715,8 +802,31 @@ export class GoldCoinsExchange {
   /**
    * 绑定事件
    */
+  bindCountryCodeEvents() {
+    if (this.$.countryCodeBtn) {
+      this._addDomListener(this.$.countryCodeBtn, "click", (e) => {
+        e.stopPropagation();
+        this.toggleCountryCodeDropdown();
+      });
+    }
+
+    if (this.$.countryCodeDropdown) {
+      this._addDomListener(this.$.countryCodeDropdown, "click", (e) => {
+        const item = e.target.closest("[data-country-iso]");
+        if (!item) return;
+        e.stopPropagation();
+        this.selectCountry(item.getAttribute("data-country-iso"));
+      });
+    }
+
+    this._addDomListener(document, "click", () => this.closeCountryCodeDropdown());
+    this._addDomListener(document, "keydown", (e) => {
+      if (e.key === "Escape") this.closeCountryCodeDropdown();
+    });
+  }
+
   bindEvents() {
-    // Country code is fixed (+91). Picker disabled by design.
+    this.bindCountryCodeEvents();
     this.bindHistoryEvents();
 
     // Redeem confirmation modal is disabled by design (direct redeem).
