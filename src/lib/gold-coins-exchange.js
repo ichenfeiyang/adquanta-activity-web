@@ -13,6 +13,17 @@ import * as logger from "./activity-logger.js";
 import { assetUrl } from "./asset-url.js";
 import { escapeHtml } from "./escape-html.js";
 import { REDEEM_SUMMARY_DEFAULT } from "./activity-messages.js";
+import {
+  buildSelectedRedeemSummary,
+  formatRedeemProductName,
+  getProductTypeLabel,
+  getRedeemSummaryLabel,
+  hasMixedProductTypes,
+  isDataProduct,
+  isValidMappedChargeProduct,
+  mapChargeProduct,
+  sortChargeProducts,
+} from "./charge-product.js";
 import { redeemHistoryMethods } from "./redeem-history.js";
 import { bindPageElements } from "./bind-page-elements.js";
 import {
@@ -22,6 +33,31 @@ import {
   saveRedeemCountry,
   SUPPORTED_REDEEM_COUNTRIES,
 } from "./redeem-country.js";
+
+function buildAmountButtonHtml(item, { showTypeBadge = false, uniformLayout = false } = {}) {
+  const typeBadgeHtml = showTypeBadge
+    ? `<span class="redeem-amount-type-badge">${escapeHtml(getProductTypeLabel(item.product_type))}</span>`
+    : "";
+  let subtitleHtml = "";
+  if (item.amount_subtitle) {
+    subtitleHtml = `<span class="redeem-amount-subtitle">${escapeHtml(item.amount_subtitle)}</span>`;
+  } else if (uniformLayout) {
+    subtitleHtml = `<span class="redeem-amount-subtitle redeem-amount-subtitle--placeholder" aria-hidden="true">&nbsp;</span>`;
+  }
+  const layoutClass = uniformLayout || isDataProduct(item.product_type) ? " redeem-amount-btn--tall" : "";
+
+  return `<button class="redeem-amount-btn${layoutClass}" data-amount="${item.amount}" data-spend-coin="${item.spend_coin}" data-charges-id="${escapeHtml(
+    item.charges_id,
+  )}">
+      ${typeBadgeHtml}
+      <span class="redeem-amount-main">${escapeHtml(item.amount_text || String(item.amount))}</span>
+      ${subtitleHtml}
+      <span class="redeem-amount-cost">
+        <img src="${assetUrl("icons/gold_coin.svg")}" alt="" class="redeem-amount-coin-icon" />
+        <span>${Number(item.spend_coin ?? 0)}</span>
+      </span>
+    </button>`;
+}
 
 /**
  * 金币兑换页面
@@ -334,20 +370,17 @@ export class GoldCoinsExchange {
         const providerName = String(p?.provider_name ?? "").trim();
         const providerCode = String(p?.provider_code ?? providerName ?? "").trim() || providerName;
         const products = Array.isArray(p?.products) ? p.products : [];
-        const items = products
-          .filter((prod) => prod && prod.available === true)
-          .map((prod) => ({
-            charges_id: prod.sku_code ?? "",
-            amount: Number(prod.receive_value ?? 0),
-            amount_text: `${prod.receive_value ?? 0} ${prod.receive_currency ?? ""}`.trim(),
-            spend_coin: Number(prod.spend_coin ?? 0),
-            provider_name: providerName,
-            provider_code: providerCode,
-            receive_currency: prod.receive_currency ?? "",
-            send_value: prod.send_value ?? "",
-          }))
-          .filter((x) => x.charges_id && Number.isFinite(x.amount))
-          .sort((a, b) => a.amount - b.amount);
+        const items = sortChargeProducts(
+          products
+            .filter((prod) => prod && prod.available === true)
+            .map((prod) =>
+              mapChargeProduct(prod, {
+                provider_name: providerName,
+                provider_code: providerCode,
+              }),
+            )
+            .filter((x) => isValidMappedChargeProduct(x)),
+        );
         return {
           provider_code: providerCode,
           provider_name: providerName || providerCode,
@@ -418,19 +451,13 @@ export class GoldCoinsExchange {
   renderAmountGrid(options) {
     if (!this.$.amountGrid) return;
     const list = Array.isArray(options) ? options : [];
+    const hasDataProduct = list.some((item) => isDataProduct(item.product_type));
+    const showTypeBadge = hasMixedProductTypes(list);
+    const uniformLayout = hasDataProduct && showTypeBadge;
+
+    this.$.amountGrid.classList.toggle("redeem-amount-grid--wide", hasDataProduct);
     this.$.amountGrid.innerHTML = list
-      .map(
-        (o) =>
-          `<button class="redeem-amount-btn" data-amount="${o.amount}" data-spend-coin="${o.spend_coin}" data-charges-id="${escapeHtml(
-            o.charges_id
-          )}">
-            <span class="redeem-amount-main">${escapeHtml(o.amount_text || String(o.amount))}</span>
-            <span class="redeem-amount-cost">
-              <img src="${assetUrl("icons/gold_coin.svg")}" alt="" class="redeem-amount-coin-icon" />
-              <span>${Number(o.spend_coin ?? 0)}</span>
-            </span>
-          </button>`
-      )
+      .map((item) => buildAmountButtonHtml(item, { showTypeBadge, uniformLayout }))
       .join("");
     this.state.amount = null;
     this.state.selectedCharge = null;
@@ -548,7 +575,7 @@ export class GoldCoinsExchange {
     const goldCoins = this.getRequiredGoldCoins();
     const validMobile = typeof this.state.mobile === "string" && /^\d{6,15}$/.test(this.state.mobile);
     const hasOperator = !!this.selectedProviderCode && this.state.operatorSelected === true;
-    const hasAmount = !!this.state.amount;
+    const hasSelectedProduct = Boolean(this.state.selectedCharge?.charges_id);
     const canAfford = goldCoins > 0 && this.userGoldCoins >= goldCoins;
 
     if (this.exchangeLoading) {
@@ -559,7 +586,7 @@ export class GoldCoinsExchange {
     }
 
     if (validMobile && !this.chargesLoaded) {
-      this.$.redeemSummary.textContent = "Loading top-up options...";
+      this.$.redeemSummary.textContent = "Loading recharge options...";
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
       return;
@@ -572,21 +599,27 @@ export class GoldCoinsExchange {
       return;
     }
 
-    if (validMobile && hasOperator && !hasAmount) {
-      this.$.redeemSummary.textContent = "Select top-up amount";
+    if (validMobile && hasOperator && !hasSelectedProduct) {
+      this.$.redeemSummary.textContent = "Select a recharge or data plan";
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
       return;
     }
 
-    if (validMobile && hasOperator && hasAmount) {
-      const label = this.state.selectedCharge?.amount_text || String(this.state.amount ?? "");
-      this.$.redeemSummary.textContent = `Use ${goldCoins} coins to top up ${label} (${this.state.operator}) for ${this.state.countryCode} ${this.state.mobile}`;
+    if (validMobile && hasOperator && hasSelectedProduct) {
+      const selected = this.state.selectedCharge || {};
+      this.$.redeemSummary.textContent = buildSelectedRedeemSummary({
+        coins: goldCoins,
+        product: selected,
+        operator: this.state.operator,
+        countryCode: this.state.countryCode,
+        mobile: this.state.mobile,
+      });
     } else {
       this.$.redeemSummary.textContent = REDEEM_SUMMARY_DEFAULT;
     }
 
-    const canRedeem = validMobile && hasOperator && hasAmount && canAfford;
+    const canRedeem = validMobile && hasOperator && hasSelectedProduct && canAfford;
     this.$.btnRedeem.disabled = !canRedeem;
     if (canRedeem) {
       this.$.btnRedeem.classList.remove("redeem-primary-btn--disabled");
@@ -602,20 +635,21 @@ export class GoldCoinsExchange {
     const coins = this.getRequiredGoldCoins();
     if (!coins) return null;
 
-    const label = this.state.selectedCharge?.amount_text || String(this.state.amount ?? "");
+    const selected = this.state.selectedCharge || {};
     return {
-      name: `Top-up ${label}`,
-      icon: "📱",
+      name: formatRedeemProductName(selected),
+      icon: isDataProduct(selected.product_type) ? "📶" : "📱",
       points: coins,
       mobile: `${this.state.countryCode} ${this.state.mobile}`,
       operator: this.state.operator,
+      product_type: selected.product_type,
     };
   }
 
   /**
    * 执行兑换
    */
-  showExchangeConfirmModal({ coins, amountLabel }) {
+  showExchangeConfirmModal({ coins, amountLabel, productType = "topup" }) {
     const modal = document.getElementById("exchangeModal");
     if (!modal) {
       // Fallback: keep behavior safe if modal markup missing.
@@ -633,7 +667,13 @@ export class GoldCoinsExchange {
     const cancelBtn = document.getElementById("cancelBtn");
     const confirmBtn = document.getElementById("confirmBtn");
 
-    if (previewName) previewName.textContent = `Top-up ${amountLabel || "-"}`;
+    if (previewName) {
+      previewName.textContent = formatRedeemProductName({
+        product_type: productType,
+        amount_text: amountLabel,
+        display_text: amountLabel,
+      });
+    }
     if (previewPoints) previewPoints.textContent = `${coins} coins`;
     if (confirmPoints) confirmPoints.textContent = String(coins ?? 0);
     if (confirmName) confirmName.textContent = String(amountLabel || "-");
@@ -697,27 +737,12 @@ export class GoldCoinsExchange {
       return;
     }
 
-    const amountLabelRaw = this.state.selectedCharge?.amount_text;
-    let amountLabel = "";
-    if (typeof amountLabelRaw === "string") {
-      amountLabel = amountLabelRaw;
-    } else if (amountLabelRaw && typeof amountLabelRaw === "object") {
-      // Avoid "[object Object]" when backend sends an object unexpectedly.
-      const v = amountLabelRaw.receive_value ?? amountLabelRaw.value ?? amountLabelRaw.amount ?? "";
-      const c =
-        amountLabelRaw.receive_currency ?? amountLabelRaw.currency ?? amountLabelRaw.unit ?? amountLabelRaw.amount_currency ?? "";
-      amountLabel = `${v} ${c}`.trim();
-    }
-    if (!amountLabel || amountLabel === "[object Object]") {
-      // Fallback to current selection amount.
-      const selected = this.state.selectedCharge || {};
-      const currency = selected.receive_currency ?? selected.currency ?? "";
-      amountLabel = (typeof this.state.amount === "number" ? String(this.state.amount) : String(this.state.amount ?? "")).trim();
-      if (currency && amountLabel) amountLabel = `${amountLabel} ${currency}`.trim();
-    }
+    const selected = this.state.selectedCharge || {};
+    const amountLabel = getRedeemSummaryLabel(selected) || String(this.state.amount ?? "");
     const confirmed = await this.showExchangeConfirmModal({
       coins,
       amountLabel,
+      productType: selected.product_type,
     });
     if (!confirmed) return;
 
@@ -780,7 +805,7 @@ export class GoldCoinsExchange {
       this.openTopupStatusPage({
         distributor_ref: distributorRef,
         status: String(res?.data?.status || "pending").toLowerCase(),
-        amount_label: this.state.selectedCharge?.amount_text || String(this.state.amount ?? ""),
+        amount_label: getRedeemSummaryLabel(this.state.selectedCharge) || String(this.state.amount ?? ""),
         send_value: sendValue,
         phone_number,
         operator: this.state.operator || "",

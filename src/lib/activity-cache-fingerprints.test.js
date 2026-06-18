@@ -26,6 +26,51 @@ test("fingerprintCharges tracks provider products", () => {
   assert.notEqual(fingerprintCharges(first), fingerprintCharges(second));
 });
 
+test("fingerprintCharges tracks data product display fields", () => {
+  const first = {
+    providers: [
+      {
+        provider_code: "JIO",
+        products: [
+          {
+            sku_code: "sku-data",
+            receive_value: 399,
+            receive_currency: "INR",
+            spend_coin: 120,
+            send_value: 4.15,
+            available: true,
+            product_type: "data",
+            display_text: "INR 399: 2.5GB/Day",
+            validity_period: "P28D",
+          },
+        ],
+      },
+    ],
+  };
+  const second = {
+    providers: [
+      {
+        provider_code: "JIO",
+        products: [
+          {
+            sku_code: "sku-data",
+            receive_value: 399,
+            receive_currency: "INR",
+            spend_coin: 120,
+            send_value: 4.15,
+            available: true,
+            product_type: "data",
+            display_text: "INR 399: 2.5GB/Day Updated",
+            validity_period: "P28D",
+          },
+        ],
+      },
+    ],
+  };
+
+  assert.notEqual(fingerprintCharges(first), fingerprintCharges(second));
+});
+
 test("fingerprintChargeRecords supports list payloads", () => {
   const first = { list: [{ business_id: "a1", status: "pending", amount: 10 }] };
   const second = { list: [{ business_id: "a1", status: "success", amount: 10 }] };

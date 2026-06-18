@@ -38,7 +38,7 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
       </section>
 
       <section class="redeem-section">
-        <h2 class="redeem-section-title">Mobile Recharge</h2>
+        <h2 class="redeem-section-title">Mobile Recharge & Data</h2>
 
         <div class="redeem-field">
           <label class="redeem-label" for="inputMobile">Mobile Number</label>
@@ -78,7 +78,7 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
         </div>
 
         <div id="redeemSummary" class="redeem-summary">
-          Enter your number and choose a recharge amount
+          Enter your number and choose a recharge or data plan
         </div>
 
         <button id="btnRedeem" type="button" class="redeem-primary-btn redeem-primary-btn--disabled" disabled>

@@ -10,6 +10,7 @@ import {
 } from "./activity-cache-fingerprints.js";
 
 const STORAGE_PREFIX = "activity_page_cache_v1";
+const CHARGES_CACHE_KIND = "chargesByPhoneV2";
 
 export const CACHE_TTL = {
   activityInfo: 30_000,
@@ -190,11 +191,11 @@ export function invalidateChargeRecordsCache(token) {
 }
 
 export function getChargesCache(token, phoneNumber) {
-  return getCachedData(scopedKey("chargesByPhone", token, phoneNumber));
+  return getCachedData(scopedKey(CHARGES_CACHE_KIND, token, phoneNumber));
 }
 
 export function setChargesCache(token, phoneNumber, data) {
-  setCachedData(scopedKey("chargesByPhone", token, phoneNumber), data, CACHE_TTL.chargesByPhone);
+  setCachedData(scopedKey(CHARGES_CACHE_KIND, token, phoneNumber), data, CACHE_TTL.chargesByPhone);
 }
 
 export async function loadActivityInfoWithSWR(token, { force = false, fetcher, onData }) {
@@ -228,11 +229,11 @@ export async function loadChargeRecordsWithSWR(token, { force = false, fetcher, 
 }
 
 export async function loadChargesWithSWR(token, phoneNumber, { force = false, fetcher, onData }) {
-  const cacheKey = scopedKey("chargesByPhone", token, phoneNumber);
+  const cacheKey = scopedKey(CHARGES_CACHE_KIND, token, phoneNumber);
   return loadWithSWR({
     force,
     cacheKey,
-    dedupeKey: scopedKey("chargesByPhone", token, `${phoneNumber}:fetch`),
+    dedupeKey: scopedKey(CHARGES_CACHE_KIND, token, `${phoneNumber}:fetch`),
     fetcher,
     onData,
     isValidResponse: (res) => res?.code === 200 && res?.data != null,

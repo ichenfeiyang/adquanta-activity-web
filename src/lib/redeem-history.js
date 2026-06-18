@@ -1,11 +1,12 @@
 import { getChargeRecords } from "./activity-api.js";
-import {
-  getChargeRecordsCache,
-  loadChargeRecordsWithSWR,
-} from "./activity-page-cache.js";
+import { loadChargeRecordsWithSWR } from "./activity-page-cache.js";
 import { goToTopupStatus } from "./activity-navigation.js";
 import { assetUrl } from "./asset-url.js";
 import { escapeHtml } from "./escape-html.js";
+import {
+  getHistoryRecordTitle,
+  getRecordAmountLabel,
+} from "./charge-product.js";
 import { formatPhoneDisplay } from "./redeem-country.js";
 import {
   buildAmountLabel,
@@ -99,7 +100,7 @@ export const redeemHistoryMethods = {
       business_id,
       distributor_ref: record.distributor_ref ?? record.distributorRef ?? business_id,
       status: String(record.status || record.processing_state || "pending"),
-      amount_label: buildAmountLabel(record),
+      amount_label: getRecordAmountLabel(record) || buildAmountLabel(record),
       send_value: record.send_value ?? record.sendValue ?? "",
       phone_number: getRecordPhone(record),
       operator: getRecordOperator(record),
@@ -134,7 +135,7 @@ export const redeemHistoryMethods = {
         );
         const businessId = getRecordBusinessId(record);
         const phoneNumber = getRecordPhone(record);
-        const skuCode = record.sku_code ?? "";
+        const title = getHistoryRecordTitle(record);
         const phoneHtml = phoneNumber
           ? `<div class="redeem-history-phone">${escapeHtml(formatPhoneDisplay(phoneNumber))}</div>`
           : "";
@@ -146,7 +147,7 @@ export const redeemHistoryMethods = {
              data-distributor-ref="${escapeHtml(record.distributor_ref || record.distributorRef || "")}">
           <div class="redeem-history-icon ${iconClass}">${iconText}</div>
           <div class="redeem-history-main">
-            <div class="redeem-history-title">${escapeHtml(skuCode ? `Top-up ${skuCode}` : "Redeem")}</div>
+            <div class="redeem-history-title">${escapeHtml(title)}</div>
             ${phoneHtml}
             <div class="redeem-history-subtitle">
               ${escapeHtml(this.formatRecordDate(record.created_at))} • ${escapeHtml(statusLabel)}

@@ -1,5 +1,19 @@
 /** Lightweight cache equality checks for SWR background revalidation. */
 
+function fingerprintChargeProduct(product) {
+  return [
+    product.sku_code ?? product.charges_id ?? "",
+    product.product_type ?? "",
+    product.display_text ?? "",
+    product.validity_period ?? "",
+    product.receive_value ?? product.amount ?? "",
+    product.receive_currency ?? "",
+    product.send_value ?? "",
+    product.spend_coin ?? "",
+    product.available === true ? 1 : 0,
+  ].join(":");
+}
+
 export function fingerprintActivityInfo(data) {
   const tasks = Array.isArray(data?.tasks) ? data.tasks : [];
   const checkin = tasks.find((task) => task.type === "checkin")?.detail ?? null;
@@ -36,12 +50,7 @@ export function fingerprintCharges(data) {
       .map((provider) => {
         const code = String(provider.provider_code ?? provider.provider_name ?? "");
         const products = Array.isArray(provider.products) ? provider.products : [];
-        const productKey = products
-          .map(
-            (product) =>
-              `${product.sku_code ?? product.charges_id ?? ""}:${product.receive_value ?? product.amount ?? ""}:${product.spend_coin ?? ""}:${product.available === true ? 1 : 0}`,
-          )
-          .join(",");
+        const productKey = products.map(fingerprintChargeProduct).join(",");
         return `${code}[${productKey}]`;
       })
       .join("|");

@@ -19,7 +19,7 @@ export const INITIALIZATION_FAILED_MESSAGE =
 export const PAGE_LOAD_FAILED_TITLE = "Page Load Failed";
 
 export const REDEEM_SUMMARY_DEFAULT =
-  "Enter your number and choose a recharge amount";
+  "Enter your number and choose a recharge or data plan";
 
 export const ACTIVITY_LOAD_FAILED_MESSAGE =
   "Failed to load activity data, please try again";
