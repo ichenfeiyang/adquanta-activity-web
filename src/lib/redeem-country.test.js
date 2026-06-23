@@ -14,6 +14,9 @@ test("resolveRedeemCountry maps supported ISO codes", () => {
   assert.equal(resolveRedeemCountry("ID").dialCode, "+62");
   assert.equal(resolveRedeemCountry("PH").iso, "PH");
   assert.equal(resolveRedeemCountry("IN").dialCode, "+91");
+  assert.equal(resolveRedeemCountry("PK").dialCode, "+92");
+  assert.equal(resolveRedeemCountry("BD").dialCode, "+880");
+  assert.equal(resolveRedeemCountry("NP").dialCode, "+977");
 });
 
 test("resolveRedeemCountry falls back to India", () => {
@@ -25,6 +28,9 @@ test("formatPhoneDisplay formats known country prefixes", () => {
   assert.equal(formatPhoneDisplay("6281234567890"), "+62 81234567890");
   assert.equal(formatPhoneDisplay("639171234567"), "+63 9171234567");
   assert.equal(formatPhoneDisplay("918801384326"), "+91 8801384326");
+  assert.equal(formatPhoneDisplay("923001234567"), "+92 3001234567");
+  assert.equal(formatPhoneDisplay("8801712345678"), "+880 1712345678");
+  assert.equal(formatPhoneDisplay("9779812345678"), "+977 9812345678");
 });
 
 test("getInitialRedeemCountry defaults to India", () => {
