@@ -6,7 +6,7 @@ const MISSING_CLIENT_ID_RETRY_MS = 10000;
 let cachedClientId = null;
 let lastMissingClientIdAt = 0;
 
-function getMeasurementId() {
+export function getGaMeasurementId() {
   return String(import.meta.env.VITE_GA_MEASUREMENT_ID || "").trim();
 }
 
@@ -30,7 +30,7 @@ export function readGaClientId({ measurementId = "", timeoutMs = DEFAULT_TIMEOUT
   }
 
   const gtag = getGtag();
-  const targetMeasurementId = String(measurementId || getMeasurementId()).trim();
+  const targetMeasurementId = String(measurementId || getGaMeasurementId()).trim();
   if (!gtag || !targetMeasurementId) {
     lastMissingClientIdAt = now;
     return Promise.resolve(null);
@@ -55,7 +55,7 @@ export function readGaClientId({ measurementId = "", timeoutMs = DEFAULT_TIMEOUT
     }, Math.max(0, Number(timeoutMs) || 0));
 
     try {
-      gtag("get", targetMeasurementId, "client_id", (id) => {
+      gtag("get", targetMeasurementId, "client_id", function (id) {
         const value = String(id || "").trim();
         finish(isValidGaClientId(value) ? value : null);
       });
@@ -75,8 +75,7 @@ export async function buildGaClientIdHeader(options = {}) {
     measurementId: options.gaMeasurementId,
     timeoutMs: options.gaClientIdTimeoutMs,
   });
-  if (!clientId) return {};
-  return { [GA_CLIENT_ID_HEADER]: clientId };
+  return clientId ? { [GA_CLIENT_ID_HEADER]: clientId } : {};
 }
 
 export function __resetGaClientIdCacheForTests() {
