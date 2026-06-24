@@ -5,6 +5,7 @@
  */
 import * as logger from "./activity-logger.js";
 import { fetchWithRetry } from "./fetch-with-retry.js";
+import { buildGaClientIdHeader } from "./ga-client-id.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
@@ -18,7 +19,8 @@ function buildAuthHeaders(options = {}) {
 function maskAuthHeaders(headers = {}) {
   const out = { ...headers };
   for (const k of Object.keys(out)) {
-    if (k.toLowerCase() === "authorization") {
+    const lowerKey = k.toLowerCase();
+    if (lowerKey === "authorization" || lowerKey === "x-ga-client-id") {
       out[k] = "[REDACTED]";
     }
   }
@@ -137,7 +139,11 @@ async function fetchApi(apiName, url, init = {}) {
 export async function getActivityInfo(options = {}) {
   const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/info`;
-  return fetchApi("getActivityInfo", url, { method: "GET", headers: { ...buildAuthHeaders(options) } });
+  const gaHeader = await buildGaClientIdHeader(options);
+  return fetchApi("getActivityInfo", url, {
+    method: "GET",
+    headers: { ...buildAuthHeaders(options), ...gaHeader },
+  });
 }
 
 /**

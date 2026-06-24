@@ -16,6 +16,7 @@ export class ActivityCenterAdapter {
       code: config.code || "",
       token: config.token || "",
       channelTag: config.channelTag || "",
+      getUserId: config.getUserId || (() => null),
       onSDKReady: config.onSDKReady || (() => {}),
       onEventCompleted: config.onEventCompleted || (() => {}),
       ...config,
@@ -47,9 +48,12 @@ export class ActivityCenterAdapter {
         logger.log("SDK init succeeded:", session);
 
         // 追踪页面浏览事件
-        await window.ActivityBridgeHelper.trackEvent("page_view", {
-          url: `${window.location.origin}${window.location.pathname}`,
-        });
+        await window.ActivityBridgeHelper.trackEvent(
+          "page_view",
+          this.buildTrackEventPayload({
+            url: `${window.location.origin}${window.location.pathname}`,
+          }),
+        );
 
         this.isSDKReady = true;
         this.config.onSDKReady(session);
@@ -168,11 +172,21 @@ export class ActivityCenterAdapter {
     }
 
     try {
-      return await window.ActivityBridgeHelper.trackEvent(eventType, eventData);
+      const payload = this.buildTrackEventPayload(eventData);
+      return await window.ActivityBridgeHelper.trackEvent(eventType, payload);
     } catch (e) {
       logger.warn("trackEvent failed", e?.message || e);
       return null;
     }
+  }
+
+  buildTrackEventPayload(eventData = {}) {
+    const userId = this.config.getUserId?.();
+    const payload = { ...eventData };
+    if (userId != null && userId !== "") {
+      payload.user_id = userId;
+    }
+    return payload;
   }
 
   /**

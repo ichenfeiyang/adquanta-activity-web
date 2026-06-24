@@ -310,4 +310,8 @@ export class ActivityCenterBusiness {
   getAdTaskStatus() {
     return { ...this.adTaskStatus };
   }
+
+  getUserId() {
+    return this.userId;
+  }
 }

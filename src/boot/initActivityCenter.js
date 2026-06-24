@@ -92,6 +92,7 @@ export function initActivityCenter({ router, route }) {
     activityId,
     code,
     token: apiOptions.token,
+    getUserId: () => business.getUserId(),
     onSDKReady: (session) => {
       logger.log("SDK 初始化完成:", session);
     },
