@@ -6,6 +6,7 @@
 import * as logger from "./activity-logger.js";
 import { fetchWithRetry } from "./fetch-with-retry.js";
 import { buildGaClientIdHeader } from "./ga-client-id.js";
+import { syncGoldCoinsFromActivityInfo } from "./ga-user-properties.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
@@ -140,10 +141,14 @@ export async function getActivityInfo(options = {}) {
   const baseUrl = BaseApiUrl;
   const url = `${baseUrl}/api/v1/ops/activity/info`;
   const gaHeader = await buildGaClientIdHeader(options);
-  return fetchApi("getActivityInfo", url, {
+  const result = await fetchApi("getActivityInfo", url, {
     method: "GET",
     headers: { ...buildAuthHeaders(options), ...gaHeader },
   });
+  if (result?.code === 200 && result?.data) {
+    syncGoldCoinsFromActivityInfo(result.data);
+  }
+  return result;
 }
 
 /**
