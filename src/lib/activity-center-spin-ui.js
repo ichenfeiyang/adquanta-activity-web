@@ -1,5 +1,10 @@
 import { showToast } from "./activity-alert-ui.js";
 import { formatLuckySpinDesc, maxRouletteCoin } from "./activity-center-ui-helpers.js";
+import {
+  adFailedMessage,
+  dailyAdLimitMessage,
+} from "./activity-messages.js";
+import { t } from "./i18n/activity-locale.js";
 export const spinUiMixin = {
   isSpinWheelVisible() {
     return this.elements.spinWheelModal?.style.display === "flex";
@@ -9,14 +14,14 @@ export const spinUiMixin = {
     const btn = this.elements.btnWatchAd;
     if (!btn) return;
     btn.classList.remove("can-claim", "is-completed");
-    this.setWatchSpinButtonLabel("Watch & Spin");
+    this.setWatchSpinButtonLabel(t("center.watchAndSpin"));
     btn.disabled = false;
   },
 
   getSpinWheelBottomButtonLabel(forceDailyFirst) {
-    if (forceDailyFirst) return "Watch to Spin";
-    if (this._turntableNeedsWatch) return "Watch to Spin Again";
-    return "Spin Now";
+    if (forceDailyFirst) return t("center.watchToSpin");
+    if (this._turntableNeedsWatch) return t("center.watchToSpinAgain");
+    return t("center.spinNow");
   },
 
   setSpinWheelBottomButton({ label, disabled } = {}) {
@@ -65,7 +70,7 @@ export const spinUiMixin = {
 
   enterSpinWatchAgainMode() {
     this._turntableNeedsWatch = true;
-    this.setSpinWheelBottomButton({ label: "Watch to Spin Again", disabled: false });
+    this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: false });
     this.updateSpinWheelSubtitle();
   },
 
@@ -79,9 +84,9 @@ export const spinUiMixin = {
 
   getSpinWheelSubtitleText() {
     if (this._turntableNeedsWatch) {
-      return "Tap Watch to Spin to watch a video and earn a spin chance.";
+      return t("center.spinSubtitleWatch");
     }
-    return "Tap Spin Now to spin your reward!";
+    return t("center.spinSubtitleSpin");
   },
 
   updateSpinWheelSubtitle() {
@@ -242,7 +247,7 @@ export const spinUiMixin = {
       used = Math.max(0, Number(completed) - Number(this.currentSpinAvailable || 0));
     }
     if (this.elements.adProgressVideos) {
-      this.elements.adProgressVideos.textContent = `${used} / ${limit} Spins`;
+      this.elements.adProgressVideos.textContent = t("center.progressSpins", { used, limit });
     }
     if (this.elements.adProgressBarFill) {
       const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
@@ -250,7 +255,7 @@ export const spinUiMixin = {
     }
     if (this.elements.adEarnedText) {
       const earnedCoins = earnedPool != null ? earnedPool : completed * taskReward;
-      this.elements.adEarnedText.textContent = `${earnedCoins} Coins`;
+      this.elements.adEarnedText.textContent = t("center.earnedCoins", { count: earnedCoins });
     }
   },
 
@@ -268,7 +273,7 @@ export const spinUiMixin = {
     if (!this._waitingAdForSpin) return;
     this._waitingAdForSpin = false;
     if (this.config.isDailyAdLimitReached?.()) {
-      const message = this.config.getDailyAdLimitMessage?.() || "Daily ad watch limit reached";
+      const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
       this.handleRewardAdFailedForSpin(message);
       this.refreshAdTaskStats();
       return;
@@ -276,11 +281,11 @@ export const spinUiMixin = {
     this.addSpinChance(1);
     // After watching ad successfully, user must click Spin Now manually.
     this._turntableNeedsWatch = false;
-    this.setSpinWheelBottomButton({ label: "Spin Now", disabled: false });
+    this.setSpinWheelBottomButton({ label: t("center.spinNow"), disabled: false });
     this.updateSpinWheelSubtitle();
   },
 
-  handleRewardAdFailedForSpin(message = "Ad failed to play, please try again") {
+  handleRewardAdFailedForSpin(message = adFailedMessage()) {
     this._waitingAdForSpin = false;
     this.enterSpinWatchAgainMode();
     showToast(message, "warning");
@@ -293,7 +298,7 @@ export const spinUiMixin = {
     if (this._turntableNeedsWatch) {
       if (this._waitingAdForSpin) return;
       if (this.config.isDailyAdLimitReached?.()) {
-        const message = this.config.getDailyAdLimitMessage?.() || "Daily ad watch limit reached";
+        const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
         this.handleRewardAdFailedForSpin(message);
         this.refreshAdTaskStats();
         return;
@@ -352,7 +357,7 @@ export const spinUiMixin = {
     if (this._spinInFlight) return;
     if (this.currentSpinAvailable <= 0) {
       if (this.config.isDailyAdLimitReached?.()) {
-        const message = this.config.getDailyAdLimitMessage?.() || "Daily ad watch limit reached";
+        const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
         showToast(message, "warning");
         this.refreshAdTaskStats();
         return;
@@ -360,7 +365,7 @@ export const spinUiMixin = {
       // Safety fallback: no spin chances locally, go back to watch mode.
       this._turntableNeedsWatch = true;
       this._waitingAdForSpin = true;
-      this.setSpinWheelBottomButton({ label: "Watch to Spin Again", disabled: true });
+      this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: true });
       this.config.onWatchAdClick();
       return;
     }

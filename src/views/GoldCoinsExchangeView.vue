@@ -4,7 +4,9 @@ import { assetUrl } from "../lib/asset-url.js";
 import { ROUTE_NAMES } from "../lib/activity-pages.js";
 import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useActivityBackNavigation } from "../composables/useActivityBackNavigation.js";
+import { useI18n } from "../composables/useI18n.js";
 
+const { t } = useI18n();
 const { returnToActivityCenter } = useActivityBackNavigation();
 
 useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
@@ -17,19 +19,19 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
 <template>
   <div class="redeem-root">
     <header class="redeem-header">
-      <button id="backBtn" type="button" class="redeem-back-btn" aria-label="Back" @click="returnToActivityCenter">←</button>
+      <button id="backBtn" type="button" class="redeem-back-btn" :aria-label="t('common.back')" @click="returnToActivityCenter">←</button>
     </header>
 
     <main class="redeem-main">
       <section class="redeem-section">
         <div class="redeem-wallet-card">
           <div class="redeem-wallet-left">
-            <div class="redeem-wallet-label">My Coins</div>
+            <div class="redeem-wallet-label">{{ t('redeem.myCoins') }}</div>
             <div class="redeem-wallet-value">
               <span id="userGoldCoins">0</span>
-              <span class="redeem-wallet-unit">Gold Coins</span>
+              <span class="redeem-wallet-unit">{{ t('common.goldCoins') }}</span>
             </div>
-            <div class="redeem-wallet-hint">Use coins for recharge and rewards</div>
+            <div class="redeem-wallet-hint">{{ t('redeem.walletHint') }}</div>
           </div>
           <div class="redeem-wallet-icon">
             <img :src="assetUrl('icons/gold-coin-white.svg')" alt="coins" class="icon-img">
@@ -38,16 +40,16 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
       </section>
 
       <section class="redeem-section">
-        <h2 class="redeem-section-title">Mobile Recharge & Data</h2>
+        <h2 class="redeem-section-title">{{ t('redeem.sectionTitle') }}</h2>
 
         <div class="redeem-field">
-          <label class="redeem-label" for="inputMobile">Mobile Number</label>
+          <label class="redeem-label" for="inputMobile">{{ t('redeem.mobileNumber') }}</label>
           <div class="redeem-input-wrapper">
             <button
               id="countryCodeBtn"
               type="button"
               class="redeem-countrycode-btn"
-              aria-label="Country code"
+              :aria-label="t('redeem.countryCode')"
               aria-haspopup="listbox"
               aria-expanded="false"
             >
@@ -62,38 +64,38 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               type="tel"
               inputmode="numeric"
               maxlength="15"
-              placeholder="Enter phone number"
+              :placeholder="t('redeem.phonePlaceholder')"
             />
           </div>
         </div>
 
         <div id="operatorSection" class="redeem-field" style="display:none;">
-          <label class="redeem-label">Operator</label>
+          <label class="redeem-label">{{ t('redeem.operator') }}</label>
           <div id="operatorGrid" class="redeem-operator-grid" />
         </div>
 
         <div id="amountSection" class="redeem-field" style="display:none;">
-          <label class="redeem-label">Select Amount</label>
+          <label class="redeem-label">{{ t('redeem.selectAmount') }}</label>
           <div id="amountGrid" class="redeem-amount-grid" />
         </div>
 
         <div id="redeemSummary" class="redeem-summary">
-          Enter your number and choose a recharge or data plan
+          {{ t('redeem.summaryDefault') }}
         </div>
 
         <button id="btnRedeem" type="button" class="redeem-primary-btn redeem-primary-btn--disabled" disabled>
-          Redeem Now
+          {{ t('redeem.redeemNow') }}
         </button>
         <p class="redeem-powered">
-          <span class="redeem-powered-label">Powered by</span>
+          <span class="redeem-powered-label">{{ t('redeem.poweredBy') }}</span>
           <span class="redeem-powered-brand">DingConnect</span>
         </p>
       </section>
 
       <section class="redeem-section redeem-history-section">
         <div class="redeem-history-header">
-          <h2 class="redeem-section-title">Redemption History</h2>
-          <button id="viewAllRecords" type="button" class="redeem-history-view-all">View All</button>
+          <h2 class="redeem-section-title">{{ t('redeem.historyTitle') }}</h2>
+          <button id="viewAllRecords" type="button" class="redeem-history-view-all">{{ t('redeem.viewAll') }}</button>
         </div>
         <div id="historyList" class="redeem-history-list" />
       </section>
@@ -103,8 +105,8 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
   <div id="exchangeModal" class="modal" style="display: none;">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title">Confirm Redeem</h2>
-        <button id="modalCloseBtn" type="button" class="modal-close">✕</button>
+        <h2 class="modal-title">{{ t('redeem.confirmTitle') }}</h2>
+        <button id="modalCloseBtn" type="button" class="modal-close" :aria-label="t('common.close')">✕</button>
       </div>
       <div class="modal-body">
         <div class="product-preview">
@@ -115,12 +117,12 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
           </div>
         </div>
         <div class="modal-message">
-          <p>Use <span id="confirmPoints"></span> coins to redeem <span id="confirmName"></span>?</p>
+          <p>{{ t('redeem.confirmPrefix') }}<span id="confirmPoints"></span>{{ t('redeem.confirmInfix') }}<span id="confirmName"></span>{{ t('redeem.confirmSuffix') }}</p>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="cancelBtn" type="button" class="btn-cancel">Cancel</button>
-        <button id="confirmBtn" type="button" class="btn-confirm">Confirm</button>
+        <button id="cancelBtn" type="button" class="btn-cancel">{{ t('common.cancel') }}</button>
+        <button id="confirmBtn" type="button" class="btn-confirm">{{ t('common.confirm') }}</button>
       </div>
     </div>
   </div>

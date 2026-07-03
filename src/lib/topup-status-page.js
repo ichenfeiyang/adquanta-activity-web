@@ -2,7 +2,8 @@ import { BaseApiUrl, getChargeStatus } from "./activity-api.js";
 import { readEntryToken, resolveAndStripEntryToken } from "./activity-auth.js";
 import { bindPageElements } from "./bind-page-elements.js";
 import { showToast } from "./activity-alert-ui.js";
-import { AUTH_FAILED_MESSAGE } from "./activity-messages.js";
+import { authFailedMessage } from "./activity-messages.js";
+import { t } from "./i18n/activity-locale.js";
 import { formatPhoneDisplay } from "./redeem-country.js";
 import {
   extractTopupStatusFromApi,
@@ -25,21 +26,21 @@ function normalizeStatus(statusRaw = "pending") {
 function statusView(status) {
   if (status === "success") {
     return {
-      title: "Recharge Successful!",
-      desc: "Your request has been processed.",
+      title: t("topup.successTitle"),
+      desc: t("topup.successDesc"),
       icon: "✓",
     };
   }
   if (status === "failed") {
     return {
-      title: "Recharge Failed",
-      desc: "The recharge did not complete. Please try again later.",
+      title: t("topup.failedTitle"),
+      desc: t("topup.failedDesc"),
       icon: "✕",
     };
   }
   return {
-    title: "Processing Recharge",
-    desc: "We are processing your top-up. This may take a few minutes.",
+    title: t("topup.processingTitle"),
+    desc: t("topup.processingDesc"),
     icon: "↻",
   };
 }
@@ -139,7 +140,7 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
   renderDetails();
 
   if (!token) {
-    showToast(AUTH_FAILED_MESSAGE, "error");
+    showToast(authFailedMessage(), "error");
     finish(statusFromQuery);
     return;
   }

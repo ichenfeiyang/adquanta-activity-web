@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { runLazyPageBoot } from "../lib/lazy-page-boot.js";
-import { PAGE_TITLES } from "../lib/activity-pages.js";
+import { pageTitle } from "../lib/activity-pages.js";
 
 /**
  * Lazy-load a page boot module after the Vue shell mounts.
@@ -24,7 +24,7 @@ export function useLazyActivityPage(routeName, { logTag, loadModule, bootstrap }
 
   onMounted(async () => {
     dispose = await runLazyPageBoot({
-      pageLabel: PAGE_TITLES[routeName],
+      pageLabel: pageTitle(routeName),
       logTag,
       loadModule: () => modulePromise,
       init: (module) => bootstrap(module, { router, route }),

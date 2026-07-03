@@ -2,17 +2,22 @@ import { getActivityInfo, postCheckin, postActivityVideo } from "./activity-api.
 import { invalidateActivityInfoCache, loadActivityInfoWithSWR } from "./activity-page-cache.js";
 import { showToast } from "./activity-alert-ui.js";
 import {
-  ACTIVITY_LOAD_FAILED_MESSAGE,
-  CHECKIN_FAILED_MESSAGE,
-  CHECKIN_FAILED_RETRY_MESSAGE,
-  CLAIM_FAILED_MESSAGE,
-  CLAIM_FAILED_RETRY_MESSAGE,
-  NO_COINS_RECEIVED_MESSAGE,
-  VIDEO_CHECKIN_SUCCESS_MESSAGE,
+  activityLoadFailedMessage,
+  adFailedMessage,
+  checkinFailedMessage,
+  checkinFailedRetryMessage,
+  claimFailedMessage,
+  claimFailedRetryMessage,
+  dailyAdLimitMessage,
+  noCoinsReceivedMessage,
+  videoCheckinSuccessMessage,
+  videoCompletedRewardMessage,
 } from "./activity-messages.js";
 import * as logger from "./activity-logger.js";
 
-export const DAILY_AD_LIMIT_MESSAGE = "Daily ad watch limit reached";
+export function getDailyAdLimitMessage() {
+  return dailyAdLimitMessage();
+}
 
 /**
  * 活动中心业务逻辑层
@@ -92,9 +97,9 @@ export class ActivityCenterBusiness {
     );
   }
 
-  resolveDailyAdMessage(message, fallback = "Ad failed to play, please try again") {
+  resolveDailyAdMessage(message, fallback = adFailedMessage()) {
     if (this.isDailyAdLimitReached() || this.isDailyAdLimitErrorMessage(message)) {
-      return DAILY_AD_LIMIT_MESSAGE;
+      return dailyAdLimitMessage();
     }
     const text = String(message || "").trim();
     return text || fallback;
@@ -208,7 +213,7 @@ export class ActivityCenterBusiness {
       throw result.error || new Error("API returned an error");
     } catch (error) {
       logger.error("[Activity API] Request failed", error?.message ?? error);
-      showToast(ACTIVITY_LOAD_FAILED_MESSAGE, "warning");
+      showToast(activityLoadFailedMessage(), "warning");
       return { ok: false, error };
     }
   }
@@ -222,7 +227,7 @@ export class ActivityCenterBusiness {
     try {
       const res = await postCheckin(apiOptions, { type: "base" });
       if (res.code !== 200) {
-        showToast(res.message || CHECKIN_FAILED_MESSAGE, "error");
+        showToast(res.message || checkinFailedMessage(), "error");
         return { ok: false };
       }
       const coinFromCheckin = res.data?.coin ?? res.coin ?? 0;
@@ -233,7 +238,7 @@ export class ActivityCenterBusiness {
       return { ok: true, coinFromCheckin, video_coin, multiplier };
     } catch (error) {
       logger.error("Do checkin failed", error);
-      showToast(error?.message || CHECKIN_FAILED_RETRY_MESSAGE, "error");
+      showToast(error?.message || checkinFailedRetryMessage(), "error");
       return { ok: false };
     }
   }
@@ -252,13 +257,13 @@ export class ActivityCenterBusiness {
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200) {
         success = true;
-        showToast(VIDEO_CHECKIN_SUCCESS_MESSAGE, "success");
+        showToast(videoCheckinSuccessMessage(), "success");
       } else {
-        showToast(msg || CLAIM_FAILED_MESSAGE, "error");
+        showToast(msg || claimFailedMessage(), "error");
       }
     } catch (error) {
       logger.error("Claim checkin video reward failed", error);
-      showToast(error?.message || CLAIM_FAILED_RETRY_MESSAGE, "error");
+      showToast(error?.message || claimFailedRetryMessage(), "error");
     }
     // Refresh only after successful reward claim.
     if (success) {
@@ -282,22 +287,22 @@ export class ActivityCenterBusiness {
         const coinValue = res.data?.coin;
         const rewardCoin = Number(coinValue);
         if (coinValue == null || coinValue === "" || !Number.isFinite(rewardCoin)) {
-          showToast(NO_COINS_RECEIVED_MESSAGE, "error");
+          showToast(noCoinsReceivedMessage(), "error");
           return { ok: false };
         }
         return {
           ok: true,
           coin: rewardCoin,
           roulette: res.data?.roulette ?? null,
-          message: msg || "Video completed! Coins rewarded.",
+          message: msg || videoCompletedRewardMessage(),
         };
       } else {
-        showToast(this.resolveDailyAdMessage(msg, CLAIM_FAILED_MESSAGE), "error");
+        showToast(this.resolveDailyAdMessage(msg, claimFailedMessage()), "error");
       }
     } catch (error) {
       logger.error("Turntable / daily video reward failed", error);
       showToast(
-        this.resolveDailyAdMessage(error?.message, CLAIM_FAILED_RETRY_MESSAGE),
+        this.resolveDailyAdMessage(error?.message, claimFailedRetryMessage()),
         "error",
       );
     }

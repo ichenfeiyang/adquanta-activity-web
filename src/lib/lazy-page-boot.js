@@ -1,9 +1,9 @@
 import { showToast } from "./activity-alert-ui.js";
-import { PAGE_LOAD_FAILED_TITLE } from "./activity-messages.js";
+import { pageLoadFailedMessage, pageLoadFailedTitle } from "./activity-messages.js";
 
 function showChunkLoadError(pageLabel = "Page") {
-  const message = `${pageLabel} failed to load. Please check your network and refresh.`;
-  if (showToast(message, "warning", { title: PAGE_LOAD_FAILED_TITLE })) return;
+  const message = pageLoadFailedMessage(pageLabel);
+  if (showToast(message, "warning", { title: pageLoadFailedTitle() })) return;
   window.alert(message);
 }
 

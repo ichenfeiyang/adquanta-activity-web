@@ -2,7 +2,7 @@ import { BaseApiUrl } from "./activity-api.js";
 import { resolveAndStripEntryToken } from "./activity-auth.js";
 import { resolveActivityRouteContext } from "./activity-context.js";
 import { showToast } from "./activity-alert-ui.js";
-import { AUTH_FAILED_MESSAGE } from "./activity-messages.js";
+import { authFailedMessage } from "./activity-messages.js";
 
 /**
  * Resolve route context and bearer token for an activity page.
@@ -16,7 +16,7 @@ export function requireActivitySession(route, options = {}) {
   const token = resolveAndStripEntryToken({ routeQuery, router: options.router, route });
 
   if (!token) {
-    showToast(AUTH_FAILED_MESSAGE, "error");
+    showToast(authFailedMessage(), "error");
     return null;
   }
 

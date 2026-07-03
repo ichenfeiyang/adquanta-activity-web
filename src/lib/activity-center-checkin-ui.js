@@ -1,5 +1,6 @@
 import { assetUrl } from "./asset-url.js";
 import { resolveSigninRewardCoins } from "./activity-center-ui-helpers.js";
+import { t } from "./i18n/activity-locale.js";
 
 function ensureCheckinDayGrid(container, cache) {
   if (cache.nodes?.length === 7 && cache.container === container) {
@@ -38,7 +39,7 @@ function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
   }
   dayEl.className = dayClass;
   labelEl.className = labelClass;
-  labelEl.textContent = `Day ${day}`;
+  labelEl.textContent = t("common.day", { day });
 
   dotEl.replaceChildren();
   if (isDay7) {
@@ -82,7 +83,9 @@ export const checkinUiMixin = {
     if (this.elements.signinDialogTitle) {
       this.elements.signinDialogTitle.style.display = "";
       this.elements.signinDialogTitle.classList.toggle("signin-dialog-title--muted", alreadyChecked);
-      this.elements.signinDialogTitle.textContent = alreadyChecked ? "You have checked in" : "Check-in Successful!";
+      this.elements.signinDialogTitle.textContent = alreadyChecked
+        ? t("center.alreadyCheckedInTitle")
+        : t("center.checkinSuccess");
     }
     if (this.elements.signinDialogBaseCoinsWrap) {
       this.elements.signinDialogBaseCoinsWrap.style.display = "";
@@ -90,8 +93,8 @@ export const checkinUiMixin = {
 
     if (this.elements.signinDialogBaseCoins) {
       this.elements.signinDialogBaseCoins.textContent = alreadyChecked
-        ? `You have earned ${baseCoin} Coins`
-        : `+${baseCoin} Coins`;
+        ? t("center.alreadyEarnedCoins", { count: baseCoin })
+        : t("center.earnedCoinsAmount", { count: baseCoin });
       this.elements.signinDialogBaseCoins.classList.toggle("signin-dialog-base-coins--muted", alreadyChecked);
     }
     this.updateSigninDialogBoostCopy({ baseCoin, totalCoin });
@@ -120,7 +123,7 @@ export const checkinUiMixin = {
     const continuousDays = (detail && typeof detail.continuous_days === "number") ? detail.continuous_days : 0;
     const pill = this.elements.checkinPill;
     if (pill) {
-      pill.textContent = `${continuousDays}/7 Days`;
+      pill.textContent = t("common.daysProgress", { current: continuousDays });
     }
 
     const container = this.elements.checkinDaysContainer;
@@ -145,7 +148,7 @@ export const checkinUiMixin = {
         this.elements.signinTimerBtn.disabled = true;
         this.elements.signinTimerBtn.classList.remove("tc-secondary-btn", "is-completed");
         const span = this.elements.signinTimerBtn.querySelector("span");
-        if (span) span.textContent = "Check-in Now";
+        if (span) span.textContent = t("center.checkinNow");
       }
       this._signinVideoCompleted = false;
       return;
@@ -194,7 +197,9 @@ export const checkinUiMixin = {
         signinBtn.classList.remove("tc-secondary-btn", "is-completed");
       }
       const span = signinBtn.querySelector("span");
-      if (span) span.textContent = canCheckin ? "Check-in Now" : "Completed";
+      if (span) {
+        span.textContent = canCheckin ? t("center.checkinNow") : t("common.completed");
+      }
     }
     this.updateSigninDialogVideoButtonState();
   },
@@ -202,14 +207,13 @@ export const checkinUiMixin = {
   updateSigninDialogBoostCopy({ baseCoin, totalCoin }) {
     this._signinTotalCoin = totalCoin;
     if (this.elements.signinDialogBoostDesc) {
-      this.elements.signinDialogBoostDesc.innerHTML =
-        `Watch a short video to turn <strong>${baseCoin}</strong> coins into <strong>${totalCoin}</strong> coins`;
+      this.elements.signinDialogBoostDesc.innerHTML = t("center.boostDescHtml", { baseCoin, totalCoin });
     }
     if (this.elements.signinDialogWatchBtnLabel) {
-      this.elements.signinDialogWatchBtnLabel.textContent = `Double to ${totalCoin} Coins · Watch Video`;
+      this.elements.signinDialogWatchBtnLabel.textContent = t("center.doubleWatchLabel", { totalCoin });
     }
     if (this.elements.signinDialogClaimBaseOnly) {
-      this.elements.signinDialogClaimBaseOnly.textContent = `No thanks, claim ${baseCoin} coins`;
+      this.elements.signinDialogClaimBaseOnly.textContent = t("center.claimBaseOnly", { baseCoin });
     }
   },
 
@@ -219,13 +223,13 @@ export const checkinUiMixin = {
     watchBtn.disabled = this._signinVideoCompleted;
     watchBtn.classList.toggle("is-completed", this._signinVideoCompleted);
     if (this._signinVideoCompleted) {
-      watchBtn.textContent = "Completed";
+      watchBtn.textContent = t("common.completed");
       return;
     }
     if (!watchBtn.querySelector(".signin-dialog-watch-icon")) {
       watchBtn.innerHTML = `
         <img src="${assetUrl("icons/play_circle.svg")}" alt="" class="signin-dialog-watch-icon" width="24" height="24">
-        <span id="signinDialogWatchBtnLabel">Double to ${this._signinTotalCoin || 0} Coins · Watch Video</span>
+        <span id="signinDialogWatchBtnLabel">${t("center.doubleWatchLabel", { totalCoin: this._signinTotalCoin || 0 })}</span>
       `;
       this.elements.signinDialogWatchBtnLabel = document.getElementById("signinDialogWatchBtnLabel");
     }

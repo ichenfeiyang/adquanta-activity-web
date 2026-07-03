@@ -1,6 +1,6 @@
 import {
   ActivityCenterBusiness,
-  DAILY_AD_LIMIT_MESSAGE,
+  getDailyAdLimitMessage,
 } from "../lib/activity-center-business.js";
 import { ActivityCenterAdapter } from "../lib/activity-center-adapter.js";
 import { ActivityCenterUI } from "../lib/activity-center-ui.js";
@@ -8,10 +8,14 @@ import { goToGoldCoinsExchange } from "../lib/activity-navigation.js";
 import { requireActivitySession } from "../lib/activity-session.js";
 import { showToast } from "../lib/activity-alert-ui.js";
 import {
-  ALREADY_CHECKED_IN_MESSAGE,
-  INITIALIZATION_FAILED_MESSAGE,
-  VIDEO_CHECKIN_ALREADY_MESSAGE,
+  adFailedMessage,
+  alreadyCheckedInMessage,
+  adNotAvailableMessage,
+  initializationFailedMessage,
+  videoCheckinAlreadyMessage,
 } from "../lib/activity-messages.js";
+import { ensureActivityLocaleFromSession } from "../lib/i18n/activity-locale.js";
+import { reloadActivityPage } from "../lib/reload-activity-page.js";
 import { createAdCallbackTimeout } from "../lib/ad-callback-timeout.js";
 import { createActivitySdkEventHandler } from "../lib/activity-sdk-event-handlers.js";
 import { getActivityInfoCache, isActivityInfoCacheFresh } from "../lib/activity-page-cache.js";
@@ -49,12 +53,12 @@ export function initActivityCenter({ router, route }) {
     ui.setSigninWatchLoading(false);
   }
 
-  function normalizeAdMessage(message, fallback = "Ad failed to play, please try again") {
+  function normalizeAdMessage(message, fallback = adFailedMessage()) {
     return business.resolveDailyAdMessage(message, fallback);
   }
 
   function showDailyAdLimitToast() {
-    ui.handleRewardAdFailedForSpin(DAILY_AD_LIMIT_MESSAGE);
+    ui.handleRewardAdFailedForSpin(getDailyAdLimitMessage());
     ui.refreshAdTaskStats();
   }
 
@@ -94,6 +98,10 @@ export function initActivityCenter({ router, route }) {
     token: apiOptions.token,
     getUserId: () => business.getUserId(),
     onSDKReady: (session) => {
+      if (ensureActivityLocaleFromSession(session)) {
+        reloadActivityPage();
+        return;
+      }
       logger.log("SDK 初始化完成:", session);
     },
     onEventCompleted: handleSDKEventCompleted,
@@ -101,7 +109,7 @@ export function initActivityCenter({ router, route }) {
 
   ui = new ActivityCenterUI({
     isDailyAdLimitReached: () => business.isDailyAdLimitReached(),
-    getDailyAdLimitMessage: () => DAILY_AD_LIMIT_MESSAGE,
+    getDailyAdLimitMessage: () => getDailyAdLimitMessage(),
     getAdTaskStatus: () => business.getAdTaskStatus(),
     onWatchAdClick: async () => {
       if (business.isDailyAdLimitReached()) {
@@ -115,7 +123,7 @@ export function initActivityCenter({ router, route }) {
         await adapter.triggerRewardAd({ taskId: "task_watch_ad", reward: adTaskStatus.reward });
       } catch (error) {
         rewardAdTimeout?.clear();
-        const message = normalizeAdMessage(error?.message, "Ad is not available");
+        const message = normalizeAdMessage(error?.message, adNotAvailableMessage());
         logger.error("[Ad trigger failed] reward_ad task_watch_ad", error);
         ui.handleRewardAdFailedForSpin(message);
         adapter.trackEvent("ad_watch_error", {
@@ -173,11 +181,11 @@ export function initActivityCenter({ router, route }) {
         return;
       }
 
-      showToast(ALREADY_CHECKED_IN_MESSAGE, "info");
+      showToast(alreadyCheckedInMessage(), "info");
     },
     onSigninWatchVideoClick: async () => {
       if (ui.isSigninVideoCompleted()) {
-        showToast(VIDEO_CHECKIN_ALREADY_MESSAGE, "info");
+        showToast(videoCheckinAlreadyMessage(), "info");
         return;
       }
       if (checkinWatchAdInFlight.value) return;
@@ -197,7 +205,7 @@ export function initActivityCenter({ router, route }) {
         interstitialAdTimeout?.clear();
         checkinWatchAdInFlight.value = false;
         ui.setSigninWatchLoading(false);
-        const message = normalizeAdMessage(e?.message, "Video is not available");
+        const message = normalizeAdMessage(e?.message, adNotAvailableMessage());
         logger.error("[Ad trigger failed] interstitial_ad task_checkin", e);
         showToast(message, "error");
         adapter.trackEvent("checkin_video_error", {
@@ -234,7 +242,7 @@ export function initActivityCenter({ router, route }) {
     rewardAdTimeout?.clear();
     logger.error("广告播放错误:", error);
     ui.handleRewardAdFailedForSpin(
-      normalizeAdMessage(error?.message, "Ad failed to play, please try again"),
+      normalizeAdMessage(error?.message, adFailedMessage()),
     );
     adapter.trackEvent("ad_watch_error", {
       taskId: "task_watch_ad",
@@ -256,7 +264,7 @@ export function initActivityCenter({ router, route }) {
 
   adapter.init().catch((error) => {
     logger.error("初始化失败", error);
-    showToast(INITIALIZATION_FAILED_MESSAGE, "error");
+    showToast(initializationFailedMessage(), "error");
   });
 
   return function disposeActivityCenter() {

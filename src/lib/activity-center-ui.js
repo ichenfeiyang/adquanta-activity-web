@@ -1,5 +1,5 @@
 import { assetUrl } from "./asset-url.js";
-import { ALREADY_CHECKED_IN_MESSAGE } from "./activity-messages.js";
+import { alreadyCheckedInMessage } from "./activity-messages.js";
 import { showToast } from "./activity-alert-ui.js";
 import { bindPageElements } from "./bind-page-elements.js";
 import { checkinUiMixin as checkinMixin } from "./activity-center-checkin-ui.js";
@@ -334,7 +334,7 @@ export class ActivityCenterUI {
       this.elements.signinTimerBtn.addEventListener("click", () => {
         const btn = this.elements.signinTimerBtn;
         if (btn.classList.contains("is-completed")) {
-          showToast(ALREADY_CHECKED_IN_MESSAGE, "info");
+          showToast(alreadyCheckedInMessage(), "info");
           return;
         }
         if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;

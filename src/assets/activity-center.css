@@ -667,6 +667,10 @@ body {
   color: #374151;
 }
 
+.tc-flow-text--multiline {
+  white-space: pre-line;
+}
+
 .tc-flow-footer {
   margin-top: 12px;
   padding-top: 8px;

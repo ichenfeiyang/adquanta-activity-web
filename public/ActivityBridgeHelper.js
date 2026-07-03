@@ -48,6 +48,7 @@
     var nativeTrackEvent = typeof bridge.trackEvent === "function" ? bridge.trackEvent : null;
     var nativeGetSession = typeof bridge.getSession === "function" ? bridge.getSession : null;
     var nativeTriggerEvent = typeof bridge.triggerEvent === "function" ? bridge.triggerEvent : null;
+    var nativeGetSystemLocale = typeof bridge.getSystemLocale === "function" ? bridge.getSystemLocale : null;
 
     window.ActivityBridgeHelper = bridge;
 
@@ -118,6 +119,23 @@
         } catch (e) {
             logBridgeError("[ActivityWeb] ActivityBridgeHelper.getSession failed:", e);
             return null;
+        }
+    };
+
+    /**
+     * Device / OS language from native (optional).
+     * Native should return values like "id-ID", "in-ID", "ur-PK".
+     */
+    bridge.getSystemLocale = function () {
+        try {
+            if (typeof nativeGetSystemLocale !== "function") {
+                return "";
+            }
+            var result = nativeGetSystemLocale.call(bridge);
+            return result == null ? "" : String(result).trim();
+        } catch (e) {
+            logBridgeError("[ActivityWeb] ActivityBridgeHelper.getSystemLocale failed:", e);
+            return "";
         }
     };
 

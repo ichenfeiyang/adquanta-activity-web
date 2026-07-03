@@ -1,4 +1,5 @@
-import { DAILY_AD_LIMIT_MESSAGE } from "./activity-center-business.js";
+import { getDailyAdLimitMessage } from "./activity-center-business.js";
+import { adNotCompletedMessage } from "./activity-messages.js";
 import { showToast } from "./activity-alert-ui.js";
 import * as logger from "./activity-logger.js";
 
@@ -45,7 +46,7 @@ async function handleRewardAdEvent(ctx, result) {
       adapter.trackEvent("daily_video_completed", {
         taskId: "task_watch_ad",
         success: false,
-        reason: DAILY_AD_LIMIT_MESSAGE,
+        reason: getDailyAdLimitMessage(),
         platform: adapter.getPlatform(),
       });
       return;
@@ -64,7 +65,7 @@ async function handleRewardAdEvent(ctx, result) {
     return;
   }
 
-  const displayMessage = normalizeAdMessage(message, "Ad not completed");
+  const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
   ui.handleRewardAdFailedForSpin(displayMessage);
   adapter.trackEvent("ad_watch_failed", {
     taskId: "task_watch_ad",
@@ -131,7 +132,7 @@ async function handleInterstitialAdEvent(ctx, result) {
 
   checkinWatchAdInFlight.value = false;
   ui.setSigninWatchLoading(false);
-  const displayMessage = normalizeAdMessage(message, "Ad not completed");
+  const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
   showToast(displayMessage, "warning");
   adapter.trackEvent("checkin_video_failed", {
     taskId,

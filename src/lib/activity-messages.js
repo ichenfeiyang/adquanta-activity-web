@@ -1,43 +1,101 @@
-export const AUTH_FAILED_TITLE = "Authorization Failed";
+import { t } from "./i18n/activity-locale.js";
 
-export const AUTH_FAILED_MESSAGE =
-  "Missing token. Please reopen this page from the app and try again.";
+export function authFailedTitle() {
+  return t("auth.failedTitle");
+}
 
-export const ALREADY_CHECKED_IN_TITLE = "Already Checked In";
+export function authFailedMessage() {
+  return t("auth.failedMessage");
+}
 
-export const ALREADY_CHECKED_IN_MESSAGE =
-  "You've already checked in today. Come back tomorrow!";
+export function alreadyCheckedInTitle() {
+  return t("center.alreadyCheckedInTitle");
+}
 
-export const VIDEO_CHECKIN_ALREADY_MESSAGE =
-  "Video check-in already completed today";
+export function alreadyCheckedInMessage() {
+  return t("messages.alreadyCheckedIn");
+}
 
-export const INITIALIZATION_FAILED_TITLE = "Initialization Failed";
+export function videoCheckinAlreadyMessage() {
+  return t("messages.videoCheckinAlready");
+}
 
-export const INITIALIZATION_FAILED_MESSAGE =
-  "Initialization failed, please try again";
+export function initializationFailedTitle() {
+  return t("messages.initFailedTitle");
+}
 
-export const PAGE_LOAD_FAILED_TITLE = "Page Load Failed";
+export function initializationFailedMessage() {
+  return t("messages.initFailed");
+}
 
-export const REDEEM_SUMMARY_DEFAULT =
-  "Enter your number and choose a recharge or data plan";
+export function pageLoadFailedTitle() {
+  return t("messages.pageLoadFailedTitle");
+}
 
-export const ACTIVITY_LOAD_FAILED_MESSAGE =
-  "Failed to load activity data, please try again";
+export function pageLoadFailedMessage(pageLabel) {
+  return t("messages.pageLoadFailed", { page: pageLabel });
+}
 
-export const CHECKIN_FAILED_MESSAGE = "Check-in failed";
+export function redeemSummaryDefault() {
+  return t("redeem.summaryDefault");
+}
 
-export const CHECKIN_FAILED_RETRY_MESSAGE = "Check-in failed, please try again";
+export function activityLoadFailedMessage() {
+  return t("messages.activityLoadFailed");
+}
 
-export const VIDEO_CHECKIN_SUCCESS_MESSAGE = "Video check-in successful";
+export function checkinFailedMessage() {
+  return t("messages.checkinFailed");
+}
 
-export const CLAIM_FAILED_MESSAGE = "Claim failed";
+export function checkinFailedRetryMessage() {
+  return t("messages.checkinFailedRetry");
+}
 
-export const CLAIM_FAILED_RETRY_MESSAGE = "Claim failed, please try again";
+export function videoCheckinSuccessMessage() {
+  return t("messages.videoCheckinSuccess");
+}
 
-export const NO_COINS_RECEIVED_MESSAGE = "No coins received";
+export function claimFailedMessage() {
+  return t("messages.claimFailed");
+}
 
-export const ALERT_TITLES_BY_MESSAGE = {
-  [AUTH_FAILED_MESSAGE]: AUTH_FAILED_TITLE,
-  [ALREADY_CHECKED_IN_MESSAGE]: ALREADY_CHECKED_IN_TITLE,
-  [INITIALIZATION_FAILED_MESSAGE]: INITIALIZATION_FAILED_TITLE,
-};
+export function claimFailedRetryMessage() {
+  return t("messages.claimFailedRetry");
+}
+
+export function noCoinsReceivedMessage() {
+  return t("messages.noCoinsReceived");
+}
+
+export function dailyAdLimitMessage() {
+  return t("messages.dailyAdLimit");
+}
+
+export function adFailedMessage() {
+  return t("messages.adFailed");
+}
+
+export function adNotCompletedMessage() {
+  return t("messages.adNotCompleted");
+}
+
+export function adNotAvailableMessage() {
+  return t("messages.adNotAvailable");
+}
+
+export function videoCompletedRewardMessage() {
+  return t("messages.videoCompletedReward");
+}
+
+export function resolveAlertTitleByMessage(message, type = "error") {
+  const pairs = [
+    [authFailedMessage(), authFailedTitle()],
+    [alreadyCheckedInMessage(), alreadyCheckedInTitle()],
+    [initializationFailedMessage(), initializationFailedTitle()],
+  ];
+  for (const [msg, title] of pairs) {
+    if (message === msg) return title;
+  }
+  return null;
+}

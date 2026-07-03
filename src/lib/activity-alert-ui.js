@@ -1,19 +1,20 @@
-import { ALERT_TITLES_BY_MESSAGE } from "./activity-messages.js";
+import { resolveAlertTitleByMessage } from "./activity-messages.js";
+import { t } from "./i18n/activity-locale.js";
 
 export const DEFAULT_ALERT_DURATION_MS = 3000;
 
 const DEFAULT_TITLES = {
-  success: "Success",
-  error: "Something went wrong",
-  warning: "Notice",
-  info: "Notice",
+  success: () => t("alert.success"),
+  error: () => t("alert.error"),
+  warning: () => t("alert.warning"),
+  info: () => t("alert.info"),
 };
 
 const FALLBACK_BY_TYPE = {
-  success: "Done.",
-  error: "Something went wrong. Please try again.",
-  warning: "Please try again.",
-  info: "Please wait...",
+  success: () => t("alert.fallbackSuccess"),
+  error: () => t("alert.fallbackError"),
+  warning: () => t("alert.fallbackWarning"),
+  info: () => t("alert.fallbackInfo"),
 };
 
 const CJK_PATTERN = /[\u4e00-\u9fff]/;
@@ -64,7 +65,7 @@ function bindAlertControls() {
   controlsBound = true;
 }
 
-function showActivityAlert({ title = "Notice", message = "", duration = DEFAULT_ALERT_DURATION_MS } = {}) {
+function showActivityAlert({ title = t("alert.notice"), message = "", duration = DEFAULT_ALERT_DURATION_MS } = {}) {
   const { modal, title: titleEl, message: messageEl } = getAlertElements();
   if (!modal) {
     window.alert(message || title);
@@ -88,14 +89,14 @@ function showActivityAlert({ title = "Notice", message = "", duration = DEFAULT_
 function resolveAlertText(message, type) {
   const text = String(message ?? "");
   if (CJK_PATTERN.test(text)) {
-    return FALLBACK_BY_TYPE[type] || "Please try again.";
+    return FALLBACK_BY_TYPE[type]?.() || t("alert.fallbackWarning");
   }
   return text;
 }
 
 function resolveAlertTitle(message, type, explicitTitle) {
   if (explicitTitle) return explicitTitle;
-  return ALERT_TITLES_BY_MESSAGE[message] || DEFAULT_TITLES[type] || DEFAULT_TITLES.error;
+  return resolveAlertTitleByMessage(message, type) || DEFAULT_TITLES[type]?.() || DEFAULT_TITLES.error();
 }
 
 function isDuplicateToast(key) {

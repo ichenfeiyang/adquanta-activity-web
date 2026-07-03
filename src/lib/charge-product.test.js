@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { initActivityLocale } from "./i18n/activity-locale.js";
 import {
   buildSelectedRedeemSummary,
   formatRedeemProductName,
@@ -13,6 +14,8 @@ import {
   normalizeProductType,
   sortChargeProducts,
 } from "./charge-product.js";
+
+await initActivityLocale({ locale: "en" });
 
 test("normalizeProductType treats missing and topup as topup", () => {
   assert.equal(normalizeProductType(), "topup");

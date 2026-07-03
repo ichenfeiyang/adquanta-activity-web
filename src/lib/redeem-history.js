@@ -15,6 +15,7 @@ import {
   getRecordPhone,
 } from "./topup-status-preview.js";
 import * as logger from "./activity-logger.js";
+import { t } from "./i18n/activity-locale.js";
 
 function getHistoryStatusPresentation(statusRaw) {
   const status = String(statusRaw || "success").toLowerCase();
@@ -22,20 +23,20 @@ function getHistoryStatusPresentation(statusRaw) {
     return {
       iconClass: "redeem-history-icon--processing",
       iconText: "⏳",
-      statusLabel: "Processing",
+      statusLabel: t("history.processing"),
     };
   }
   if (status === "fail" || status === "failed" || status === "error") {
     return {
       iconClass: "redeem-history-icon--fail",
       iconText: "✕",
-      statusLabel: "Failed",
+      statusLabel: t("history.failed"),
     };
   }
   return {
     iconClass: "redeem-history-icon--success",
     iconText: "✓",
-    statusLabel: "Success",
+    statusLabel: t("history.success"),
   };
 }
 
@@ -159,7 +160,7 @@ export const redeemHistoryMethods = {
               <span class="redeem-history-coin-icon">
                 <img src="${assetUrl("icons/gold_coin.svg")}" alt="coin" />
               </span>
-              ${coinNum} Coins
+              ${coinNum} ${t("common.coins")}
             </div>
           </div>
         </div>
@@ -168,7 +169,7 @@ export const redeemHistoryMethods = {
       .join("");
 
     if (this.$.viewAllRecordsBtn) {
-      this.$.viewAllRecordsBtn.textContent = showAll ? "Collapse" : "View All";
+      this.$.viewAllRecordsBtn.textContent = showAll ? t("redeem.collapse") : t("redeem.viewAll");
       this.$.viewAllRecordsBtn.style.visibility = redeemOnly.length > 2 ? "visible" : "hidden";
     }
   },

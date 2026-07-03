@@ -87,3 +87,26 @@ VITE_ACTIVITY_API_BASE_URL=https://service-dev.aiwriter.today
 | `X-Frame-Options` | `SAMEORIGIN` 或 CSP `frame-ancestors 'self'` |
 
 Content-Security-Policy 需按实际 API 域名与 GA 域名单独配置。
+
+## 多语言 / Region（Native 必传）
+
+App WebView 里的 `navigator.language` **通常不是手机系统语言**，H5 不能单靠浏览器 API 判断印尼语等语言。
+
+请在 **打开 H5 的 URL** 或 **`initActivity` / `getSession` 返回值** 中至少提供一项：
+
+| 字段 | 示例 | 说明 |
+|------|------|------|
+| URL `region` | `&region=ID` | 按国家映射 UI 语言（ID→印尼语，PK→乌尔都语…） |
+| URL `locale` | `&locale=id-ID` | 直接指定 UI 语言 |
+| session `region` | `"region":"ID"` | 与 URL region 相同 |
+| session `systemLocale` | `"systemLocale":"id-ID"` | 手机系统语言（推荐） |
+
+当前若 session 只有 `userId/deviceId/activityId/...`，H5 **无法**自动切换为印尼语，只能显示默认英文；用户可在页面右上角手动切换语言。
+
+可选：Native 实现同步桥 `ActivityBridgeHelper.getSystemLocale()`，返回 `id-ID` / `in-ID` 等，H5 已支持读取。
+
+H5 调试：在 WebView 控制台执行（无需 `debug=1`）：
+
+```javascript
+JSON.stringify(window.__activityLocaleDebug(), null, 2)
+```

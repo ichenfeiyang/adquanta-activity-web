@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { resolveHistoryBase } from '../lib/router-base.js'
-import { ROUTE_NAMES, PAGE_TITLES } from '../lib/activity-pages.js'
+import { ROUTE_NAMES, PAGE_TITLE_KEYS } from '../lib/activity-pages.js'
+import { t } from '../lib/i18n/activity-locale.js'
 import ActivityCenterView from '../views/ActivityCenterView.vue'
 
 const scrollPositions = new Map()
@@ -19,19 +20,19 @@ const router = createRouter({
     {
       path: '/activity-center',
       name: ROUTE_NAMES.ACTIVITY_CENTER,
-      meta: { title: PAGE_TITLES[ROUTE_NAMES.ACTIVITY_CENTER] },
+      meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.ACTIVITY_CENTER] },
       component: ActivityCenterView,
     },
     {
       path: '/gold-coins-exchange',
       name: ROUTE_NAMES.GOLD_COINS_EXCHANGE,
-      meta: { title: PAGE_TITLES[ROUTE_NAMES.GOLD_COINS_EXCHANGE] },
+      meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.GOLD_COINS_EXCHANGE] },
       component: () => import('../views/GoldCoinsExchangeView.vue'),
     },
     {
       path: '/topup-status',
       name: ROUTE_NAMES.TOPUP_STATUS,
-      meta: { title: PAGE_TITLES[ROUTE_NAMES.TOPUP_STATUS] },
+      meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.TOPUP_STATUS] },
       component: () => import('../views/TopupStatusView.vue'),
     },
   ],
@@ -57,9 +58,9 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  const title = to.meta?.title
-  if (typeof title === 'string' && title) {
-    document.title = title
+  const titleKey = to.meta?.titleKey
+  if (typeof titleKey === 'string' && titleKey) {
+    document.title = t(titleKey)
   }
 })
 

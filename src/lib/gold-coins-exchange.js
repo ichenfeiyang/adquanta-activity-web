@@ -12,7 +12,8 @@ import {
 import * as logger from "./activity-logger.js";
 import { assetUrl } from "./asset-url.js";
 import { escapeHtml } from "./escape-html.js";
-import { REDEEM_SUMMARY_DEFAULT } from "./activity-messages.js";
+import { redeemSummaryDefault } from "./activity-messages.js";
+import { t } from "./i18n/activity-locale.js";
 import {
   buildSelectedRedeemSummary,
   formatRedeemProductName,
@@ -581,26 +582,26 @@ export class GoldCoinsExchange {
     if (this.exchangeLoading) {
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
-      this.$.redeemSummary.textContent = "Processing...";
+      this.$.redeemSummary.textContent = t("common.processing");
       return;
     }
 
     if (validMobile && !this.chargesLoaded) {
-      this.$.redeemSummary.textContent = "Loading recharge options...";
+      this.$.redeemSummary.textContent = t("redeem.loadingOptions");
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
       return;
     }
 
     if (validMobile && this.chargesLoaded && !hasOperator) {
-      this.$.redeemSummary.textContent = "Select an operator";
+      this.$.redeemSummary.textContent = t("redeem.selectOperator");
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
       return;
     }
 
     if (validMobile && hasOperator && !hasSelectedProduct) {
-      this.$.redeemSummary.textContent = "Select a recharge or data plan";
+      this.$.redeemSummary.textContent = t("redeem.selectPlan");
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
       return;
@@ -616,7 +617,7 @@ export class GoldCoinsExchange {
         mobile: this.state.mobile,
       });
     } else {
-      this.$.redeemSummary.textContent = REDEEM_SUMMARY_DEFAULT;
+      this.$.redeemSummary.textContent = redeemSummaryDefault();
     }
 
     const canRedeem = validMobile && hasOperator && hasSelectedProduct && canAfford;
@@ -654,7 +655,7 @@ export class GoldCoinsExchange {
     if (!modal) {
       // Fallback: keep behavior safe if modal markup missing.
       return Promise.resolve(
-        window.confirm(`Use ${coins} Gold Coins to redeem ${amountLabel || "-"} top-up?`)
+        window.confirm(t("redeem.confirmTopupFallback", { coins, name: amountLabel || "-" }))
       );
     }
 
@@ -674,7 +675,7 @@ export class GoldCoinsExchange {
         display_text: amountLabel,
       });
     }
-    if (previewPoints) previewPoints.textContent = `${coins} coins`;
+    if (previewPoints) previewPoints.textContent = t("redeem.coinsUnit", { count: coins });
     if (confirmPoints) confirmPoints.textContent = String(coins ?? 0);
     if (confirmName) confirmName.textContent = String(amountLabel || "-");
 
@@ -733,7 +734,7 @@ export class GoldCoinsExchange {
 
     // 检查金币是否足够
     if (this.userGoldCoins < coins) {
-      this.config.onExchangeFailed("Not enough coins to redeem");
+      this.config.onExchangeFailed(t("redeem.notEnoughCoins"));
       return;
     }
 
@@ -750,26 +751,26 @@ export class GoldCoinsExchange {
       this.exchangeLoading = true;
       if (this.$.btnRedeem) {
         if (!this.$.btnRedeem.dataset.originalText) {
-          this.$.btnRedeem.dataset.originalText = this.$.btnRedeem.textContent || "Redeem Now";
+          this.$.btnRedeem.dataset.originalText = this.$.btnRedeem.textContent || t("redeem.redeemNow");
         }
-        this.$.btnRedeem.textContent = "Processing...";
+        this.$.btnRedeem.textContent = t("common.processing");
         this.$.btnRedeem.disabled = true;
         this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
       }
 
       const chargesId = this.state.selectedCharge?.charges_id || this.state.selectedCharge?.chargesId || "";
       if (!chargesId) {
-        this.config.onExchangeFailed("Missing charges_id");
+        this.config.onExchangeFailed(t("redeem.missingChargesId"));
         return;
       }
       const sendValue = this.state.selectedCharge?.send_value ?? this.state.selectedCharge?.sendValue ?? "";
       if (sendValue === "" || sendValue === null || sendValue === undefined) {
-        this.config.onExchangeFailed("Missing send_value");
+        this.config.onExchangeFailed(t("redeem.missingSendValue"));
         return;
       }
       const phone_number = this.getFullPhoneNumber();
       if (!/^\d{6,20}$/.test(phone_number)) {
-        this.config.onExchangeFailed("Invalid phone number");
+        this.config.onExchangeFailed(t("redeem.invalidPhone"));
         return;
       }
 
@@ -781,17 +782,17 @@ export class GoldCoinsExchange {
       });
       const msg = res?.data?.message || res?.message || "";
       if (res?.code !== 200) {
-        this.config.onExchangeFailed(msg || "Redemption failed, please try again");
+        this.config.onExchangeFailed(msg || t("redeem.redeemFailed"));
         return;
       }
       if (res?.data?.success !== true) {
-        this.config.onExchangeFailed(msg || "Submit failed, please try again");
+        this.config.onExchangeFailed(msg || t("redeem.submitFailed"));
         return;
       }
 
       const distributorRef = String(res?.data?.distributor_ref || "").trim();
       if (!distributorRef) {
-        this.config.onExchangeFailed("Missing distributor_ref");
+        this.config.onExchangeFailed(t("redeem.missingDistributorRef"));
         return;
       }
 
@@ -813,11 +814,11 @@ export class GoldCoinsExchange {
       return;
     } catch (error) {
       logger.error("Redeem top-up failed", error);
-      this.config.onExchangeFailed(error?.message || "Redemption failed, please try again");
+      this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {
       this.exchangeLoading = false;
       if (this.$.btnRedeem) {
-        this.$.btnRedeem.textContent = this.$.btnRedeem.dataset.originalText || "Redeem Now";
+        this.$.btnRedeem.textContent = this.$.btnRedeem.dataset.originalText || t("redeem.redeemNow");
       }
       this.updateRedeemState();
     }

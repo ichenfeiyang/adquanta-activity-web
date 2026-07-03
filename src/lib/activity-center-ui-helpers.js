@@ -1,3 +1,5 @@
+import { t } from "./i18n/activity-locale.js";
+
 export function maxRouletteCoin(coinList) {
   const values = (Array.isArray(coinList) ? coinList : []).map(Number).filter(Number.isFinite);
   return values.length ? Math.max(...values) : 0;
@@ -5,9 +7,9 @@ export function maxRouletteCoin(coinList) {
 
 export function formatLuckySpinDesc(maxCoin) {
   if (maxCoin > 0) {
-    return `Each video unlocks 1 lucky spin. Win up to ${maxCoin} coins per spin!`;
+    return t("center.luckySpinDesc", { maxCoin });
   }
-  return "Each video unlocks 1 lucky spin.";
+  return t("center.luckySpinDescShort");
 }
 
 export function resolveSigninRewardCoins(reward) {

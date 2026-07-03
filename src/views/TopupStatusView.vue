@@ -4,9 +4,11 @@ import "../assets/topup-status.css";
 import { ROUTE_NAMES } from "../lib/activity-pages.js";
 import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useActivityBackNavigation } from "../composables/useActivityBackNavigation.js";
+import { useI18n } from "../composables/useI18n.js";
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const { returnToActivityCenter, navigateBackOrActivityCenter } = useActivityBackNavigation();
 
 useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
@@ -19,7 +21,7 @@ useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
 <template>
   <div class="ts-root" data-status="pending">
     <header id="tsHeader" class="ts-header">
-      <button id="tsBackBtn" type="button" class="ts-back-btn" aria-label="Back" @click="navigateBackOrActivityCenter">←</button>
+      <button id="tsBackBtn" type="button" class="ts-back-btn" :aria-label="t('common.back')" @click="navigateBackOrActivityCenter">←</button>
     </header>
 
     <main class="ts-main">
@@ -27,26 +29,26 @@ useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
         <div class="ts-status-icon-wrap">
           <div id="tsStatusIcon" class="ts-status-icon">↻</div>
         </div>
-        <h2 id="tsStatusTitle" class="ts-status-title">Processing Recharge</h2>
-        <p id="tsStatusDesc" class="ts-status-desc">We are processing your top-up. This may take a few minutes.</p>
+        <h2 id="tsStatusTitle" class="ts-status-title">{{ t('topup.processingTitle') }}</h2>
+        <p id="tsStatusDesc" class="ts-status-desc">{{ t('topup.processingDesc') }}</p>
       </section>
 
       <section class="ts-detail-card">
         <div class="ts-row">
-          <span class="ts-label">Transaction ID</span>
+          <span class="ts-label">{{ t('topup.transactionId') }}</span>
           <span id="tsTransactionId" class="ts-value">-</span>
         </div>
         <div class="ts-divider" />
         <div class="ts-row">
-          <span class="ts-label">Amount</span>
+          <span class="ts-label">{{ t('topup.amount') }}</span>
           <span id="tsAmount" class="ts-value">-</span>
         </div>
         <div class="ts-row">
-          <span class="ts-label">Mobile Number</span>
+          <span class="ts-label">{{ t('topup.mobileNumber') }}</span>
           <span id="tsPhone" class="ts-value">-</span>
         </div>
         <div class="ts-row">
-          <span class="ts-label">Operator</span>
+          <span class="ts-label">{{ t('topup.operator') }}</span>
           <span id="tsOperator" class="ts-value">-</span>
         </div>
       </section>
@@ -54,13 +56,13 @@ useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
       <section id="tsTipCard" class="ts-tip-card">
         <div class="ts-tip-icon">🕒</div>
         <div>
-          <div class="ts-tip-title">Average Processing Time</div>
-          <div class="ts-tip-desc">Typically under 2 minutes.</div>
+          <div class="ts-tip-title">{{ t('topup.avgTimeTitle') }}</div>
+          <div class="ts-tip-desc">{{ t('topup.avgTimeDesc') }}</div>
         </div>
       </section>
 
       <button id="tsReturnBtn" type="button" class="ts-secondary-btn" @click="returnToActivityCenter">
-        <span id="tsSecondaryActionLabel">Return to Tasks</span>
+        <span id="tsSecondaryActionLabel">{{ t('topup.returnToTasks') }}</span>
       </button>
     </main>
   </div>

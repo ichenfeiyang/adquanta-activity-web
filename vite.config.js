@@ -41,6 +41,10 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/vue-router')) {
               return 'vue-vendor'
             }
+            if (id.includes('/src/locales/')) {
+              const match = id.match(/\/locales\/([^.]+)\.json/)
+              return match ? `locale-${match[1]}` : 'locale'
+            }
             if (
               id.includes('/lib/activity-api') ||
               id.includes('/lib/activity-page-cache') ||

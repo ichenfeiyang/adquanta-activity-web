@@ -1,3 +1,5 @@
+import { t } from "./i18n/activity-locale.js";
+
 export function normalizeProductType(productType) {
   const type = String(productType || "")
     .trim()
@@ -12,7 +14,7 @@ export function isDataProduct(productType) {
 
 function formatDurationUnit(count, singular, plural) {
   if (!Number.isFinite(count) || count <= 0) return "";
-  return count === 1 ? `1 ${singular} valid` : `${count} ${plural} valid`;
+  return count === 1 ? t("product.dayValid") : t("product.daysValid", { count });
 }
 
 export function formatValidityPeriod(periodRaw = "") {
@@ -23,7 +25,10 @@ export function formatValidityPeriod(periodRaw = "") {
   if (dayMatch) return formatDurationUnit(Number(dayMatch[1]), "day", "days");
 
   const weekMatch = period.match(/^P(\d+)W$/);
-  if (weekMatch) return formatDurationUnit(Number(weekMatch[1]), "week", "weeks");
+  if (weekMatch) {
+    const count = Number(weekMatch[1]);
+    return count === 1 ? t("product.weekValid") : t("product.weeksValid", { count });
+  }
 
   return "";
 }
@@ -99,7 +104,7 @@ export function sortChargeProducts(products = []) {
 }
 
 export function getProductTypeLabel(productType) {
-  return isDataProduct(productType) ? "Data" : "Top-up";
+  return isDataProduct(productType) ? t("product.data") : t("product.topup");
 }
 
 export function getRedeemSummaryLabel(product = {}) {
@@ -111,13 +116,20 @@ export function getRedeemSummaryLabel(product = {}) {
 }
 
 export function getRedeemActionVerb(productType) {
-  return isDataProduct(productType) ? "redeem data" : "top up";
+  return isDataProduct(productType) ? t("product.redeemData") : t("product.topUpVerb");
 }
 
 export function buildSelectedRedeemSummary({ coins, product = {}, operator, countryCode, mobile }) {
   const label = getRedeemSummaryLabel(product);
   const action = getRedeemActionVerb(product.product_type);
-  return `Use ${coins} coins to ${action} ${label} (${operator}) for ${countryCode} ${mobile}`;
+  return t("redeem.summarySelected", {
+    coins,
+    action,
+    label,
+    operator,
+    countryCode,
+    mobile,
+  });
 }
 
 export function formatRedeemProductName(product = {}) {
@@ -133,7 +145,7 @@ export function getHistoryRecordTitle(record = {}) {
 
   const skuCode = String(record?.sku_code ?? "").trim();
   const prefix = getProductTypeLabel(record?.product_type);
-  if (skuCode) return `${prefix} ${skuCode}`;
+  if (skuCode) return isDataProduct(record?.product_type) ? t("product.historyData", { sku: skuCode }) : t("product.historyTopup", { sku: skuCode });
   return prefix;
 }
 
