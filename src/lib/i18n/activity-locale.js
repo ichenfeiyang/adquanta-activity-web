@@ -90,11 +90,11 @@ const HTML_LANG_MAP = {
 };
 
 export const SUPPORTED_UI_LOCALES = [
-  { code: "en", nativeLabel: "English", ariaLabelKey: "common.languageEnglish" },
-  { code: "id", nativeLabel: "Bahasa Indonesia", ariaLabelKey: "common.languageIndonesian" },
-  { code: "ur", nativeLabel: "اردو", ariaLabelKey: "common.languageUrdu" },
-  { code: "bn", nativeLabel: "বাংলা", ariaLabelKey: "common.languageBengali" },
-  { code: "ne", nativeLabel: "नेपाली", ariaLabelKey: "common.languageNepali" },
+  { code: "en", nativeLabel: "English", shortLabel: "EN", flag: "🇺🇸", ariaLabelKey: "common.languageEnglish" },
+  { code: "id", nativeLabel: "Bahasa Indonesia", shortLabel: "ID", flag: "🇮🇩", ariaLabelKey: "common.languageIndonesian" },
+  { code: "ur", nativeLabel: "اردو", shortLabel: "UR", flag: "🇵🇰", ariaLabelKey: "common.languageUrdu" },
+  { code: "bn", nativeLabel: "বাংলা", shortLabel: "BN", flag: "🇧🇩", ariaLabelKey: "common.languageBengali" },
+  { code: "ne", nativeLabel: "नेपाली", shortLabel: "NE", flag: "🇳🇵", ariaLabelKey: "common.languageNepali" },
 ];
 
 const USER_LOCALE_KEY = "activity_ui_locale_v1";
@@ -103,6 +103,20 @@ const SUPPORTED_LOCALE_CODES = new Set(["en", "id", "ur", "bn", "ne"]);
 
 let currentLocale = "en";
 let localeInitPromise = null;
+const localeChangeListeners = new Set();
+
+export function subscribeLocaleChange(listener) {
+  localeChangeListeners.add(listener);
+  return () => localeChangeListeners.delete(listener);
+}
+
+function notifyLocaleChange() {
+  for (const listener of localeChangeListeners) {
+    try {
+      listener(currentLocale);
+    } catch (_) {}
+  }
+}
 
 function normalizeLocale(locale) {
   const value = String(locale || "")
@@ -403,8 +417,13 @@ export function getActivityLocaleDiagnostics() {
 }
 
 export function setActivityLocale(locale) {
-  currentLocale = normalizeLocale(locale);
+  const next = normalizeLocale(locale);
+  const changed = next !== currentLocale;
+  currentLocale = next;
   applyDocumentLocale(currentLocale);
+  if (changed) {
+    notifyLocaleChange();
+  }
   return currentLocale;
 }
 
@@ -420,7 +439,9 @@ export async function initActivityLocale(options = {}) {
     if (locale !== "en") {
       await ensureLocaleMessages(locale);
     }
-    return setActivityLocale(locale);
+    setActivityLocale(locale);
+    notifyLocaleChange();
+    return currentLocale;
   })();
 
   return localeInitPromise;

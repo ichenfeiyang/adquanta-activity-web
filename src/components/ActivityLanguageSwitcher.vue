@@ -7,100 +7,98 @@ import {
   t,
 } from "../lib/i18n/activity-locale.js";
 
-const rootRef = ref(null);
 const open = ref(false);
+const rootEl = ref(null);
 const currentLocale = computed(() => getActivityLocale());
+
+const currentOption = computed(
+  () => SUPPORTED_UI_LOCALES.find((item) => item.code === currentLocale.value) || SUPPORTED_UI_LOCALES[0],
+);
+
+function toggleMenu() {
+  open.value = !open.value;
+}
 
 function closeMenu() {
   open.value = false;
 }
 
-function toggleMenu(event) {
-  event.stopPropagation();
-  open.value = !open.value;
-}
-
 function selectLocale(code) {
   closeMenu();
-  if (code === currentLocale.value) return;
+  if (!code || code === currentLocale.value) return;
   switchUserActivityLocale(code);
 }
 
-function labelFor(option) {
-  return t(option.ariaLabelKey);
-}
-
-function onDocumentClick(event) {
+function onDocumentPointerDown(event) {
   if (!open.value) return;
-  const root = rootRef.value;
-  if (root && event.target instanceof Node && root.contains(event.target)) return;
-  closeMenu();
+  const root = rootEl.value;
+  if (root && !root.contains(event.target)) {
+    closeMenu();
+  }
 }
 
-function onDocumentKeydown(event) {
-  if (event.key === "Escape") closeMenu();
+function onDocumentKeyDown(event) {
+  if (event.key === "Escape") {
+    closeMenu();
+  }
 }
 
 onMounted(() => {
-  document.addEventListener("click", onDocumentClick);
-  document.addEventListener("keydown", onDocumentKeydown);
+  document.addEventListener("pointerdown", onDocumentPointerDown);
+  document.addEventListener("keydown", onDocumentKeyDown);
 });
 
 onUnmounted(() => {
-  document.removeEventListener("click", onDocumentClick);
-  document.removeEventListener("keydown", onDocumentKeydown);
+  document.removeEventListener("pointerdown", onDocumentPointerDown);
+  document.removeEventListener("keydown", onDocumentKeyDown);
 });
 </script>
 
 <template>
-  <div ref="rootRef" class="activity-language-switcher" dir="ltr">
+  <div
+    ref="rootEl"
+    class="activity-language-switcher"
+    dir="ltr"
+  >
     <button
       type="button"
       class="activity-language-switcher__trigger"
       :aria-label="t('common.switchLanguage')"
-      :aria-expanded="open ? 'true' : 'false'"
+      :aria-expanded="open"
       aria-haspopup="listbox"
       @click="toggleMenu"
     >
-      <svg
-        class="activity-language-switcher__icon"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
-        <path
-          d="M3 12h18M12 3c2.8 2.2 4.5 5.4 4.5 9s-1.7 6.8-4.5 9M12 3c-2.8 2.2-4.5 5.4-4.5 9s1.7 6.8 4.5 9"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"
-        />
-      </svg>
+      <span class="activity-language-switcher__trigger-flag" aria-hidden="true">{{ currentOption.flag }}</span>
+      <span class="activity-language-switcher__trigger-code">{{ currentOption.shortLabel }}</span>
+      <span class="activity-language-switcher__trigger-chevron" aria-hidden="true">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
     </button>
 
-    <div
-      v-show="open"
-      class="activity-language-switcher__menu"
-      role="listbox"
-      :aria-label="t('common.switchLanguage')"
-    >
-      <button
-        v-for="option in SUPPORTED_UI_LOCALES"
-        :key="option.code"
-        type="button"
-        class="activity-language-switcher__option"
-        :class="{ 'activity-language-switcher__option--active': currentLocale === option.code }"
-        role="option"
-        :aria-selected="currentLocale === option.code ? 'true' : 'false'"
-        :aria-label="labelFor(option)"
-        @click.stop="selectLocale(option.code)"
+    <Transition name="activity-language-menu">
+      <div
+        v-if="open"
+        class="activity-language-switcher__menu"
+        role="listbox"
+        :aria-label="t('common.switchLanguage')"
       >
-        <span class="activity-language-switcher__label" :dir="option.code === 'ur' ? 'rtl' : 'ltr'">
-          {{ option.nativeLabel }}
-        </span>
-      </button>
-    </div>
+        <button
+          v-for="option in SUPPORTED_UI_LOCALES"
+          :key="option.code"
+          type="button"
+          class="activity-language-switcher__option"
+          :class="{ 'activity-language-switcher__option--active': option.code === currentLocale }"
+          role="option"
+          :aria-selected="option.code === currentLocale"
+          @click="selectLocale(option.code)"
+        >
+          <span class="activity-language-switcher__option-flag" aria-hidden="true">{{ option.flag }}</span>
+          <span class="activity-language-switcher__option-code">{{ option.shortLabel }}</span>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -115,63 +113,80 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid rgba(236, 91, 19, 0.14);
+  gap: 6px;
+  min-width: 72px;
+  height: 36px;
+  padding: 0 10px 0 8px;
+  border: 1px solid rgba(236, 91, 19, 0.16);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #ec5b13;
+  background: linear-gradient(180deg, #ffffff 0%, #fff9f5 100%);
+  color: #374151;
+  box-shadow:
+    0 6px 16px rgba(236, 91, 19, 0.2),
+    0 2px 6px rgba(15, 23, 42, 0.08);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.activity-language-switcher__trigger:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(236, 91, 19, 0.18);
+.activity-language-switcher__trigger-flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.activity-language-switcher__trigger-code {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.activity-language-switcher__trigger-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ec5b13;
+  margin-left: -2px;
 }
 
 .activity-language-switcher__trigger:active {
   transform: scale(0.96);
 }
 
-.activity-language-switcher__icon {
-  width: 14px;
-  height: 14px;
-  display: block;
+.activity-language-switcher__trigger:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(236, 91, 19, 0.18),
+    0 6px 16px rgba(236, 91, 19, 0.2);
 }
 
 .activity-language-switcher__menu {
   position: absolute;
-  top: calc(100% + 6px);
   right: 0;
-  left: auto;
-  min-width: 132px;
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(236, 91, 19, 0.12);
+  bottom: calc(100% + 10px);
+  min-width: 112px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
   background: #ffffff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-  z-index: 1300;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
 }
 
 .activity-language-switcher__option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  min-height: 40px;
+  padding: 0 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   color: #374151;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   cursor: pointer;
-}
-
-.activity-language-switcher__label {
-  display: block;
+  text-align: left;
 }
 
 .activity-language-switcher__option:hover {
@@ -181,5 +196,25 @@ onUnmounted(() => {
 .activity-language-switcher__option--active {
   background: rgba(236, 91, 19, 0.12);
   color: #ec5b13;
+}
+
+.activity-language-switcher__option-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.activity-language-switcher__option-code {
+  min-width: 24px;
+}
+
+.activity-language-menu-enter-active,
+.activity-language-menu-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.activity-language-menu-enter-from,
+.activity-language-menu-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 </style>

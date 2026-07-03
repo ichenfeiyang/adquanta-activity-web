@@ -9,21 +9,22 @@ if (typeof window !== 'undefined') {
   window.__activityLocaleDebug = getActivityLocaleDiagnostics
 }
 
-initActivityLocale()
-  .then(() => {
-    initGtag()
-    const pendingPath = readPostReloadPath()
-    createApp(App).use(router).mount('#app')
-    if (pendingPath) {
-      void router.replace(pendingPath)
-    }
-  })
-  .catch((error) => {
+function mountApp() {
+  const pendingPath = readPostReloadPath()
+  createApp(App).use(router).mount('#app')
+  if (pendingPath) {
+    void router.replace(pendingPath)
+  }
+}
+
+async function bootstrap() {
+  initGtag()
+  try {
+    await initActivityLocale()
+  } catch (error) {
     console.error('[ADActivityWeb] Failed to initialize locale', error)
-    initGtag()
-    const pendingPath = readPostReloadPath()
-    createApp(App).use(router).mount('#app')
-    if (pendingPath) {
-      void router.replace(pendingPath)
-    }
-  })
+  }
+  mountApp()
+}
+
+void bootstrap()

@@ -4,6 +4,7 @@ import { assetUrl } from "../lib/asset-url.js";
 import { ROUTE_NAMES } from "../lib/activity-pages.js";
 import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useI18n } from "../composables/useI18n.js";
+import ActivityLanguageSwitcher from "../components/ActivityLanguageSwitcher.vue";
 
 const { t } = useI18n();
 
@@ -83,7 +84,10 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       </section>
 
       <section id="tc-lucky-spin-section" class="tc-section">
-        <h2 class="tc-section-title">{{ t('center.tasksForYou') }}</h2>
+        <div class="tc-section-head">
+          <h2 class="tc-section-title">{{ t('center.tasksForYou') }}</h2>
+          <ActivityLanguageSwitcher />
+        </div>
         <div class="tc-card tc-video-card">
           <div class="tc-video-head">
             <div id="btn-spin-entry" class="tc-video-icon">

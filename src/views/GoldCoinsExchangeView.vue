@@ -26,16 +26,16 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
       <section class="redeem-section">
         <div class="redeem-wallet-card">
           <div class="redeem-wallet-left">
-            <div class="redeem-wallet-label">{{ t('redeem.myCoins') }}</div>
-            <div class="redeem-wallet-value">
-              <span id="userGoldCoins">0</span>
-              <span class="redeem-wallet-unit">{{ t('common.goldCoins') }}</span>
+              <div class="redeem-wallet-label">{{ t('redeem.myCoins') }}</div>
+              <div class="redeem-wallet-value">
+                <span id="userGoldCoins">0</span>
+                <span class="redeem-wallet-unit">{{ t('common.goldCoins') }}</span>
+              </div>
+              <div class="redeem-wallet-hint">{{ t('redeem.walletHint') }}</div>
             </div>
-            <div class="redeem-wallet-hint">{{ t('redeem.walletHint') }}</div>
-          </div>
-          <div class="redeem-wallet-icon">
-            <img :src="assetUrl('icons/gold-coin-white.svg')" alt="coins" class="icon-img">
-          </div>
+            <div class="redeem-wallet-icon">
+              <img :src="assetUrl('icons/gold-coin-white.svg')" alt="coins" class="icon-img">
+            </div>
         </div>
       </section>
 

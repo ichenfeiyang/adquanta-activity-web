@@ -110,22 +110,38 @@ def proxy_api(path):
     resp.headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type"
     return resp
 
-def _redirect_activity_center():
-    """根路径默认进入活动中心，单次跳转，保留 query（code/token 等）。"""
+def _redirect_vue_spa():
+    """根路径进入 Vue SPA（index.html），由 Vue Router 处理页面路由。"""
     qs = request.query_string.decode("utf-8") if request.query_string else ""
-    target = "/activity-center.html" + (f"?{qs}" if qs else "")
+    target = f"/index.html?{qs}" if qs else "/index.html"
     return redirect(target, code=302)
 
 
+def _redirect_activity_center():
+    return _redirect_vue_spa()
+
+
 @app.route("/")
-@app.route("/index.html")
-def index():
+def root():
     return _redirect_activity_center()
+
+
+@app.route("/index.html")
+def index_html():
+    return send_from_directory(BASE_DIR, "index.html")
 
 
 @app.route("/activity.html")
 def activity_entry():
     """兼容旧入口：同样直达活动中心（单次跳转）。"""
+    return _redirect_activity_center()
+
+
+@app.route("/activity-center.html")
+@app.route("/gold-coins-exchange.html")
+@app.route("/topup-status.html")
+def legacy_html_redirect():
+    """兼容旧静态 HTML 入口，统一跳转到 Vue SPA。"""
     return _redirect_activity_center()
 
 @app.route('/activity/<path:filename>')
@@ -160,7 +176,7 @@ if __name__ == '__main__':
     print(f"本机：http://127.0.0.1:8848")
     print(f"手机/局域网：{MOBILE_ACCESS_URL}（同 WiFi 下打开；监听 0.0.0.0:8848 已放通网内访问）")
     _lan_url_warning(MOBILE_ACCESS_URL)
-    print("默认入口：/ -> /activity-center.html；活动中心 /activity-center.html")
+    print("默认入口：/ -> /index.html（Vue SPA）；旧 /activity-center.html 会 302 到 /index.html")
     print("=" * 60)
     # 0.0.0.0：手机用 http://<电脑局域网IP>:8848 即达，不绑定单一 IP
     app.run(host="0.0.0.0", port=8848, debug=True)
