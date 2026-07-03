@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   getActivityLocale,
+  isRtlActivityLocale,
   SUPPORTED_UI_LOCALES,
   switchUserActivityLocale,
   t,
@@ -14,6 +15,8 @@ const currentLocale = computed(() => getActivityLocale());
 const currentOption = computed(
   () => SUPPORTED_UI_LOCALES.find((item) => item.code === currentLocale.value) || SUPPORTED_UI_LOCALES[0],
 );
+
+const isRtl = computed(() => isRtlActivityLocale(currentLocale.value));
 
 function toggleMenu() {
   open.value = !open.value;
@@ -58,11 +61,12 @@ onUnmounted(() => {
   <div
     ref="rootEl"
     class="activity-language-switcher"
-    dir="ltr"
   >
     <button
       type="button"
       class="activity-language-switcher__trigger"
+      :class="{ 'activity-language-switcher__trigger--rtl': isRtl }"
+      :dir="isRtl ? 'rtl' : 'ltr'"
       :aria-label="t('common.switchLanguage')"
       :aria-expanded="open"
       aria-haspopup="listbox"
@@ -81,6 +85,8 @@ onUnmounted(() => {
       <div
         v-if="open"
         class="activity-language-switcher__menu"
+        :class="{ 'activity-language-switcher__menu--rtl': isRtl }"
+        :dir="isRtl ? 'rtl' : 'ltr'"
         role="listbox"
         :aria-label="t('common.switchLanguage')"
       >
@@ -106,7 +112,6 @@ onUnmounted(() => {
 .activity-language-switcher {
   position: relative;
   display: inline-flex;
-  direction: ltr;
 }
 
 .activity-language-switcher__trigger {
@@ -116,7 +121,7 @@ onUnmounted(() => {
   gap: 6px;
   min-width: 72px;
   height: 36px;
-  padding: 0 10px 0 8px;
+  padding-inline: 8px 10px;
   border: 1px solid rgba(236, 91, 19, 0.16);
   border-radius: 999px;
   background: linear-gradient(180deg, #ffffff 0%, #fff9f5 100%);
@@ -126,6 +131,10 @@ onUnmounted(() => {
     0 2px 6px rgba(15, 23, 42, 0.08);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.activity-language-switcher__trigger--rtl {
+  direction: rtl;
 }
 
 .activity-language-switcher__trigger-flag {
@@ -145,7 +154,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: #ec5b13;
-  margin-left: -2px;
+  margin-inline-start: -2px;
 }
 
 .activity-language-switcher__trigger:active {
@@ -171,8 +180,13 @@ onUnmounted(() => {
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
 }
 
+.activity-language-switcher__menu--rtl {
+  direction: rtl;
+}
+
 .activity-language-switcher__option {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -186,7 +200,11 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
+}
+
+.activity-language-switcher__menu--rtl .activity-language-switcher__option {
+  justify-content: flex-start;
 }
 
 .activity-language-switcher__option:hover {

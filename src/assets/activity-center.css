@@ -772,7 +772,7 @@ body {
   font-size: 11px;
   font-weight: 400;
   color: #9ca3af;
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 
 .tc-primary-btn {
@@ -989,19 +989,26 @@ body {
   left: 50%;
   transform: translateX(-50%);
   min-width: 46px;
-  height: 22px;
-  padding: 0 10px;
+  max-width: calc(100% - 6px);
+  height: auto;
+  min-height: 22px;
+  padding: 3px 8px;
   border-radius: 999px;
   border: 1px solid #f4b400;
   background: linear-gradient(180deg, #ffe55b 0%, #ffcf24 100%);
   color: #1f2937;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
+  line-height: 1.1;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tc-video-play-chip {
@@ -1046,7 +1053,7 @@ body {
 .tc-ad-coin-inline-img {
   width: 16px;
   height: 16px;
-  margin-left: 4px;
+  margin-inline-start: 4px;
   vertical-align: middle;
 }
 
@@ -1087,7 +1094,7 @@ body {
 }
 
 .tc-video-progress-item-right {
-  text-align: right;
+  text-align: end;
 }
 
 .tc-video-progress-label {
@@ -1507,3 +1514,15 @@ body.tc-scroll-locked {
   color: #f97316;
 }
 
+[dir="rtl"] .tc-video-progress-fill {
+  margin-inline-start: auto;
+}
+
+[dir="rtl"] .tc-section-head {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .tc-section-head .tc-section-title {
+  text-align: start;
+}

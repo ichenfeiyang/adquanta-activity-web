@@ -205,7 +205,7 @@ test("initActivityLocale sets document lang and dir", async () => {
   try {
     await initActivityLocale({ locale: "ur", force: true });
     assert.equal(document.documentElement.lang, "ur");
-    assert.equal(document.documentElement.dir, "ltr");
+    assert.equal(document.documentElement.dir, "rtl");
     await initActivityLocale({ locale: "bn", force: true });
     assert.equal(document.documentElement.lang, "bn");
     assert.equal(document.documentElement.dir, "ltr");

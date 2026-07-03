@@ -89,6 +89,8 @@ const HTML_LANG_MAP = {
   ne: "ne",
 };
 
+const RTL_LOCALES = new Set(["ur"]);
+
 export const SUPPORTED_UI_LOCALES = [
   { code: "en", nativeLabel: "English", shortLabel: "EN", flag: "🇺🇸", ariaLabelKey: "common.languageEnglish" },
   { code: "id", nativeLabel: "Bahasa Indonesia", shortLabel: "ID", flag: "🇮🇩", ariaLabelKey: "common.languageIndonesian" },
@@ -382,15 +384,18 @@ export function resolveActivityLocale(options = {}) {
 
 function applyDocumentLocale(locale) {
   try {
-    document.documentElement.lang = HTML_LANG_MAP[locale] || "en";
-    // Keep layout LTR: this UI is designed icon-left / text-right. Global RTL mirrors
-    // flex rows and breaks image+text order. Urdu script still renders RTL via Unicode bidi.
-    document.documentElement.dir = "ltr";
+    const code = normalizeLocale(locale);
+    document.documentElement.lang = HTML_LANG_MAP[code] || "en";
+    document.documentElement.dir = RTL_LOCALES.has(code) ? "rtl" : "ltr";
   } catch (_) {}
 }
 
 export function getActivityLocale() {
   return currentLocale;
+}
+
+export function isRtlActivityLocale(locale = currentLocale) {
+  return RTL_LOCALES.has(normalizeLocale(locale));
 }
 
 /** Debug helper: paste output when reporting locale issues in App WebView. */
