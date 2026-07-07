@@ -267,3 +267,85 @@ export async function getChargeRecords(options = {}, params = {}) {
     headers: { ...buildAuthHeaders(options) },
   });
 }
+
+/**
+ * Tremendous 礼品卡可兑换列表
+ * GET /api/v1/ops/activity/tremendous
+ */
+export async function getTremendousProducts(options = {}, params = {}) {
+  const baseUrl = BaseApiUrl;
+  const url = `${baseUrl}/api/v1/ops/activity/tremendous?${new URLSearchParams({
+    country_code: params.country_code ?? "",
+    currency_code: params.currency_code ?? "",
+  }).toString()}`;
+  return fetchApi("getTremendousProducts", url, {
+    method: "GET",
+    headers: { ...buildAuthHeaders(options) },
+  });
+}
+
+/**
+ * Tremendous 礼品卡预校验
+ * POST /api/v1/ops/activity/tremendous/validate
+ */
+export async function postTremendousValidate(options = {}, body = {}) {
+  const baseUrl = BaseApiUrl;
+  const url = `${baseUrl}/api/v1/ops/activity/tremendous/validate`;
+  return fetchApi("postTremendousValidate", url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildAuthHeaders(options),
+    },
+    body: JSON.stringify({
+      product_id: body.product_id ?? "",
+      denomination: body.denomination ?? 0,
+      currency_code: body.currency_code ?? "",
+      recipient_name: body.recipient_name ?? "",
+      recipient_email: body.recipient_email ?? "",
+      recipient_phone: body.recipient_phone ?? "",
+      delivery_method: body.delivery_method ?? "",
+    }),
+  });
+}
+
+/**
+ * Tremendous 礼品卡兑换
+ * POST /api/v1/ops/activity/tremendous
+ */
+export async function postTremendousRedeem(options = {}, body = {}) {
+  const baseUrl = BaseApiUrl;
+  const url = `${baseUrl}/api/v1/ops/activity/tremendous`;
+  return fetchApi("postTremendousRedeem", url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildAuthHeaders(options),
+    },
+    body: JSON.stringify({
+      product_id: body.product_id ?? "",
+      denomination: body.denomination ?? 0,
+      currency_code: body.currency_code ?? "",
+      recipient_name: body.recipient_name ?? "",
+      recipient_email: body.recipient_email ?? "",
+      recipient_phone: body.recipient_phone ?? "",
+      delivery_method: body.delivery_method ?? "",
+    }),
+  });
+}
+
+/**
+ * Tremendous 礼品卡兑换记录
+ * GET /api/v1/ops/activity/tremendous/records
+ */
+export async function getTremendousRecords(options = {}, params = {}) {
+  const baseUrl = BaseApiUrl;
+  const url = `${baseUrl}/api/v1/ops/activity/tremendous/records?${new URLSearchParams({
+    limit: String(params.limit ?? ""),
+    offset: String(params.offset ?? ""),
+  }).toString()}`;
+  return fetchApi("getTremendousRecords", url, {
+    method: "GET",
+    headers: { ...buildAuthHeaders(options) },
+  });
+}

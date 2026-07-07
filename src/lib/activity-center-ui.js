@@ -123,11 +123,10 @@ export class ActivityCenterUI {
   updateFeatureVisibility(visibility = {}) {
     const showCheckin = visibility.checkin === true;
     const showVideo = visibility.video === true;
-    const showAny = showCheckin || showVideo;
 
-    // Balance card: show whenever any task exists
+    // Wallet + redeem entry: always visible (independent of task modules).
     const balanceSection = this.elements.checkinSection || document.getElementById("tc-checkin-section");
-    if (balanceSection) balanceSection.style.display = showAny ? "" : "none";
+    if (balanceSection) balanceSection.style.display = "";
 
     // Daily check-in card: show only when checkin task exists
     const dailyCheckinSection = this.elements.dailyCheckinSection || document.getElementById("tc-daily-checkin-section");
@@ -146,7 +145,8 @@ export class ActivityCenterUI {
    * Show default shell immediately before /activity/info returns.
    */
   renderInitialShell() {
-    this.updateFeatureVisibility({ checkin: true, video: true });
+    // Show wallet/redeem immediately; task modules appear only after /activity/info confirms them.
+    this.updateFeatureVisibility({ checkin: false, video: false });
     this.updateAssets({ goldCoins: 0 });
     this.updateCheckin(null);
     this.renderTurntableFromCoins(this.spinPrizePool);

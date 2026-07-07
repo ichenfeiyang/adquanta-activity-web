@@ -26,6 +26,7 @@ import {
   sortChargeProducts,
 } from "./charge-product.js";
 import { redeemHistoryMethods } from "./redeem-history.js";
+import { giftCardRedeemMethods } from "./gift-card-redeem.js";
 import { bindPageElements } from "./bind-page-elements.js";
 import {
   DEFAULT_REDEEM_COUNTRY,
@@ -114,6 +115,28 @@ export class GoldCoinsExchange {
 
     this.$ = bindPageElements({
       userGoldCoins: "userGoldCoins",
+      walletLocalHint: "walletLocalHint",
+      tabGiftCards: "tabGiftCards",
+      tabMobileTopup: "tabMobileTopup",
+      giftCardPanel: "giftCardPanel",
+      mobileTopupPanel: "mobileTopupPanel",
+      giftBrandGrid: "giftBrandGrid",
+      giftAmountSection: "giftAmountSection",
+      giftAmountGrid: "giftAmountGrid",
+      giftRecipientSection: "giftRecipientSection",
+      giftDeliveryEmail: "giftDeliveryEmail",
+      giftDeliveryPhone: "giftDeliveryPhone",
+      giftRecipientEmailField: "giftRecipientEmailField",
+      giftRecipientPhoneField: "giftRecipientPhoneField",
+      giftCountryCodeBtn: "giftCountryCodeBtn",
+      giftCountryCodeDropdown: "giftCountryCodeDropdown",
+      inputGiftRecipientName: "inputGiftRecipientName",
+      inputGiftRecipientEmail: "inputGiftRecipientEmail",
+      inputGiftRecipientPhone: "inputGiftRecipientPhone",
+      btnGiftRedeem: "btnGiftRedeem",
+      giftRedeemSummary: "giftRedeemSummary",
+      giftHistoryList: "giftHistoryList",
+      viewAllGiftRecordsBtn: "viewAllGiftRecords",
       inputMobile: "inputMobile",
       countryCodeBtn: "countryCodeBtn",
       countryCodeDropdown: "countryCodeDropdown",
@@ -130,6 +153,7 @@ export class GoldCoinsExchange {
 
     this._domDisposers = [];
     this._countryDropdownOpen = false;
+    this._countryDropdownTarget = null;
   }
 
   _addDomListener(target, type, handler, options) {
@@ -159,9 +183,13 @@ export class GoldCoinsExchange {
     this.refreshCountryCodeUI();
     this.closeCountryCodeDropdown();
     this.hydrateFromCache();
+    this.initGiftCardRedeem();
     this.initHistory();
     this.bindEvents();
     await Promise.all([this.loadActivityInfo(), this.loadRecords()]);
+    if (this.activeRedeemTab === "gift") {
+      await Promise.all([this.loadGiftCatalog(), this.loadGiftRecords()]);
+    }
     this.setChargesUIVisible(false);
   }
 
@@ -172,25 +200,34 @@ export class GoldCoinsExchange {
 
   refreshCountryCodeUI() {
     this.updateCountryCodeBtnView();
-    this.renderCountryCodeDropdown();
+    this.renderCountryCodeDropdown(this.$.countryCodeDropdown);
+    this.renderCountryCodeDropdown(this.$.giftCountryCodeDropdown);
   }
 
   getChargesLookupKey(mobile) {
     return `${this.state.countryCodeEnum}:${String(mobile || "")}`;
   }
 
-  setCountryDropdownOpen(isOpen) {
+  setCountryDropdownOpen(isOpen, target = null) {
     this._countryDropdownOpen = isOpen;
+    this._countryDropdownTarget = isOpen ? target : null;
+    const mobileOpen = isOpen && target === "mobile";
+    const giftOpen = isOpen && target === "gift";
     if (this.$.countryCodeDropdown) {
-      this.$.countryCodeDropdown.hidden = !isOpen;
+      this.$.countryCodeDropdown.hidden = !mobileOpen;
+    }
+    if (this.$.giftCountryCodeDropdown) {
+      this.$.giftCountryCodeDropdown.hidden = !giftOpen;
     }
     if (this.$.countryCodeBtn) {
-      this.$.countryCodeBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      this.$.countryCodeBtn.setAttribute("aria-expanded", mobileOpen ? "true" : "false");
+    }
+    if (this.$.giftCountryCodeBtn) {
+      this.$.giftCountryCodeBtn.setAttribute("aria-expanded", giftOpen ? "true" : "false");
     }
   }
 
-  renderCountryCodeButton(country) {
-    const btn = this.$.countryCodeBtn;
+  renderCountryCodeButton(country, btn) {
     if (!btn) return;
     btn.innerHTML = `
       <span class="redeem-countrycode-flag" aria-hidden="true">${country.flag}</span>
@@ -200,15 +237,26 @@ export class GoldCoinsExchange {
   }
 
   updateCountryCodeBtnView() {
-    this.renderCountryCodeButton(resolveRedeemCountry(this.state.countryCodeEnum));
+    const country = resolveRedeemCountry(this.state.countryCodeEnum);
+    this.renderCountryCodeButton(country, this.$.countryCodeBtn);
+    this.renderCountryCodeButton(country, this.$.giftCountryCodeBtn);
     if (this.$.countryCodeBtn) {
-      this.$.countryCodeBtn.setAttribute("aria-expanded", this._countryDropdownOpen ? "true" : "false");
+      this.$.countryCodeBtn.setAttribute(
+        "aria-expanded",
+        this._countryDropdownOpen && this._countryDropdownTarget === "mobile" ? "true" : "false",
+      );
+    }
+    if (this.$.giftCountryCodeBtn) {
+      this.$.giftCountryCodeBtn.setAttribute(
+        "aria-expanded",
+        this._countryDropdownOpen && this._countryDropdownTarget === "gift" ? "true" : "false",
+      );
     }
   }
 
-  renderCountryCodeDropdown() {
-    if (!this.$.countryCodeDropdown) return;
-    this.$.countryCodeDropdown.innerHTML = SUPPORTED_REDEEM_COUNTRIES.map((country) => {
+  renderCountryCodeDropdown(dropdownEl) {
+    if (!dropdownEl) return;
+    dropdownEl.innerHTML = SUPPORTED_REDEEM_COUNTRIES.map((country) => {
       const active = country.iso === this.state.countryCodeEnum ? " redeem-countrycode-item--active" : "";
       return `<button
         type="button"
@@ -226,8 +274,13 @@ export class GoldCoinsExchange {
     }).join("");
   }
 
-  toggleCountryCodeDropdown() {
-    this.setCountryDropdownOpen(!this._countryDropdownOpen);
+  toggleCountryCodeDropdown(target = "mobile") {
+    const nextTarget = target === "gift" ? "gift" : "mobile";
+    if (this._countryDropdownOpen && this._countryDropdownTarget === nextTarget) {
+      this.closeCountryCodeDropdown();
+      return;
+    }
+    this.setCountryDropdownOpen(true, nextTarget);
   }
 
   closeCountryCodeDropdown() {
@@ -239,8 +292,13 @@ export class GoldCoinsExchange {
     this.closeCountryCodeDropdown();
     this.refreshCountryCodeUI();
     this.resetChargesUI();
+    this.resetGiftCatalog?.();
     this.maybeLoadChargesForMobile(this.state.mobile);
     this.updateRedeemState();
+    this.updateGiftRedeemState?.();
+    if (this.activeRedeemTab === "gift") {
+      void this.loadGiftCatalog();
+    }
   }
 
   hydrateFromCache() {
@@ -512,6 +570,7 @@ export class GoldCoinsExchange {
     if (this.$.userGoldCoins) {
       this.$.userGoldCoins.textContent = this.userGoldCoins;
     }
+    this.updateWalletLocalHint?.();
   }
 
   async sleep(ms) {
@@ -833,12 +892,28 @@ export class GoldCoinsExchange {
     if (this.$.countryCodeBtn) {
       this._addDomListener(this.$.countryCodeBtn, "click", (e) => {
         e.stopPropagation();
-        this.toggleCountryCodeDropdown();
+        this.toggleCountryCodeDropdown("mobile");
+      });
+    }
+
+    if (this.$.giftCountryCodeBtn) {
+      this._addDomListener(this.$.giftCountryCodeBtn, "click", (e) => {
+        e.stopPropagation();
+        this.toggleCountryCodeDropdown("gift");
       });
     }
 
     if (this.$.countryCodeDropdown) {
       this._addDomListener(this.$.countryCodeDropdown, "click", (e) => {
+        const item = e.target.closest("[data-country-iso]");
+        if (!item) return;
+        e.stopPropagation();
+        this.selectCountry(item.getAttribute("data-country-iso"));
+      });
+    }
+
+    if (this.$.giftCountryCodeDropdown) {
+      this._addDomListener(this.$.giftCountryCodeDropdown, "click", (e) => {
         const item = e.target.closest("[data-country-iso]");
         if (!item) return;
         e.stopPropagation();
@@ -853,6 +928,8 @@ export class GoldCoinsExchange {
   }
 
   bindEvents() {
+    this.bindTabEvents();
+    this.bindGiftCardEvents();
     this.bindCountryCodeEvents();
     this.bindHistoryEvents();
 
@@ -926,4 +1003,4 @@ export class GoldCoinsExchange {
 
 }
 
-Object.assign(GoldCoinsExchange.prototype, redeemHistoryMethods);
+Object.assign(GoldCoinsExchange.prototype, redeemHistoryMethods, giftCardRedeemMethods);

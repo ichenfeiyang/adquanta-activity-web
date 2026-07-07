@@ -4,7 +4,9 @@ import {
   __resetRedeemCountryStorageForTests,
   DEFAULT_REDEEM_COUNTRY,
   formatPhoneDisplay,
+  formatRedeemDenomination,
   getInitialRedeemCountry,
+  getRedeemCurrencyForCountry,
   getSavedRedeemCountry,
   resolveRedeemCountry,
   saveRedeemCountry,
@@ -45,4 +47,16 @@ test("saveRedeemCountry persists user selection", () => {
   assert.equal(getSavedRedeemCountry()?.iso, "ID");
   assert.equal(getInitialRedeemCountry().iso, "ID");
   __resetRedeemCountryStorageForTests();
+});
+
+test("getRedeemCurrencyForCountry maps ISO to Tremendous currency", () => {
+  assert.equal(getRedeemCurrencyForCountry("IN").code, "INR");
+  assert.equal(getRedeemCurrencyForCountry("ID").code, "IDR");
+  assert.equal(getRedeemCurrencyForCountry("XX").code, "INR");
+});
+
+test("formatRedeemDenomination formats currency labels", () => {
+  assert.equal(formatRedeemDenomination(100, "INR"), "₹100");
+  assert.equal(formatRedeemDenomination(250000, "IDR"), "Rp250,000");
+  assert.equal(formatRedeemDenomination(10.5, "USD"), "$10.50");
 });

@@ -26,10 +26,19 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
   align-items: center;
   padding: 8px 16px;
   background-color: #f8f6f6;
+}
+
+.redeem-header-title {
+  grid-column: 2;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
 }
 
 .redeem-back-btn {
@@ -37,8 +46,8 @@ body {
   height: 32px;
   border-radius: 999px;
   border: none;
-  background-color: rgba(148, 163, 184, 0.15);
-  color: #374151;
+  background-color: rgba(236, 91, 19, 0.12);
+  color: #ec5b13;
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -62,15 +71,44 @@ body {
   margin-bottom: 10px;
 }
 
+.redeem-section-title--compact {
+  margin-bottom: 12px;
+}
+
 .redeem-wallet-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 18px 16px;
   border-radius: 16px;
   background: linear-gradient(135deg, #ec5b13, #f97316);
   box-shadow: 0 14px 30px rgba(236, 91, 19, 0.4);
   color: #ffffff;
+}
+
+.redeem-wallet-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.redeem-wallet-top-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.redeem-wallet-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.redeem-wallet-local {
+  font-size: 12px;
+  opacity: 0.9;
 }
 
 .redeem-wallet-left {
@@ -85,8 +123,9 @@ body {
 }
 
 .redeem-wallet-value {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
+  line-height: 1.1;
 }
 
 .redeem-wallet-unit {
@@ -244,6 +283,52 @@ body {
   color: #111827;
   position: relative;
   z-index: 1;
+}
+
+.redeem-input--full {
+  padding: 0 12px;
+}
+
+.redeem-label--spaced {
+  margin-top: 4px;
+}
+
+.redeem-field-hint {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #9ca3af;
+}
+
+.redeem-gift-delivery-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  margin-top: 4px;
+  border-radius: 10px;
+  background-color: #eef2f7;
+}
+
+.redeem-gift-delivery-tab {
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.redeem-gift-delivery-tab--active {
+  background-color: #ffffff;
+  color: #ec5b13;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.redeem-gift-delivery-panel {
+  margin-top: 2px;
 }
 
 .redeem-input:focus {
@@ -569,5 +654,203 @@ body {
 @media (max-width: 414px) {
   .redeem-root {
     max-width: 100%;
+  }
+}
+
+.redeem-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background-color: #e5e7eb;
+}
+
+.redeem-tab {
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.redeem-tab--active {
+  background-color: #ffffff;
+  color: #ec5b13;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.redeem-tab-panel {
+  margin-top: 4px;
+}
+
+.redeem-tab-panel--hidden {
+  display: none;
+}
+
+.redeem-featured-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.redeem-featured-head .redeem-section-title {
+  margin-bottom: 0;
+}
+
+.redeem-featured-icon {
+  color: #ec5b13;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.redeem-brand-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.redeem-brand-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.redeem-brand-btn {
+  flex: 0 0 auto;
+  min-width: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 1.5px solid #e5e7eb;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.redeem-brand-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+}
+
+.redeem-brand-btn--active .redeem-brand-name {
+  color: #ec5b13;
+}
+
+.redeem-brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.redeem-brand-logo {
+  width: 76px;
+  height: 48px;
+  border-radius: 8px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.redeem-brand-icon--amazon {
+  background: rgba(236, 91, 19, 0.12);
+}
+
+.redeem-brand-icon--flipkart {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.redeem-brand-icon--google {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.redeem-brand-icon--default {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.redeem-brand-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+.redeem-gift-amount-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.redeem-gift-amount-btn {
+  min-height: 68px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
+}
+
+.redeem-gift-amount-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+}
+
+.redeem-gift-amount-main {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.redeem-gift-amount-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.redeem-gift-amount-cost .redeem-amount-coin-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.redeem-empty-hint {
+  padding: 16px 12px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px dashed #e5e7eb;
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.redeem-gift-history-section {
+  margin-top: 24px;
+}
+
+@media (max-width: 380px) {
+  .redeem-gift-amount-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

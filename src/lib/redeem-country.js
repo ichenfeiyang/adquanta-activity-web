@@ -45,6 +45,41 @@ export function getInitialRedeemCountry() {
   return getSavedRedeemCountry() ?? DEFAULT_REDEEM_COUNTRY;
 }
 
+/** ISO 3166-1 alpha-2 → Tremendous currency + display symbol */
+export const REDEEM_COUNTRY_CURRENCIES = {
+  IN: { code: "INR", symbol: "₹" },
+  ID: { code: "IDR", symbol: "Rp" },
+  PH: { code: "PHP", symbol: "₱" },
+  PK: { code: "PKR", symbol: "Rs" },
+  BD: { code: "BDT", symbol: "৳" },
+  NP: { code: "NPR", symbol: "Rs" },
+  US: { code: "USD", symbol: "$" },
+};
+
+export function getRedeemCurrencyForCountry(iso) {
+  const code = String(iso || "")
+    .trim()
+    .toUpperCase();
+  return REDEEM_COUNTRY_CURRENCIES[code] || REDEEM_COUNTRY_CURRENCIES.IN;
+}
+
+export function getCurrencyDisplayByCode(currencyCode) {
+  const code = String(currencyCode || "").toUpperCase();
+  const entry = Object.values(REDEEM_COUNTRY_CURRENCIES).find((item) => item.code === code);
+  return entry || { code, symbol: code ? `${code} ` : "" };
+}
+
+export function formatRedeemDenomination(amount, currencyCode = "") {
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return String(amount ?? "");
+  const { code, symbol } = getCurrencyDisplayByCode(currencyCode);
+  if (code === "IDR") {
+    return `${symbol}${Math.round(value).toLocaleString("en-US")}`;
+  }
+  const formatted = Number.isInteger(value) ? String(value) : value.toFixed(2);
+  return `${symbol}${formatted}`;
+}
+
 export function formatPhoneDisplay(phoneRaw = "") {
   const digits = String(phoneRaw || "").replace(/\D/g, "");
   if (!digits) return "-";
