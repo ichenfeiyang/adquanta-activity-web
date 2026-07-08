@@ -124,15 +124,10 @@ export class GoldCoinsExchange {
       giftAmountSection: "giftAmountSection",
       giftAmountGrid: "giftAmountGrid",
       giftRecipientSection: "giftRecipientSection",
-      giftDeliveryEmail: "giftDeliveryEmail",
-      giftDeliveryPhone: "giftDeliveryPhone",
-      giftRecipientEmailField: "giftRecipientEmailField",
-      giftRecipientPhoneField: "giftRecipientPhoneField",
-      giftCountryCodeBtn: "giftCountryCodeBtn",
-      giftCountryCodeDropdown: "giftCountryCodeDropdown",
+      giftRecipientSkeleton: "giftRecipientSkeleton",
+      giftRecipientForm: "giftRecipientForm",
       inputGiftRecipientName: "inputGiftRecipientName",
       inputGiftRecipientEmail: "inputGiftRecipientEmail",
-      inputGiftRecipientPhone: "inputGiftRecipientPhone",
       btnGiftRedeem: "btnGiftRedeem",
       giftRedeemSummary: "giftRedeemSummary",
       giftHistoryList: "giftHistoryList",
@@ -201,7 +196,6 @@ export class GoldCoinsExchange {
   refreshCountryCodeUI() {
     this.updateCountryCodeBtnView();
     this.renderCountryCodeDropdown(this.$.countryCodeDropdown);
-    this.renderCountryCodeDropdown(this.$.giftCountryCodeDropdown);
   }
 
   getChargesLookupKey(mobile) {
@@ -212,18 +206,11 @@ export class GoldCoinsExchange {
     this._countryDropdownOpen = isOpen;
     this._countryDropdownTarget = isOpen ? target : null;
     const mobileOpen = isOpen && target === "mobile";
-    const giftOpen = isOpen && target === "gift";
     if (this.$.countryCodeDropdown) {
       this.$.countryCodeDropdown.hidden = !mobileOpen;
     }
-    if (this.$.giftCountryCodeDropdown) {
-      this.$.giftCountryCodeDropdown.hidden = !giftOpen;
-    }
     if (this.$.countryCodeBtn) {
       this.$.countryCodeBtn.setAttribute("aria-expanded", mobileOpen ? "true" : "false");
-    }
-    if (this.$.giftCountryCodeBtn) {
-      this.$.giftCountryCodeBtn.setAttribute("aria-expanded", giftOpen ? "true" : "false");
     }
   }
 
@@ -239,17 +226,10 @@ export class GoldCoinsExchange {
   updateCountryCodeBtnView() {
     const country = resolveRedeemCountry(this.state.countryCodeEnum);
     this.renderCountryCodeButton(country, this.$.countryCodeBtn);
-    this.renderCountryCodeButton(country, this.$.giftCountryCodeBtn);
     if (this.$.countryCodeBtn) {
       this.$.countryCodeBtn.setAttribute(
         "aria-expanded",
         this._countryDropdownOpen && this._countryDropdownTarget === "mobile" ? "true" : "false",
-      );
-    }
-    if (this.$.giftCountryCodeBtn) {
-      this.$.giftCountryCodeBtn.setAttribute(
-        "aria-expanded",
-        this._countryDropdownOpen && this._countryDropdownTarget === "gift" ? "true" : "false",
       );
     }
   }
@@ -274,13 +254,12 @@ export class GoldCoinsExchange {
     }).join("");
   }
 
-  toggleCountryCodeDropdown(target = "mobile") {
-    const nextTarget = target === "gift" ? "gift" : "mobile";
-    if (this._countryDropdownOpen && this._countryDropdownTarget === nextTarget) {
+  toggleCountryCodeDropdown() {
+    if (this._countryDropdownOpen && this._countryDropdownTarget === "mobile") {
       this.closeCountryCodeDropdown();
       return;
     }
-    this.setCountryDropdownOpen(true, nextTarget);
+    this.setCountryDropdownOpen(true, "mobile");
   }
 
   closeCountryCodeDropdown() {
@@ -892,28 +871,12 @@ export class GoldCoinsExchange {
     if (this.$.countryCodeBtn) {
       this._addDomListener(this.$.countryCodeBtn, "click", (e) => {
         e.stopPropagation();
-        this.toggleCountryCodeDropdown("mobile");
-      });
-    }
-
-    if (this.$.giftCountryCodeBtn) {
-      this._addDomListener(this.$.giftCountryCodeBtn, "click", (e) => {
-        e.stopPropagation();
-        this.toggleCountryCodeDropdown("gift");
+        this.toggleCountryCodeDropdown();
       });
     }
 
     if (this.$.countryCodeDropdown) {
       this._addDomListener(this.$.countryCodeDropdown, "click", (e) => {
-        const item = e.target.closest("[data-country-iso]");
-        if (!item) return;
-        e.stopPropagation();
-        this.selectCountry(item.getAttribute("data-country-iso"));
-      });
-    }
-
-    if (this.$.giftCountryCodeDropdown) {
-      this._addDomListener(this.$.giftCountryCodeDropdown, "click", (e) => {
         const item = e.target.closest("[data-country-iso]");
         if (!item) return;
         e.stopPropagation();

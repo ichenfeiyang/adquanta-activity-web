@@ -19,10 +19,8 @@ import {
 const GIFT_TAB = "gift";
 const TOPUP_TAB = "topup";
 const GIFT_DELIVERY_EMAIL = "EMAIL";
-const GIFT_DELIVERY_PHONE = "PHONE";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
 
 function isApiEnvelopeOk(res) {
   return res?.code === 200 || res?.code === 0;
@@ -65,6 +63,30 @@ function buildGiftAmountButtonHtml(item, currencyCode) {
     </button>`;
 }
 
+const GIFT_BRAND_SKELETON_COUNT = 5;
+const GIFT_AMOUNT_SKELETON_COUNT = 6;
+
+function buildBrandSkeletonCardHtml() {
+  return `<div class="redeem-brand-btn redeem-skeleton-card" aria-hidden="true">
+    <div class="redeem-skeleton-block redeem-skeleton-brand-logo"></div>
+    <div class="redeem-skeleton-block redeem-skeleton-brand-name"></div>
+  </div>`;
+}
+
+function buildGiftAmountSkeletonCardHtml() {
+  return `<div class="redeem-gift-amount-btn redeem-skeleton-card" aria-hidden="true">
+    <div class="redeem-skeleton-block redeem-skeleton-amount-main"></div>
+    <div class="redeem-skeleton-block redeem-skeleton-amount-cost"></div>
+  </div>`;
+}
+
+function buildRecipientSkeletonHtml() {
+  return `<div class="redeem-skeleton-block redeem-skeleton-label"></div>
+    <div class="redeem-skeleton-block redeem-skeleton-input"></div>
+    <div class="redeem-skeleton-block redeem-skeleton-label redeem-skeleton-label--short"></div>
+    <div class="redeem-skeleton-block redeem-skeleton-input"></div>`;
+}
+
 function getSelectedProduct(ctx) {
   const productId = ctx.giftState.productId;
   if (!productId) return null;
@@ -79,57 +101,24 @@ function getRecipientEmail(ctx) {
   return String(ctx.$.inputGiftRecipientEmail?.value || "").trim();
 }
 
-function getRecipientPhoneLocal(ctx) {
-  return String(ctx.$.inputGiftRecipientPhone?.value || "").trim();
-}
-
-function formatRecipientPhoneE164(ctx) {
-  const raw = getRecipientPhoneLocal(ctx);
-  if (!raw) return "";
-  if (raw.startsWith("+")) {
-    const digits = raw.replace(/\D/g, "");
-    return digits ? `+${digits}` : "";
-  }
-  const localDigits = raw.replace(/\D/g, "");
-  if (!localDigits) return "";
-  const dialDigits = resolveRedeemCountry(ctx.state?.countryCodeEnum).dialCode.replace(/\D/g, "");
-  return `+${dialDigits}${localDigits}`;
-}
-
 function isValidRecipientEmail(email) {
   return !!email && EMAIL_PATTERN.test(email);
 }
 
-function isValidRecipientPhoneE164(phone) {
-  return !!phone && E164_PATTERN.test(phone);
-}
-
 function hasValidGiftContact(ctx) {
-  const method = ctx.giftState.deliveryMethod === GIFT_DELIVERY_PHONE ? GIFT_DELIVERY_PHONE : GIFT_DELIVERY_EMAIL;
-  if (method === GIFT_DELIVERY_PHONE) {
-    return isValidRecipientPhoneE164(formatRecipientPhoneE164(ctx));
-  }
   return isValidRecipientEmail(getRecipientEmail(ctx));
 }
 
 function buildGiftRedeemPayload(ctx, denomination) {
-  const recipientName = getRecipientName(ctx);
-  const method = ctx.giftState.deliveryMethod === GIFT_DELIVERY_PHONE ? GIFT_DELIVERY_PHONE : GIFT_DELIVERY_EMAIL;
-  const payload = {
+  return {
     product_id: ctx.giftState.productId,
     denomination: denomination.denomination,
     currency_code: ctx.tremendousInfo.currencyCode,
-    recipient_name: recipientName,
-    delivery_method: method,
-    recipient_email: "",
+    recipient_name: getRecipientName(ctx),
+    delivery_method: GIFT_DELIVERY_EMAIL,
+    recipient_email: getRecipientEmail(ctx),
     recipient_phone: "",
   };
-  if (method === GIFT_DELIVERY_EMAIL) {
-    payload.recipient_email = getRecipientEmail(ctx);
-  } else {
-    payload.recipient_phone = formatRecipientPhoneE164(ctx);
-  }
-  return payload;
 }
 
 export const giftCardRedeemMethods = {
@@ -146,15 +135,49 @@ export const giftCardRedeemMethods = {
       productId: null,
       selectedDenomination: null,
       spendCoin: 0,
-      deliveryMethod: GIFT_DELIVERY_EMAIL,
     };
     this.giftExchangeLoading = false;
     this.giftCatalogLoading = false;
     this.giftValidateLoading = false;
     this.giftRecordsLoading = false;
     this.walletLocalCurrency = getRedeemCurrencyForCountry(this.state?.countryCodeEnum).symbol;
-    this.setGiftDeliveryMethod(GIFT_DELIVERY_EMAIL, { skipUpdate: true });
+    this.showGiftCatalogSkeleton();
     this.setActiveRedeemTab(GIFT_TAB, { skipLoad: true });
+  },
+
+  showGiftCatalogSkeleton() {
+    const loadingLabel = t("redeem.loadingGiftCatalog");
+    if (this.$.giftBrandGrid) {
+      this.$.giftBrandGrid.innerHTML = Array.from({ length: GIFT_BRAND_SKELETON_COUNT }, () =>
+        buildBrandSkeletonCardHtml(),
+      ).join("");
+      this.$.giftBrandGrid.setAttribute("aria-busy", "true");
+      this.$.giftBrandGrid.setAttribute("aria-label", loadingLabel);
+    }
+    if (this.$.giftAmountSection) this.$.giftAmountSection.hidden = false;
+    if (this.$.giftAmountGrid) {
+      this.$.giftAmountGrid.innerHTML = Array.from({ length: GIFT_AMOUNT_SKELETON_COUNT }, () =>
+        buildGiftAmountSkeletonCardHtml(),
+      ).join("");
+    }
+    this.showGiftRecipientSkeleton();
+  },
+
+  showGiftRecipientSkeleton() {
+    if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = false;
+    if (this.$.giftRecipientSkeleton) {
+      this.$.giftRecipientSkeleton.hidden = false;
+      this.$.giftRecipientSkeleton.innerHTML = buildRecipientSkeletonHtml();
+    }
+    if (this.$.giftRecipientForm) this.$.giftRecipientForm.hidden = true;
+  },
+
+  hideGiftRecipientSkeleton() {
+    if (this.$.giftRecipientSkeleton) {
+      this.$.giftRecipientSkeleton.hidden = true;
+      this.$.giftRecipientSkeleton.innerHTML = "";
+    }
+    if (this.$.giftRecipientForm) this.$.giftRecipientForm.hidden = false;
   },
 
   resetGiftCatalog() {
@@ -167,38 +190,8 @@ export const giftCardRedeemMethods = {
       productId: null,
       selectedDenomination: null,
       spendCoin: 0,
-      deliveryMethod: GIFT_DELIVERY_EMAIL,
     };
-    this.renderGiftBrandGrid([]);
-    if (this.$.giftAmountSection) this.$.giftAmountSection.hidden = true;
-    if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = true;
-    if (this.$.giftAmountGrid) this.$.giftAmountGrid.innerHTML = "";
-    this.setGiftDeliveryMethod(GIFT_DELIVERY_EMAIL, { skipUpdate: true });
-    this.updateGiftRedeemState();
-  },
-
-  setGiftDeliveryMethod(method, options = {}) {
-    const nextMethod = method === GIFT_DELIVERY_PHONE ? GIFT_DELIVERY_PHONE : GIFT_DELIVERY_EMAIL;
-    this.giftState.deliveryMethod = nextMethod;
-    const isEmail = nextMethod === GIFT_DELIVERY_EMAIL;
-
-    if (this.$.giftDeliveryEmail) {
-      this.$.giftDeliveryEmail.classList.toggle("redeem-gift-delivery-tab--active", isEmail);
-      this.$.giftDeliveryEmail.setAttribute("aria-selected", isEmail ? "true" : "false");
-    }
-    if (this.$.giftDeliveryPhone) {
-      this.$.giftDeliveryPhone.classList.toggle("redeem-gift-delivery-tab--active", !isEmail);
-      this.$.giftDeliveryPhone.setAttribute("aria-selected", !isEmail ? "true" : "false");
-    }
-    if (this.$.giftRecipientEmailField) {
-      this.$.giftRecipientEmailField.hidden = !isEmail;
-    }
-    if (this.$.giftRecipientPhoneField) {
-      this.$.giftRecipientPhoneField.hidden = isEmail;
-    }
-    if (!options.skipUpdate) {
-      this.updateGiftRedeemState();
-    }
+    this.resetGiftAmountUI();
   },
 
   getTremendousQueryParams() {
@@ -285,27 +278,6 @@ export const giftCardRedeemMethods = {
     if (this.$.inputGiftRecipientEmail) {
       this._addDomListener(this.$.inputGiftRecipientEmail, "input", onRecipientInput);
     }
-    if (this.$.inputGiftRecipientPhone) {
-      this._addDomListener(this.$.inputGiftRecipientPhone, "input", (e) => {
-        e.target.value = String(e.target.value || "").replace(/\D/g, "").trim();
-        onRecipientInput();
-      });
-    }
-
-    if (this.$.giftDeliveryEmail) {
-      this._addDomListener(this.$.giftDeliveryEmail, "click", () => {
-        if (this.giftState.deliveryMethod !== GIFT_DELIVERY_EMAIL) {
-          this.setGiftDeliveryMethod(GIFT_DELIVERY_EMAIL);
-        }
-      });
-    }
-    if (this.$.giftDeliveryPhone) {
-      this._addDomListener(this.$.giftDeliveryPhone, "click", () => {
-        if (this.giftState.deliveryMethod !== GIFT_DELIVERY_PHONE) {
-          this.setGiftDeliveryMethod(GIFT_DELIVERY_PHONE);
-        }
-      });
-    }
 
     if (this.$.btnGiftRedeem) {
       this._addDomListener(this.$.btnGiftRedeem, "click", () => {
@@ -335,12 +307,10 @@ export const giftCardRedeemMethods = {
   async loadGiftCatalog() {
     if (this.giftCatalogLoading) return;
     this.giftCatalogLoading = true;
-    const query = this.getTremendousQueryParams();
-    if (this.$.giftBrandGrid) {
-      this.$.giftBrandGrid.innerHTML = `<div class="redeem-empty-hint">${escapeHtml(t("common.loading"))}</div>`;
-    }
+    this.showGiftCatalogSkeleton();
 
     try {
+      const query = this.getTremendousQueryParams();
       const res = await getTremendousProducts(this.config.apiOptions, {
         country_code: query.country_code,
         currency_code: query.currency_code,
@@ -358,6 +328,7 @@ export const giftCardRedeemMethods = {
       this.updateWalletLocalHint();
     } catch (error) {
       logger.warn("[Tremendous] Failed to load catalog", error?.message || error);
+      const query = this.getTremendousQueryParams();
       this.tremendousInfo = {
         countryCode: query.country_code,
         currencyCode: query.currency_code,
@@ -377,6 +348,8 @@ export const giftCardRedeemMethods = {
   renderGiftBrandGrid(products) {
     const grid = this.$.giftBrandGrid;
     if (!grid) return;
+    grid.removeAttribute("aria-busy");
+    grid.setAttribute("aria-label", t("redeem.selectBrand"));
     const list = Array.isArray(products) ? products : [];
     if (!list.length) {
       grid.innerHTML = `<div class="redeem-empty-hint">${escapeHtml(t("redeem.giftBrandsEmpty"))}</div>`;
@@ -401,6 +374,7 @@ export const giftCardRedeemMethods = {
     if (this.$.giftAmountSection) this.$.giftAmountSection.hidden = true;
     if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = true;
     if (this.$.giftAmountGrid) this.$.giftAmountGrid.innerHTML = "";
+    this.hideGiftRecipientSkeleton();
     this.updateGiftRedeemState();
   },
 
@@ -418,6 +392,7 @@ export const giftCardRedeemMethods = {
 
     if (this.$.giftAmountSection) this.$.giftAmountSection.hidden = false;
     if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = false;
+    this.hideGiftRecipientSkeleton();
     this.renderGiftAmountGrid(product.denominations || []);
     this.updateGiftRedeemState();
   },
@@ -446,6 +421,7 @@ export const giftCardRedeemMethods = {
 
     if (this.giftValidateLoading) return;
     this.giftValidateLoading = true;
+    buttonEl?.classList.add("redeem-gift-amount-btn--validating");
     try {
       const res = await postTremendousValidate(this.config.apiOptions, {
         product_id: this.giftState.productId,
@@ -467,6 +443,7 @@ export const giftCardRedeemMethods = {
       this.config.onExchangeFailed(error?.message || t("redeem.giftValidateFailed"));
     } finally {
       this.giftValidateLoading = false;
+      buttonEl?.classList.remove("redeem-gift-amount-btn--validating");
       this.updateGiftRedeemState();
     }
   },
@@ -618,10 +595,7 @@ export const giftCardRedeemMethods = {
     }
 
     if (!hasValidGiftContact(this)) {
-      const method = this.giftState.deliveryMethod === GIFT_DELIVERY_PHONE ? GIFT_DELIVERY_PHONE : GIFT_DELIVERY_EMAIL;
-      this.config.onExchangeFailed(
-        method === GIFT_DELIVERY_PHONE ? t("redeem.recipientPhoneRequired") : t("redeem.recipientEmailRequired"),
-      );
+      this.config.onExchangeFailed(t("redeem.recipientEmailRequired"));
       return;
     }
 

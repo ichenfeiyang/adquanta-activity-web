@@ -300,37 +300,6 @@ body {
   color: #9ca3af;
 }
 
-.redeem-gift-delivery-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 3px;
-  margin-top: 4px;
-  border-radius: 10px;
-  background-color: #eef2f7;
-}
-
-.redeem-gift-delivery-tab {
-  height: 36px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
-}
-
-.redeem-gift-delivery-tab--active {
-  background-color: #ffffff;
-  color: #ec5b13;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-}
-
-.redeem-gift-delivery-panel {
-  margin-top: 2px;
-}
-
 .redeem-input:focus {
   outline: none;
   border-color: #ec5b13;
@@ -843,6 +812,88 @@ body {
   font-size: 13px;
   color: #9ca3af;
   text-align: center;
+}
+
+/* Gift catalog loading skeleton */
+@keyframes redeem-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.redeem-skeleton-card {
+  pointer-events: none;
+  cursor: default;
+  border-color: #eef2f7;
+  background-color: #ffffff;
+}
+
+.redeem-skeleton-block {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eef2f7 0%, #f8fafc 50%, #eef2f7 100%);
+  background-size: 200% 100%;
+  animation: redeem-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes redeem-skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.redeem-skeleton-brand-logo {
+  width: 76px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.redeem-skeleton-brand-name {
+  width: 72px;
+  height: 12px;
+}
+
+.redeem-brand-btn.redeem-skeleton-card {
+  min-width: 108px;
+  animation: redeem-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.redeem-skeleton-amount-main {
+  width: 56px;
+  height: 14px;
+}
+
+.redeem-skeleton-amount-cost {
+  width: 40px;
+  height: 12px;
+}
+
+.redeem-gift-amount-btn.redeem-skeleton-card {
+  animation: redeem-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.redeem-gift-amount-btn--validating {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.redeem-gift-recipient-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.redeem-skeleton-label {
+  width: 120px;
+  height: 12px;
+}
+
+.redeem-skeleton-label--short {
+  width: 96px;
+  margin-top: 4px;
+}
+
+.redeem-skeleton-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
 }
 
 .redeem-gift-history-section {

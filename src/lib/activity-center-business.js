@@ -19,6 +19,22 @@ export function getDailyAdLimitMessage() {
   return dailyAdLimitMessage();
 }
 
+function normalizeActivityTasks(data) {
+  const raw = data?.tasks;
+  return Array.isArray(raw) ? raw : [];
+}
+
+function normalizeWalletCoin(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 /**
  * 活动中心业务逻辑层
  * 负责：用户资产管理、任务状态管理、业务流程处理
@@ -106,11 +122,11 @@ export class ActivityCenterBusiness {
   }
 
   buildActivityInfoFingerprint(d) {
-    const tasks = Array.isArray(d?.tasks) ? d.tasks : [];
+    const tasks = normalizeActivityTasks(d);
     const checkin = tasks.find((task) => task.type === "checkin")?.detail ?? null;
     const video = tasks.find((task) => task.type === "video")?.detail ?? null;
     return JSON.stringify({
-      coin: d?.wallet_info?.coin ?? null,
+      coin: normalizeWalletCoin(d?.wallet_info?.coin),
       userId: d?.user_info?.user_id ?? null,
       checkin,
       video,
@@ -122,66 +138,76 @@ export class ActivityCenterBusiness {
     if (fingerprint === this._lastActivityInfoFingerprint) {
       return;
     }
-    this._lastActivityInfoFingerprint = fingerprint;
 
     let hasCheckinTask = false;
     let hasVideoTask = false;
+    let applied = false;
 
     this.checkinDetail = null;
     this.adTaskStatus = this.createEmptyAdTaskStatus();
 
-    if (d.user_info != null && d.user_info.user_id != null) {
-      this.userId = d.user_info.user_id;
-    }
-    if (d.wallet_info != null && typeof d.wallet_info.coin === "number") {
-      this.userAssets.goldCoins = d.wallet_info.coin;
-      this.config.onAssetsUpdate(this.userAssets);
-    }
+    try {
+      if (d.user_info != null && d.user_info.user_id != null) {
+        this.userId = d.user_info.user_id;
+      }
+      const coin = normalizeWalletCoin(d?.wallet_info?.coin);
+      if (coin != null) {
+        this.userAssets.goldCoins = coin;
+        this.config.onAssetsUpdate(this.userAssets);
+      }
 
-    const tasks = Array.isArray(d.tasks) ? d.tasks : [];
-    for (const task of tasks) {
-      if (task.type === "checkin" && task.detail != null) {
-        hasCheckinTask = true;
-        this.checkinDetail = task.detail;
-        this.config.onCheckinUpdate(task.detail);
+      const tasks = normalizeActivityTasks(d);
+      for (const task of tasks) {
+        if (task.type === "checkin" && task.detail != null) {
+          hasCheckinTask = true;
+          this.checkinDetail = task.detail;
+          this.config.onCheckinUpdate(task.detail);
+        }
+        if (task.type === "video" && task.detail != null) {
+          hasVideoTask = true;
+          const v = task.detail;
+          const dailyLimit = v.daily_limit ?? 0;
+          const todayWatched = v.today_watched ?? 0;
+          const remain =
+            typeof v.remain_count === "number"
+              ? v.remain_count
+              : Math.max(0, dailyLimit - todayWatched);
+          const roulette =
+            v.roulette != null && typeof v.roulette === "object" ? { ...v.roulette } : null;
+          this.adTaskStatus = {
+            completed: todayWatched,
+            daily_limit: dailyLimit,
+            reward: v.coin ?? 0,
+            remain_count: remain,
+            roulette,
+          };
+          this.config.onTaskUpdate({ watchAd: this.adTaskStatus });
+        }
       }
-      if (task.type === "video" && task.detail != null) {
-        hasVideoTask = true;
-        const v = task.detail;
-        const dailyLimit = v.daily_limit ?? 0;
-        const todayWatched = v.today_watched ?? 0;
-        const remain =
-          typeof v.remain_count === "number"
-            ? v.remain_count
-            : Math.max(0, dailyLimit - todayWatched);
-        const roulette =
-          v.roulette != null && typeof v.roulette === "object" ? { ...v.roulette } : null;
-        this.adTaskStatus = {
-          completed: todayWatched,
-          daily_limit: dailyLimit,
-          reward: v.coin ?? 0,
-          remain_count: remain,
-          roulette,
-        };
-        this.config.onTaskUpdate({ watchAd: this.adTaskStatus });
+      if (!hasCheckinTask) {
+        this.config.onCheckinUpdate(null);
+      }
+      if (!hasVideoTask) {
+        this.config.onTaskUpdate({ watchAd: null });
+      }
+      applied = true;
+      logger.log("[Activity API] Using response data\n", {
+        user_id: this.userId,
+        goldCoins: this.userAssets.goldCoins,
+        checkin: hasCheckinTask,
+        watchAd: hasVideoTask ? this.adTaskStatus : null,
+      });
+    } catch (error) {
+      logger.error("[Activity API] Failed to apply activity info UI", error);
+    } finally {
+      this.config.onFeatureVisibilityUpdate({
+        checkin: hasCheckinTask,
+        video: hasVideoTask,
+      });
+      if (applied) {
+        this._lastActivityInfoFingerprint = fingerprint;
       }
     }
-    if (!hasCheckinTask) {
-      this.config.onCheckinUpdate(null);
-    }
-    if (!hasVideoTask) {
-      this.config.onTaskUpdate({ watchAd: null });
-    }
-    this.config.onFeatureVisibilityUpdate({
-      checkin: hasCheckinTask,
-      video: hasVideoTask,
-    });
-    logger.log("[Activity API] Using response data\n", {
-      user_id: this.userId,
-      goldCoins: this.userAssets.goldCoins,
-      checkin: hasCheckinTask,
-      watchAd: hasVideoTask ? this.adTaskStatus : null,
-    });
   }
 
   /**

@@ -113,11 +113,20 @@ export class ActivityCenterUI {
   }
 
   getCheckinSectionEl() {
-    return this.resolveSectionElement(this.elements.checkinSection, ".tc-checkin-card");
+    return this.resolveSectionElement(this.elements.dailyCheckinSection, ".tc-checkin-card");
   }
 
+  getFlowSectionEl() {
+    return this.elements.videoTaskSection || document.getElementById("tc-video-task-section");
+  }
+
+  getLuckySpinSectionEl() {
+    return this.resolveSectionElement(this.elements.luckySpinSection, ".tc-video-card");
+  }
+
+  /** Lucky spin / daily video task card (not the static flow intro). */
   getVideoTaskSectionEl() {
-    return this.resolveSectionElement(this.elements.videoTaskSection, ".tc-video-card");
+    return this.getLuckySpinSectionEl();
   }
 
   updateFeatureVisibility(visibility = {}) {
@@ -128,16 +137,16 @@ export class ActivityCenterUI {
     const balanceSection = this.elements.checkinSection || document.getElementById("tc-checkin-section");
     if (balanceSection) balanceSection.style.display = "";
 
+    // Static flow intro: always visible so CDN first paint is not a blank page.
+    const flowSection = this.getFlowSectionEl();
+    if (flowSection) flowSection.style.display = "";
+
     // Daily check-in card: show only when checkin task exists
-    const dailyCheckinSection = this.elements.dailyCheckinSection || document.getElementById("tc-daily-checkin-section");
+    const dailyCheckinSection = this.getCheckinSectionEl();
     if (dailyCheckinSection) dailyCheckinSection.style.display = showCheckin ? "" : "none";
 
-    // Flow intro card: show only when video task exists
-    const videoSection = this.getVideoTaskSectionEl();
-    if (videoSection) videoSection.style.display = showVideo ? "" : "none";
-
     // Lucky spin task card: show only when video task exists
-    const luckySection = this.elements.luckySpinSection || document.getElementById("tc-lucky-spin-section");
+    const luckySection = this.getLuckySpinSectionEl();
     if (luckySection) luckySection.style.display = showVideo ? "" : "none";
   }
 
@@ -145,8 +154,8 @@ export class ActivityCenterUI {
    * Show default shell immediately before /activity/info returns.
    */
   renderInitialShell() {
-    // Show wallet/redeem immediately; task modules appear only after /activity/info confirms them.
-    this.updateFeatureVisibility({ checkin: false, video: false });
+    // Show safe defaults immediately; /activity/info refines visibility and data.
+    this.updateFeatureVisibility({ checkin: true, video: true });
     this.updateAssets({ goldCoins: 0 });
     this.updateCheckin(null);
     this.renderTurntableFromCoins(this.spinPrizePool);

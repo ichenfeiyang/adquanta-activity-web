@@ -74,44 +74,24 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
           <div id="giftBrandGrid" class="redeem-brand-grid" role="listbox" :aria-label="t('redeem.selectBrand')" />
         </div>
 
-        <div id="giftAmountSection" class="redeem-field" hidden>
+        <div id="giftAmountSection" class="redeem-field">
           <label class="redeem-label">{{ t('redeem.selectVoucherValue') }}</label>
           <div id="giftAmountGrid" class="redeem-gift-amount-grid" />
         </div>
 
-        <div id="giftRecipientSection" class="redeem-field" hidden>
-          <label class="redeem-label" for="inputGiftRecipientName">{{ t('redeem.recipientName') }}</label>
-          <input
-            id="inputGiftRecipientName"
-            class="redeem-input redeem-input--full"
-            type="text"
-            autocomplete="name"
-            :placeholder="t('redeem.recipientNamePlaceholder')"
-          />
+        <div id="giftRecipientSection" class="redeem-field">
+          <div id="giftRecipientSkeleton" class="redeem-gift-recipient-skeleton" hidden />
+          <div id="giftRecipientForm">
+            <label class="redeem-label" for="inputGiftRecipientName">{{ t('redeem.recipientName') }}</label>
+            <input
+              id="inputGiftRecipientName"
+              class="redeem-input redeem-input--full"
+              type="text"
+              autocomplete="name"
+              :placeholder="t('redeem.recipientNamePlaceholder')"
+            />
 
-          <p class="redeem-field-hint">{{ t('redeem.giftDeliveryHint') }}</p>
-          <div class="redeem-gift-delivery-tabs" role="tablist" :aria-label="t('redeem.giftDeliveryMethodLabel')">
-            <button
-              id="giftDeliveryEmail"
-              type="button"
-              class="redeem-gift-delivery-tab redeem-gift-delivery-tab--active"
-              role="tab"
-              aria-selected="true"
-            >
-              {{ t('redeem.giftDeliveryEmail') }}
-            </button>
-            <button
-              id="giftDeliveryPhone"
-              type="button"
-              class="redeem-gift-delivery-tab"
-              role="tab"
-              aria-selected="false"
-            >
-              {{ t('redeem.giftDeliverySms') }}
-            </button>
-          </div>
-
-          <div id="giftRecipientEmailField" class="redeem-gift-delivery-panel">
+            <p class="redeem-field-hint">{{ t('redeem.giftDeliveryHint') }}</p>
             <label class="redeem-label redeem-label--spaced" for="inputGiftRecipientEmail">{{ t('redeem.recipientEmail') }}</label>
             <input
               id="inputGiftRecipientEmail"
@@ -121,34 +101,6 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               inputmode="email"
               :placeholder="t('redeem.recipientEmailPlaceholder')"
             />
-          </div>
-
-          <div id="giftRecipientPhoneField" class="redeem-gift-delivery-panel" hidden>
-            <label class="redeem-label redeem-label--spaced" for="inputGiftRecipientPhone">{{ t('redeem.recipientPhone') }}</label>
-            <div class="redeem-input-wrapper">
-              <button
-                id="giftCountryCodeBtn"
-                type="button"
-                class="redeem-countrycode-btn"
-                :aria-label="t('redeem.countryCode')"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-              >
-                <span class="redeem-countrycode-flag" aria-hidden="true">🇮🇳</span>
-                <span class="redeem-countrycode-dial">+91</span>
-                <span class="redeem-countrycode-chevron" aria-hidden="true">▾</span>
-              </button>
-              <div id="giftCountryCodeDropdown" class="redeem-countrycode-dropdown" role="listbox" hidden />
-              <input
-                id="inputGiftRecipientPhone"
-                class="redeem-input"
-                type="tel"
-                inputmode="numeric"
-                autocomplete="tel"
-                maxlength="15"
-                :placeholder="t('redeem.recipientPhonePlaceholder')"
-              />
-            </div>
           </div>
         </div>
 
