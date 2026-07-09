@@ -65,3 +65,22 @@ export function fingerprintCharges(data) {
     .map((option) => `${option.charges_id ?? ""}:${option.amount ?? ""}:${option.spend_coin ?? ""}`)
     .join("|");
 }
+
+export function fingerprintTremendousCatalog(data) {
+  const products = Array.isArray(data?.products) ? data.products : [];
+  const productKey = products
+    .map((product) => {
+      const denominations = Array.isArray(product?.denominations) ? product.denominations : [];
+      const denominationKey = denominations
+        .map((item) => `${item.denomination ?? ""}:${item.spend_coin ?? ""}`)
+        .join(",");
+      return [
+        product?.product_id ?? "",
+        product?.product_name ?? "",
+        product?.logo_url ?? "",
+        `[${denominationKey}]`,
+      ].join(":");
+    })
+    .join("|");
+  return `${data?.country_code ?? ""}:${data?.currency_code ?? ""}:${productKey}`;
+}

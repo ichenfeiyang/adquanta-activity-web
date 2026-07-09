@@ -70,6 +70,17 @@ async function fetchApi(apiName, url, init = {}) {
   const debug = logger.isDebugEnabled();
   const startedAt = Date.now();
   const requestId = debug ? `${Date.now()}_${Math.random().toString(16).slice(2, 8)}` : "";
+  const timeoutMs = Number(init.timeoutMs || 0);
+  const fetchInit = { ...init };
+  delete fetchInit.timeoutMs;
+  let timeoutId = 0;
+  let timeoutController = null;
+
+  if (timeoutMs > 0 && typeof AbortController !== "undefined") {
+    timeoutController = new AbortController();
+    timeoutId = globalThis.setTimeout(() => timeoutController.abort(), timeoutMs);
+    fetchInit.signal = timeoutController.signal;
+  }
 
   if (debug) {
     const headers = init.headers ? { ...init.headers } : {};
@@ -79,10 +90,10 @@ async function fetchApi(apiName, url, init = {}) {
           {
             requestId,
             api: apiName,
-            method: init.method || "GET",
+            method: fetchInit.method || "GET",
             url,
             headers: maskAuthHeaders(headers),
-            body: typeof init.body === "string" ? init.body : init.body ?? null,
+            body: typeof fetchInit.body === "string" ? fetchInit.body : fetchInit.body ?? null,
           },
           null,
           2,
@@ -92,7 +103,7 @@ async function fetchApi(apiName, url, init = {}) {
 
   let response;
   try {
-    response = await fetchWithRetry(url, init, { onRetry: buildRetryLogger(apiName) });
+    response = await fetchWithRetry(url, fetchInit, { onRetry: buildRetryLogger(apiName) });
   } catch (error) {
     if (debug) {
       logger.error(
@@ -101,6 +112,8 @@ async function fetchApi(apiName, url, init = {}) {
       );
     }
     throw error;
+  } finally {
+    if (timeoutId) globalThis.clearTimeout(timeoutId);
   }
 
   const body = await readResponseBody(response, { preserveOriginal: debug });
@@ -281,6 +294,7 @@ export async function getTremendousProducts(options = {}, params = {}) {
   return fetchApi("getTremendousProducts", url, {
     method: "GET",
     headers: { ...buildAuthHeaders(options) },
+    timeoutMs: params.timeoutMs ?? 4_000,
   });
 }
 

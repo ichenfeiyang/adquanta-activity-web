@@ -7,15 +7,18 @@ import {
   fingerprintActivityInfo,
   fingerprintChargeRecords,
   fingerprintCharges,
+  fingerprintTremendousCatalog,
 } from "./activity-cache-fingerprints.js";
 
 const STORAGE_PREFIX = "activity_page_cache_v1";
 const CHARGES_CACHE_KIND = "chargesByPhoneV2";
+const TREMENDOUS_CATALOG_CACHE_KIND = "tremendousCatalogV1";
 
 export const CACHE_TTL = {
   activityInfo: 30_000,
   chargeRecords: 60_000,
   chargesByPhone: 5 * 60_000,
+  tremendousCatalog: 5 * 60_000,
 };
 
 const memoryCache = new Map();
@@ -198,6 +201,20 @@ export function setChargesCache(token, phoneNumber, data) {
   setCachedData(scopedKey(CHARGES_CACHE_KIND, token, phoneNumber), data, CACHE_TTL.chargesByPhone);
 }
 
+export function getTremendousCatalogCache(token, countryCode, currencyCode) {
+  return getCachedData(
+    scopedKey(TREMENDOUS_CATALOG_CACHE_KIND, token, `${countryCode || ""}:${currencyCode || ""}`),
+  );
+}
+
+export function setTremendousCatalogCache(token, countryCode, currencyCode, data) {
+  setCachedData(
+    scopedKey(TREMENDOUS_CATALOG_CACHE_KIND, token, `${countryCode || ""}:${currencyCode || ""}`),
+    data,
+    CACHE_TTL.tremendousCatalog,
+  );
+}
+
 export async function loadActivityInfoWithSWR(token, { force = false, fetcher, onData }) {
   const cacheKey = scopedKey("activityInfo", token);
   return loadWithSWR({
@@ -243,3 +260,23 @@ export async function loadChargesWithSWR(token, phoneNumber, { force = false, fe
   });
 }
 
+export async function loadTremendousCatalogWithSWR(
+  token,
+  countryCode,
+  currencyCode,
+  { force = false, fetcher, onData },
+) {
+  const suffix = `${countryCode || ""}:${currencyCode || ""}`;
+  const cacheKey = scopedKey(TREMENDOUS_CATALOG_CACHE_KIND, token, suffix);
+  return loadWithSWR({
+    force,
+    cacheKey,
+    dedupeKey: scopedKey(TREMENDOUS_CATALOG_CACHE_KIND, token, `${suffix}:fetch`),
+    fetcher,
+    onData,
+    isValidResponse: (res) => res?.code === 200 && res?.data != null,
+    extractData: (res) => res.data,
+    persist: (data) => setTremendousCatalogCache(token, countryCode, currencyCode, data),
+    fingerprint: fingerprintTremendousCatalog,
+  });
+}

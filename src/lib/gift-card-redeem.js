@@ -3,7 +3,10 @@ import {
   getTremendousRecords,
   postTremendousRedeem,
 } from "./activity-api.js";
-import { patchActivityInfoWalletCoin } from "./activity-page-cache.js";
+import {
+  loadTremendousCatalogWithSWR,
+  patchActivityInfoWalletCoin,
+} from "./activity-page-cache.js";
 import { escapeHtml } from "./escape-html.js";
 import { assetUrl } from "./asset-url.js";
 import * as logger from "./activity-logger.js";
@@ -306,40 +309,57 @@ export const giftCardRedeemMethods = {
     if (this.giftCatalogLoading) return;
     this.giftCatalogLoading = true;
     this.showGiftCatalogSkeleton();
+    const token = this.config.apiOptions?.token || "";
+    const query = this.getTremendousQueryParams();
 
-    try {
-      const query = this.getTremendousQueryParams();
-      const res = await getTremendousProducts(this.config.apiOptions, {
-        country_code: query.country_code,
-        currency_code: query.currency_code,
-      });
-      if (!isApiEnvelopeOk(res)) {
-        throw new Error(res?.message || t("redeem.giftCatalogFailed"));
-      }
-      const data = res?.data || {};
+    const applyCatalog = async (data) => {
       this.tremendousInfo = {
-        countryCode: data.country_code || query.country_code,
-        currencyCode: data.currency_code || query.currency_code,
-        products: Array.isArray(data.products) ? data.products : [],
+        countryCode: data?.country_code || query.country_code,
+        currencyCode: data?.currency_code || query.currency_code,
+        products: Array.isArray(data?.products) ? data.products : [],
       };
       this.walletLocalCurrency = getRedeemCurrencyForCountry(this.tremendousInfo.countryCode).symbol;
       this.updateWalletLocalHint();
-    } catch (error) {
-      logger.warn("[Tremendous] Failed to load catalog", error?.message || error);
-      const query = this.getTremendousQueryParams();
-      this.tremendousInfo = {
-        countryCode: query.country_code,
-        currencyCode: query.currency_code,
-        products: [],
-      };
-    } finally {
-      this.giftCatalogLoading = false;
       this.renderGiftBrandGrid(this.tremendousInfo.products);
       if (this.tremendousInfo.products.length && !this.giftState.productId) {
         await this.selectGiftProduct(this.tremendousInfo.products[0].product_id);
       } else if (!this.tremendousInfo.products.length) {
         this.resetGiftAmountUI();
       }
+    };
+
+    try {
+      let applyPromise = Promise.resolve();
+      const result = await loadTremendousCatalogWithSWR(
+        token,
+        query.country_code,
+        query.currency_code,
+        {
+          fetcher: () =>
+            getTremendousProducts(this.config.apiOptions, {
+              country_code: query.country_code,
+              currency_code: query.currency_code,
+            }),
+          onData: (data) => {
+            applyPromise = applyCatalog(data);
+          },
+        },
+      );
+      if (!result.ok) {
+        throw result.error || new Error(t("redeem.giftCatalogFailed"));
+      }
+      await applyPromise;
+    } catch (error) {
+      logger.warn("[Tremendous] Failed to load catalog", error?.message || error);
+      if (!this.tremendousInfo.products.length) {
+        await applyCatalog({
+          country_code: query.country_code,
+          currency_code: query.currency_code,
+          products: [],
+        });
+      }
+    } finally {
+      this.giftCatalogLoading = false;
     }
   },
 
