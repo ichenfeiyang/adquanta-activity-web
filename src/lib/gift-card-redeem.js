@@ -2,7 +2,6 @@ import {
   getTremendousProducts,
   getTremendousRecords,
   postTremendousRedeem,
-  postTremendousValidate,
 } from "./activity-api.js";
 import { patchActivityInfoWalletCoin } from "./activity-page-cache.js";
 import { escapeHtml } from "./escape-html.js";
@@ -138,7 +137,6 @@ export const giftCardRedeemMethods = {
     };
     this.giftExchangeLoading = false;
     this.giftCatalogLoading = false;
-    this.giftValidateLoading = false;
     this.giftRecordsLoading = false;
     this.walletLocalCurrency = getRedeemCurrencyForCountry(this.state?.countryCodeEnum).symbol;
     this.showGiftCatalogSkeleton();
@@ -409,7 +407,7 @@ export const giftCardRedeemMethods = {
     grid.innerHTML = list.map((item) => buildGiftAmountButtonHtml(item, currencyCode)).join("");
   },
 
-  async selectGiftDenomination(denominationOption, buttonEl) {
+  selectGiftDenomination(denominationOption, buttonEl) {
     this.$.giftAmountGrid
       ?.querySelectorAll(".redeem-gift-amount-btn")
       .forEach((el) => el.classList.remove("redeem-gift-amount-btn--active"));
@@ -418,34 +416,6 @@ export const giftCardRedeemMethods = {
     this.giftState.selectedDenomination = denominationOption;
     this.giftState.spendCoin = Number(denominationOption.spend_coin ?? 0);
     this.updateGiftRedeemState();
-
-    if (this.giftValidateLoading) return;
-    this.giftValidateLoading = true;
-    buttonEl?.classList.add("redeem-gift-amount-btn--validating");
-    try {
-      const res = await postTremendousValidate(this.config.apiOptions, {
-        product_id: this.giftState.productId,
-        denomination: denominationOption.denomination,
-        currency_code: this.tremendousInfo.currencyCode,
-      });
-      const result = res?.data;
-      if (!isApiEnvelopeOk(res) || !result?.success) {
-        throw new Error(result?.message || res?.message || t("redeem.giftValidateFailed"));
-      }
-      if (Number.isFinite(Number(result.spend_coin))) {
-        this.giftState.spendCoin = Number(result.spend_coin);
-      }
-    } catch (error) {
-      logger.warn("[Tremendous] Validate failed", error?.message || error);
-      this.giftState.selectedDenomination = null;
-      this.giftState.spendCoin = 0;
-      buttonEl?.classList.remove("redeem-gift-amount-btn--active");
-      this.config.onExchangeFailed(error?.message || t("redeem.giftValidateFailed"));
-    } finally {
-      this.giftValidateLoading = false;
-      buttonEl?.classList.remove("redeem-gift-amount-btn--validating");
-      this.updateGiftRedeemState();
-    }
   },
 
   updateGiftRedeemState() {
@@ -495,7 +465,6 @@ export const giftCardRedeemMethods = {
       !!recipientName &&
       contactReady &&
       !this.giftExchangeLoading &&
-      !this.giftValidateLoading &&
       !this.giftCatalogLoading;
 
     if (btn) {
