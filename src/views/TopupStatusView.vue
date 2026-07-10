@@ -9,7 +9,7 @@ import { useI18n } from "../composables/useI18n.js";
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
-const { returnToActivityCenter, navigateBackOrActivityCenter } = useActivityBackNavigation();
+const { returnToMobileTopup } = useActivityBackNavigation();
 
 useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
   logTag: "TopupStatus",
@@ -21,7 +21,7 @@ useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
 <template>
   <div class="ts-root" data-status="pending">
     <header id="tsHeader" class="ts-header">
-      <button id="tsBackBtn" type="button" class="ts-back-btn" :aria-label="t('common.back')" @click="navigateBackOrActivityCenter">←</button>
+      <button id="tsBackBtn" type="button" class="ts-back-btn" :aria-label="t('common.back')" @click="returnToMobileTopup">←</button>
     </header>
 
     <main class="ts-main">
@@ -61,7 +61,7 @@ useLazyActivityPage(ROUTE_NAMES.TOPUP_STATUS, {
         </div>
       </section>
 
-      <button id="tsReturnBtn" type="button" class="ts-secondary-btn" @click="returnToActivityCenter">
+      <button id="tsReturnBtn" type="button" class="ts-secondary-btn" @click="returnToMobileTopup">
         <span id="tsSecondaryActionLabel">{{ t('topup.returnToTasks') }}</span>
       </button>
     </main>

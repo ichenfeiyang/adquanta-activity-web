@@ -22,6 +22,10 @@ body {
   flex-direction: column;
 }
 
+.redeem-root--gift-redeeming {
+  cursor: wait;
+}
+
 .redeem-header {
   position: sticky;
   top: 0;
@@ -300,10 +304,23 @@ body {
   color: #9ca3af;
 }
 
+.redeem-field-error {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #dc2626;
+}
+
 .redeem-input:focus {
   outline: none;
   border-color: #ec5b13;
   box-shadow: 0 0 0 1px rgba(236, 91, 19, 0.4);
+}
+
+.redeem-input:disabled {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  cursor: wait;
 }
 
 .redeem-operator-grid {

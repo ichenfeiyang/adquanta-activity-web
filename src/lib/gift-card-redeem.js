@@ -9,6 +9,7 @@ import {
 } from "./activity-page-cache.js";
 import { escapeHtml } from "./escape-html.js";
 import { assetUrl } from "./asset-url.js";
+import { formatActivityRecordDate } from "./activity-date-format.js";
 import * as logger from "./activity-logger.js";
 import { t } from "./i18n/activity-locale.js";
 import { showToast } from "./activity-alert-ui.js";
@@ -21,6 +22,8 @@ import {
 const GIFT_TAB = "gift";
 const TOPUP_TAB = "topup";
 const GIFT_DELIVERY_EMAIL = "EMAIL";
+const GIFT_RECIPIENT_NAME_MAX_LENGTH = 80;
+const GIFT_RECIPIENT_EMAIL_MAX_LENGTH = 50;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,16 +38,7 @@ function normalizeTremendousRecords(data) {
 }
 
 function formatGiftHistoryDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatActivityRecordDate(value, "—");
 }
 
 function buildBrandIconHtml(product) {
@@ -99,8 +93,46 @@ function getRecipientName(ctx) {
   return String(ctx.$.inputGiftRecipientName?.value || "").trim();
 }
 
+function trimRecipientNameInput(input) {
+  if (!input) return false;
+  const value = String(input.value || "");
+  if (value.length > GIFT_RECIPIENT_NAME_MAX_LENGTH) {
+    input.value = value.slice(0, GIFT_RECIPIENT_NAME_MAX_LENGTH);
+    return true;
+  }
+  return false;
+}
+
+function willRecipientNameExceedLimit(input, event) {
+  if (!input || !event || typeof event.data !== "string" || !event.data) return false;
+  const value = String(input.value || "");
+  const start = Number.isFinite(input.selectionStart) ? input.selectionStart : value.length;
+  const end = Number.isFinite(input.selectionEnd) ? input.selectionEnd : start;
+  const nextLength = value.length - Math.max(0, end - start) + event.data.length;
+  return nextLength > GIFT_RECIPIENT_NAME_MAX_LENGTH;
+}
+
 function getRecipientEmail(ctx) {
   return String(ctx.$.inputGiftRecipientEmail?.value || "").trim();
+}
+
+function trimRecipientEmailInput(input) {
+  if (!input) return false;
+  const value = String(input.value || "");
+  if (value.length > GIFT_RECIPIENT_EMAIL_MAX_LENGTH) {
+    input.value = value.slice(0, GIFT_RECIPIENT_EMAIL_MAX_LENGTH);
+    return true;
+  }
+  return false;
+}
+
+function willRecipientEmailExceedLimit(input, event) {
+  if (!input || !event || typeof event.data !== "string" || !event.data) return false;
+  const value = String(input.value || "");
+  const start = Number.isFinite(input.selectionStart) ? input.selectionStart : value.length;
+  const end = Number.isFinite(input.selectionEnd) ? input.selectionEnd : start;
+  const nextLength = value.length - Math.max(0, end - start) + event.data.length;
+  return nextLength > GIFT_RECIPIENT_EMAIL_MAX_LENGTH;
 }
 
 function isValidRecipientEmail(email) {
@@ -173,6 +205,32 @@ export const giftCardRedeemMethods = {
     if (this.$.giftRecipientForm) this.$.giftRecipientForm.hidden = true;
   },
 
+  setRecipientNameErrorVisible(visible) {
+    if (!this.$.giftRecipientNameError) return;
+    this.$.giftRecipientNameError.hidden = !visible;
+    if (this.$.inputGiftRecipientName) {
+      this.$.inputGiftRecipientName.setAttribute("aria-invalid", visible ? "true" : "false");
+      if (visible) {
+        this.$.inputGiftRecipientName.setAttribute("aria-describedby", "giftRecipientNameError");
+      } else {
+        this.$.inputGiftRecipientName.removeAttribute("aria-describedby");
+      }
+    }
+  },
+
+  setRecipientEmailErrorVisible(visible) {
+    if (!this.$.giftRecipientEmailError) return;
+    this.$.giftRecipientEmailError.hidden = !visible;
+    if (this.$.inputGiftRecipientEmail) {
+      this.$.inputGiftRecipientEmail.setAttribute("aria-invalid", visible ? "true" : "false");
+      if (visible) {
+        this.$.inputGiftRecipientEmail.setAttribute("aria-describedby", "giftRecipientEmailError");
+      } else {
+        this.$.inputGiftRecipientEmail.removeAttribute("aria-describedby");
+      }
+    }
+  },
+
   hideGiftRecipientSkeleton() {
     if (this.$.giftRecipientSkeleton) {
       this.$.giftRecipientSkeleton.hidden = true;
@@ -236,6 +294,7 @@ export const giftCardRedeemMethods = {
   bindTabEvents() {
     if (this.$.tabGiftCards) {
       this._addDomListener(this.$.tabGiftCards, "click", () => {
+        if (this.giftExchangeLoading) return;
         if (this.activeRedeemTab !== GIFT_TAB) {
           this.setActiveRedeemTab(GIFT_TAB);
         }
@@ -243,6 +302,7 @@ export const giftCardRedeemMethods = {
     }
     if (this.$.tabMobileTopup) {
       this._addDomListener(this.$.tabMobileTopup, "click", () => {
+        if (this.giftExchangeLoading) return;
         if (this.activeRedeemTab !== TOPUP_TAB) {
           this.setActiveRedeemTab(TOPUP_TAB);
         }
@@ -253,6 +313,7 @@ export const giftCardRedeemMethods = {
   bindGiftCardEvents() {
     if (this.$.giftBrandGrid) {
       this._addDomListener(this.$.giftBrandGrid, "click", (e) => {
+        if (this.giftExchangeLoading) return;
         const btn = e.target.closest(".redeem-brand-btn");
         if (!btn) return;
         const productId = btn.getAttribute("data-product-id");
@@ -263,6 +324,7 @@ export const giftCardRedeemMethods = {
 
     if (this.$.giftAmountGrid) {
       this._addDomListener(this.$.giftAmountGrid, "click", (e) => {
+        if (this.giftExchangeLoading) return;
         const btn = e.target.closest(".redeem-gift-amount-btn");
         if (!btn) return;
         const denomination = Number(btn.getAttribute("data-denomination"));
@@ -274,10 +336,40 @@ export const giftCardRedeemMethods = {
 
     const onRecipientInput = () => this.updateGiftRedeemState();
     if (this.$.inputGiftRecipientName) {
-      this._addDomListener(this.$.inputGiftRecipientName, "input", onRecipientInput);
+      this.$.inputGiftRecipientName.setAttribute("maxlength", String(GIFT_RECIPIENT_NAME_MAX_LENGTH));
+      this._addDomListener(this.$.inputGiftRecipientName, "beforeinput", (e) => {
+        if (this.giftExchangeLoading) {
+          e.preventDefault();
+          return;
+        }
+        if (willRecipientNameExceedLimit(this.$.inputGiftRecipientName, e)) {
+          this.setRecipientNameErrorVisible(true);
+        }
+      });
+      this._addDomListener(this.$.inputGiftRecipientName, "input", () => {
+        if (this.giftExchangeLoading) return;
+        const wasTrimmed = trimRecipientNameInput(this.$.inputGiftRecipientName);
+        this.setRecipientNameErrorVisible(wasTrimmed);
+        onRecipientInput();
+      });
     }
     if (this.$.inputGiftRecipientEmail) {
-      this._addDomListener(this.$.inputGiftRecipientEmail, "input", onRecipientInput);
+      this.$.inputGiftRecipientEmail.setAttribute("maxlength", String(GIFT_RECIPIENT_EMAIL_MAX_LENGTH));
+      this._addDomListener(this.$.inputGiftRecipientEmail, "beforeinput", (e) => {
+        if (this.giftExchangeLoading) {
+          e.preventDefault();
+          return;
+        }
+        if (willRecipientEmailExceedLimit(this.$.inputGiftRecipientEmail, e)) {
+          this.setRecipientEmailErrorVisible(true);
+        }
+      });
+      this._addDomListener(this.$.inputGiftRecipientEmail, "input", () => {
+        if (this.giftExchangeLoading) return;
+        const wasTrimmed = trimRecipientEmailInput(this.$.inputGiftRecipientEmail);
+        this.setRecipientEmailErrorVisible(wasTrimmed);
+        onRecipientInput();
+      });
     }
 
     if (this.$.btnGiftRedeem) {
@@ -288,6 +380,7 @@ export const giftCardRedeemMethods = {
 
     if (this.$.viewAllGiftRecordsBtn) {
       this._addDomListener(this.$.viewAllGiftRecordsBtn, "click", () => {
+        if (this.giftExchangeLoading) return;
         this.showAllGiftRecords = !this.showAllGiftRecords;
         this.renderGiftRecords(this.giftRecords, this.showAllGiftRecords);
       });
@@ -303,6 +396,23 @@ export const giftCardRedeemMethods = {
     this.$.walletLocalHint.textContent = t("redeem.localCurrencyHint", {
       amount: `${query.currencySymbol}${localAmount}`,
     });
+  },
+
+  async ensureGiftProductSelection() {
+    const products = this.tremendousInfo.products || [];
+    if (!products.length) {
+      this.resetGiftAmountUI();
+      return;
+    }
+
+    const currentProduct = getSelectedProduct(this);
+    const productId = currentProduct?.product_id || products[0]?.product_id;
+    if (!productId) {
+      this.resetGiftAmountUI();
+      return;
+    }
+
+    await this.selectGiftProduct(productId, { preserveDenomination: Boolean(currentProduct) });
   },
 
   async loadGiftCatalog() {
@@ -321,11 +431,7 @@ export const giftCardRedeemMethods = {
       this.walletLocalCurrency = getRedeemCurrencyForCountry(this.tremendousInfo.countryCode).symbol;
       this.updateWalletLocalHint();
       this.renderGiftBrandGrid(this.tremendousInfo.products);
-      if (this.tremendousInfo.products.length && !this.giftState.productId) {
-        await this.selectGiftProduct(this.tremendousInfo.products[0].product_id);
-      } else if (!this.tremendousInfo.products.length) {
-        this.resetGiftAmountUI();
-      }
+      await this.ensureGiftProductSelection();
     };
 
     try {
@@ -396,10 +502,19 @@ export const giftCardRedeemMethods = {
     this.updateGiftRedeemState();
   },
 
-  async selectGiftProduct(productId) {
+  async selectGiftProduct(productId, options = {}) {
+    const shouldPreserveDenomination =
+      options.preserveDenomination && this.giftState.productId === productId;
+    const previousDenomination = shouldPreserveDenomination
+      ? this.giftState.selectedDenomination
+      : null;
+    const previousSpendCoin = shouldPreserveDenomination
+      ? this.giftState.spendCoin
+      : 0;
+
     this.giftState.productId = productId;
-    this.giftState.selectedDenomination = null;
-    this.giftState.spendCoin = 0;
+    this.giftState.selectedDenomination = previousDenomination;
+    this.giftState.spendCoin = Number(previousSpendCoin ?? 0);
     this.renderGiftBrandGrid(this.tremendousInfo.products);
 
     const product = getSelectedProduct(this);
@@ -412,6 +527,13 @@ export const giftCardRedeemMethods = {
     if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = false;
     this.hideGiftRecipientSkeleton();
     this.renderGiftAmountGrid(product.denominations || []);
+    if (previousDenomination) {
+      const denomination = Number(previousDenomination.denomination);
+      const button = Array.from(
+        this.$.giftAmountGrid?.querySelectorAll(".redeem-gift-amount-btn") || [],
+      ).find((el) => Number(el.getAttribute("data-denomination")) === denomination);
+      button?.classList.add("redeem-gift-amount-btn--active");
+    }
     this.updateGiftRedeemState();
   },
 
@@ -572,6 +694,21 @@ export const giftCardRedeemMethods = {
     patchActivityInfoWalletCoin(token, this.userGoldCoins);
   },
 
+  setGiftRedeemBusy(isBusy) {
+    this.$.redeemRoot?.classList.toggle("redeem-root--gift-redeeming", Boolean(isBusy));
+    if (this.$.redeemRoot) {
+      this.$.redeemRoot.setAttribute("aria-busy", isBusy ? "true" : "false");
+    }
+    [this.$.inputGiftRecipientName, this.$.inputGiftRecipientEmail].forEach((input) => {
+      if (!input) return;
+      input.disabled = Boolean(isBusy);
+      input.setAttribute("aria-disabled", isBusy ? "true" : "false");
+      if (isBusy && document.activeElement === input) {
+        input.blur();
+      }
+    });
+  },
+
   async performGiftRedeem() {
     const product = getSelectedProduct(this);
     const denomination = this.giftState.selectedDenomination;
@@ -580,6 +717,22 @@ export const giftCardRedeemMethods = {
     const recipientName = getRecipientName(this);
     if (!recipientName) {
       this.config.onExchangeFailed(t("redeem.recipientNameRequired"));
+      return;
+    }
+    if (recipientName.length > GIFT_RECIPIENT_NAME_MAX_LENGTH) {
+      trimRecipientNameInput(this.$.inputGiftRecipientName);
+      this.config.onExchangeFailed(
+        t("redeem.recipientNameTooLong", { max: GIFT_RECIPIENT_NAME_MAX_LENGTH }),
+      );
+      return;
+    }
+
+    const recipientEmail = getRecipientEmail(this);
+    if (recipientEmail.length > GIFT_RECIPIENT_EMAIL_MAX_LENGTH) {
+      trimRecipientEmailInput(this.$.inputGiftRecipientEmail);
+      this.config.onExchangeFailed(
+        t("redeem.recipientEmailTooLong", { max: GIFT_RECIPIENT_EMAIL_MAX_LENGTH }),
+      );
       return;
     }
 
@@ -596,6 +749,7 @@ export const giftCardRedeemMethods = {
     }
 
     this.giftExchangeLoading = true;
+    this.setGiftRedeemBusy(true);
     this.updateGiftRedeemState();
     if (this.$.btnGiftRedeem) {
       this.$.btnGiftRedeem.dataset.originalText = this.$.btnGiftRedeem.textContent || "";
@@ -635,6 +789,7 @@ export const giftCardRedeemMethods = {
       this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {
       this.giftExchangeLoading = false;
+      this.setGiftRedeemBusy(false);
       if (this.$.btnGiftRedeem) {
         this.$.btnGiftRedeem.textContent =
           this.$.btnGiftRedeem.dataset.originalText || t("redeem.redeemNow");

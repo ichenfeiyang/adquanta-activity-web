@@ -3,6 +3,7 @@ import { resolveHistoryBase } from '../lib/router-base.js'
 import { ROUTE_NAMES, PAGE_TITLE_KEYS } from '../lib/activity-pages.js'
 import { t } from '../lib/i18n/activity-locale.js'
 import ActivityCenterView from '../views/ActivityCenterView.vue'
+import TopupStatusView from '../views/TopupStatusView.vue'
 
 const scrollPositions = new Map()
 
@@ -33,7 +34,7 @@ const router = createRouter({
       path: '/topup-status',
       name: ROUTE_NAMES.TOPUP_STATUS,
       meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.TOPUP_STATUS] },
-      component: () => import('../views/TopupStatusView.vue'),
+      component: TopupStatusView,
     },
   ],
   scrollBehavior(to, from, savedPosition) {

@@ -70,6 +70,7 @@ export class GoldCoinsExchange {
       router: config.router || null,
       onExchangeFailed: config.onExchangeFailed || (() => {}),
       apiOptions: config.apiOptions || {},
+      initialTab: config.initialTab || "",
     };
 
     // 当前用户金币（未获取到服务端数据前缺省 0）
@@ -114,6 +115,7 @@ export class GoldCoinsExchange {
     this.goldCoinsPerYuan = 100;
 
     this.$ = bindPageElements({
+      redeemRoot: { selector: ".redeem-root" },
       userGoldCoins: "userGoldCoins",
       walletLocalHint: "walletLocalHint",
       tabGiftCards: "tabGiftCards",
@@ -127,7 +129,9 @@ export class GoldCoinsExchange {
       giftRecipientSkeleton: "giftRecipientSkeleton",
       giftRecipientForm: "giftRecipientForm",
       inputGiftRecipientName: "inputGiftRecipientName",
+      giftRecipientNameError: "giftRecipientNameError",
       inputGiftRecipientEmail: "inputGiftRecipientEmail",
+      giftRecipientEmailError: "giftRecipientEmailError",
       btnGiftRedeem: "btnGiftRedeem",
       giftRedeemSummary: "giftRedeemSummary",
       giftHistoryList: "giftHistoryList",
@@ -181,6 +185,7 @@ export class GoldCoinsExchange {
     this.initGiftCardRedeem();
     this.initHistory();
     this.bindEvents();
+    this.setActiveRedeemTab?.(this.config.initialTab === "topup" ? "topup" : "gift", { skipLoad: true });
     await Promise.all([this.loadActivityInfo(), this.loadRecords()]);
     if (this.activeRedeemTab === "gift") {
       await Promise.all([this.loadGiftCatalog(), this.loadGiftRecords()]);
@@ -752,9 +757,10 @@ export class GoldCoinsExchange {
 
       // Prevent background scroll when modal open.
       try {
+        const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
         resetOverflow = () => {
-          document.body.style.overflow = "";
+          document.body.style.overflow = originalOverflow;
         };
       } catch (_) {}
     });

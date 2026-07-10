@@ -88,8 +88,12 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               class="redeem-input redeem-input--full"
               type="text"
               autocomplete="name"
+              maxlength="80"
               :placeholder="t('redeem.recipientNamePlaceholder')"
             />
+            <p id="giftRecipientNameError" class="redeem-field-error" hidden>
+              {{ t('redeem.recipientNameTooLong', { max: 80 }) }}
+            </p>
 
             <p class="redeem-field-hint">{{ t('redeem.giftDeliveryHint') }}</p>
             <label class="redeem-label redeem-label--spaced" for="inputGiftRecipientEmail">{{ t('redeem.recipientEmail') }}</label>
@@ -99,8 +103,12 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               type="email"
               autocomplete="email"
               inputmode="email"
+              maxlength="50"
               :placeholder="t('redeem.recipientEmailPlaceholder')"
             />
+            <p id="giftRecipientEmailError" class="redeem-field-error" hidden>
+              {{ t('redeem.recipientEmailTooLong', { max: 50 }) }}
+            </p>
           </div>
         </div>
 

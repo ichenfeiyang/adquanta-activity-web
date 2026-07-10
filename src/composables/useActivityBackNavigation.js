@@ -1,6 +1,6 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { goToActivityCenter } from "../lib/activity-navigation.js";
+import { goToActivityCenter, goToGoldCoinsExchange } from "../lib/activity-navigation.js";
 
 export function useActivityBackNavigation() {
   const router = useRouter();
@@ -21,8 +21,13 @@ export function useActivityBackNavigation() {
     returnToActivityCenter();
   }
 
+  function returnToMobileTopup() {
+    return goToGoldCoinsExchange(router, activityId.value, { tab: "topup" });
+  }
+
   return {
     returnToActivityCenter,
+    returnToMobileTopup,
     navigateBackOrActivityCenter,
   };
 }

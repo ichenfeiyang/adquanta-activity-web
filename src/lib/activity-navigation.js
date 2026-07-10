@@ -31,10 +31,17 @@ export function goToActivityCenter(router, activityId) {
   });
 }
 
-export function goToGoldCoinsExchange(router, activityId) {
+export function goldCoinsExchangeQuery(activityId, options = {}) {
+  return compactQuery({
+    ...activityCenterQuery(activityId),
+    tab: options.tab || "",
+  });
+}
+
+export function goToGoldCoinsExchange(router, activityId, options = {}) {
   return router.push({
     name: ROUTE_NAMES.GOLD_COINS_EXCHANGE,
-    query: activityCenterQuery(activityId),
+    query: goldCoinsExchangeQuery(activityId, options),
   });
 }
 

@@ -8,6 +8,7 @@ import {
   getRecordAmountLabel,
 } from "./charge-product.js";
 import { formatPhoneDisplay } from "./redeem-country.js";
+import { formatActivityRecordDate } from "./activity-date-format.js";
 import {
   buildAmountLabel,
   getRecordBusinessId,
@@ -80,15 +81,7 @@ export const redeemHistoryMethods = {
   },
 
   formatRecordDate(isoStr) {
-    if (!isoStr) return "";
-    const date = new Date(isoStr);
-    const y = date.getFullYear();
-    const m = date.getMonth();
-    const d = date.getDate();
-    const h = String(date.getHours()).padStart(2, "0");
-    const min = String(date.getMinutes()).padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[m]} ${d}, ${y} • ${h}:${min}`;
+    return formatActivityRecordDate(isoStr);
   },
 
   buildTopupPayloadFromRecord(record) {

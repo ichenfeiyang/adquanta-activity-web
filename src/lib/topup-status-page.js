@@ -121,22 +121,11 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
     renderOperatorValue(elements.operatorEl, details.operator);
   };
 
-  const showMain = () => {
-    if (!elements.mainEl) return;
-    elements.mainEl.style.opacity = "1";
-    elements.mainEl.style.pointerEvents = "auto";
-  };
-
   const finish = (statusRaw) => {
     renderByStatus(statusRaw);
-    showMain();
   };
 
-  if (elements.mainEl) {
-    elements.mainEl.style.transition = "opacity 200ms ease";
-    elements.mainEl.style.opacity = "0";
-    elements.mainEl.style.pointerEvents = "none";
-  }
+  renderByStatus(statusFromQuery);
   renderDetails();
 
   if (!token) {
@@ -174,7 +163,6 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
   if (isCancelled()) return;
 
   let currentStatus = renderByStatus(apiDetails?.status || statusFromQuery);
-  showMain();
 
   while (!isCancelled() && currentStatus === "pending") {
     await sleep(4000);

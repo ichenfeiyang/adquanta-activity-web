@@ -18,6 +18,7 @@ export function initGoldCoinsExchange({ router, route }) {
   const exchange = new GoldCoinsExchange({
     router,
     apiOptions,
+    initialTab: route?.query?.tab,
     onExchangeFailed: (message) => {
       showToast(message, "error");
     },
