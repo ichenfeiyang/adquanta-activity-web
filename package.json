@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "npm@10.9.8",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/**/*.test.js"
+    "test": "node --test src/lib/*.test.js src/lib/i18n/*.test.js"
   },
   "dependencies": {
     "vue": "^3.5.34",

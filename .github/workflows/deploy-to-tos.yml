@@ -14,15 +14,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build Vite dist
+        env:
+          VITE_ACTIVITY_API_BASE_URL: ${{ secrets.VITE_ACTIVITY_API_BASE_URL }}
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
+        run: npm run build
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install boto3
 
-      - name: Deploy site files to TOS
+      - name: Deploy dist/ to TOS
         env:
           TOS_ACCESS_KEY_ID: ${{ secrets.TOS_ACCESS_KEY_ID }}
           TOS_SECRET_ACCESS_KEY: ${{ secrets.TOS_SECRET_ACCESS_KEY }}

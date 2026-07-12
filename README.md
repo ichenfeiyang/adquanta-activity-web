@@ -11,6 +11,8 @@ npm run dev
 
 如需联调接口，复制 `.env.example` 为 `.env.local` 并设置 `VITE_ACTIVITY_API_BASE_URL`。
 
+本仓库统一使用 **npm**（见 `package.json` 的 `packageManager` 字段与 `package-lock.json`）。
+
 ## 构建与部署
 
 ```bash
@@ -33,10 +35,18 @@ R2 公共开发 URL 不支持默认首页和 SPA fallback，所以测试环境�
 仓库已提供 `master` 分支自动部署工作流：
 
 - 工作流文件：`.github/workflows/deploy-to-tos.yml`
-- 上传脚本：`scripts/deploy_to_tos.py`
+- 上传脚本：`scripts/deploy_to_tos.py`（只上传 `dist/`）
 - 触发条件：代码 `push` 到 `master` 后自动执行
+- 流程：`npm ci` → `npm test` → `npm run build` → 上传 `dist/`
 
 ### 需要配置的 GitHub Secrets
+
+构建：
+
+- `VITE_ACTIVITY_API_BASE_URL`
+- `VITE_GA_MEASUREMENT_ID`
+
+TOS 上传：
 
 - `TOS_ACCESS_KEY_ID`
 - `TOS_SECRET_ACCESS_KEY`
@@ -53,5 +63,3 @@ R2 公共开发 URL 不支持默认首页和 SPA fallback，所以测试环境�
 - `TOS_BUCKET`: `ad-quanta`
 - `TOS_KEY_PREFIX`: 可留空，或填如 `activity-web`
 - `TOS_CDN_DOMAIN`: `https://ad-quanta-cdn.moyoung.com`
-
-上传排除规则由根目录的 `.tosignore` 控制。

@@ -35,6 +35,7 @@ import {
   saveRedeemCountry,
   SUPPORTED_REDEEM_COUNTRIES,
 } from "./redeem-country.js";
+import { shouldApplyLookupResult } from "./redeem-request-guard.js";
 
 function buildAmountButtonHtml(item, { showTypeBadge = false, uniformLayout = false } = {}) {
   const typeBadgeHtml = showTypeBadge
@@ -86,6 +87,8 @@ export class GoldCoinsExchange {
     this.chargesLoaded = false;
     this.chargesLoading = false;
     this.lastChargesMobile = "";
+    /** Latest country:phone the UI wants options for (may change while a request is in flight). */
+    this._desiredChargesLookupKey = "";
     this._chargesDebounceTimer = null;
 
     // Redeem request lock (prevent multi-click / multi-request)
@@ -305,13 +308,15 @@ export class GoldCoinsExchange {
     if (this.$.amountSection) this.$.amountSection.style.display = visible ? "" : "none";
   }
 
-  resetChargesUI() {
+  resetChargesUI(options = {}) {
+    const { clearDesired = false } = options;
     this.chargesProviders = null;
     this.selectedProviderCode = null;
     this.chargesOptions = null;
     this.chargesLoaded = false;
     this.chargesLoading = false;
     this.lastChargesMobile = "";
+    if (clearDesired) this._desiredChargesLookupKey = "";
     this.state.amount = null;
     this.state.selectedCharge = null;
     this.state.operator = "-";
@@ -320,6 +325,14 @@ export class GoldCoinsExchange {
     if (this.$.amountGrid) this.$.amountGrid.innerHTML = "";
     this.setChargesUIVisible(false);
     this.updateRedeemState();
+  }
+
+  isChargesLookupCurrent(lookupKey) {
+    return shouldApplyLookupResult({
+      requestKey: lookupKey,
+      desiredKey: this._desiredChargesLookupKey,
+      currentKey: this.getChargesLookupKey(this.state.mobile),
+    });
   }
 
   getFullPhoneNumber() {
@@ -331,17 +344,20 @@ export class GoldCoinsExchange {
   maybeLoadChargesForMobile(mobile) {
     const m = String(mobile || "");
     if (!/^\d{6,15}$/.test(m)) {
-      this.resetChargesUI();
+      this.resetChargesUI({ clearDesired: true });
       return;
     }
     // debounce to avoid spamming while typing
     if (this._chargesDebounceTimer) clearTimeout(this._chargesDebounceTimer);
     this._chargesDebounceTimer = setTimeout(() => {
       const lookupKey = this.getChargesLookupKey(m);
+      this._desiredChargesLookupKey = lookupKey;
+      if (this.lastChargesMobile === lookupKey && this.chargesLoaded && !this.chargesLoading) {
+        return;
+      }
+      // If a request is already in flight, remember the latest key and replay in finally.
       if (this.chargesLoading) return;
-      if (this.lastChargesMobile === lookupKey && this.chargesLoaded) return;
-      this.lastChargesMobile = lookupKey;
-      this.loadCharges();
+      void this.loadCharges();
     }, 350);
   }
 
@@ -460,31 +476,59 @@ export class GoldCoinsExchange {
     const { force = false } = options;
     const token = this.config.apiOptions?.token || "";
     const phoneNumber = this.getFullPhoneNumber();
+    const lookupKey = this.getChargesLookupKey(this.state.mobile);
+    this._desiredChargesLookupKey = lookupKey;
+
+    const applyIfCurrent = (data) => {
+      if (!this.isChargesLookupCurrent(lookupKey)) return;
+      this.applyChargesData(data);
+      this.lastChargesMobile = lookupKey;
+    };
 
     try {
       this.chargesLoading = true;
-      const result = await loadChargesWithSWR(token, phoneNumber, {
+      let result = await loadChargesWithSWR(token, phoneNumber, {
         force,
         fetcher: () =>
           getCharges(this.config.apiOptions, {
             country_code: this.state.countryCodeEnum,
             phone_number: phoneNumber,
           }),
-        onData: (data) => this.applyChargesData(data),
+        onData: applyIfCurrent,
       });
 
+      if (!this.isChargesLookupCurrent(lookupKey)) return;
+
+      if (!result.ok && !force) {
+        result = await loadChargesWithSWR(token, phoneNumber, {
+          force: true,
+          fetcher: () =>
+            getCharges(this.config.apiOptions, {
+              country_code: this.state.countryCodeEnum,
+              phone_number: phoneNumber,
+            }),
+          onData: applyIfCurrent,
+        });
+      }
+
+      if (!this.isChargesLookupCurrent(lookupKey)) return;
+
       if (!result.ok) {
-        if (!force) {
-          await this.loadCharges({ force: true });
-          return;
-        }
         this.resetChargesUI();
+      } else {
+        this.lastChargesMobile = lookupKey;
       }
     } catch (e) {
-      logger.warn("[Top-up] Request failed", e?.message || e);
-      this.resetChargesUI();
+      if (this.isChargesLookupCurrent(lookupKey)) {
+        logger.warn("[Top-up] Request failed", e?.message || e);
+        this.resetChargesUI();
+      }
     } finally {
       this.chargesLoading = false;
+      const desired = this._desiredChargesLookupKey;
+      if (desired && desired !== lookupKey) {
+        void this.loadCharges();
+      }
     }
   }
 
@@ -815,6 +859,16 @@ export class GoldCoinsExchange {
       const phone_number = this.getFullPhoneNumber();
       if (!/^\d{6,20}$/.test(phone_number)) {
         this.config.onExchangeFailed(t("redeem.invalidPhone"));
+        return;
+      }
+      const submitLookupKey = this.getChargesLookupKey(this.state.mobile);
+      if (
+        !this.chargesLoaded ||
+        this.lastChargesMobile !== submitLookupKey ||
+        !this.isChargesLookupCurrent(submitLookupKey)
+      ) {
+        this.config.onExchangeFailed(t("redeem.loadingOptions"));
+        void this.loadCharges({ force: true });
         return;
       }
 

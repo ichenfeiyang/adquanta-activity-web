@@ -18,6 +18,7 @@ import {
   getRedeemCurrencyForCountry,
   resolveRedeemCountry,
 } from "./redeem-country.js";
+import { shouldApplyLookupResult, trimInputToMax, willInputExceedLimit, setFieldErrorVisible } from "./redeem-request-guard.js";
 
 const GIFT_TAB = "gift";
 const TOPUP_TAB = "topup";
@@ -93,46 +94,8 @@ function getRecipientName(ctx) {
   return String(ctx.$.inputGiftRecipientName?.value || "").trim();
 }
 
-function trimRecipientNameInput(input) {
-  if (!input) return false;
-  const value = String(input.value || "");
-  if (value.length > GIFT_RECIPIENT_NAME_MAX_LENGTH) {
-    input.value = value.slice(0, GIFT_RECIPIENT_NAME_MAX_LENGTH);
-    return true;
-  }
-  return false;
-}
-
-function willRecipientNameExceedLimit(input, event) {
-  if (!input || !event || typeof event.data !== "string" || !event.data) return false;
-  const value = String(input.value || "");
-  const start = Number.isFinite(input.selectionStart) ? input.selectionStart : value.length;
-  const end = Number.isFinite(input.selectionEnd) ? input.selectionEnd : start;
-  const nextLength = value.length - Math.max(0, end - start) + event.data.length;
-  return nextLength > GIFT_RECIPIENT_NAME_MAX_LENGTH;
-}
-
 function getRecipientEmail(ctx) {
   return String(ctx.$.inputGiftRecipientEmail?.value || "").trim();
-}
-
-function trimRecipientEmailInput(input) {
-  if (!input) return false;
-  const value = String(input.value || "");
-  if (value.length > GIFT_RECIPIENT_EMAIL_MAX_LENGTH) {
-    input.value = value.slice(0, GIFT_RECIPIENT_EMAIL_MAX_LENGTH);
-    return true;
-  }
-  return false;
-}
-
-function willRecipientEmailExceedLimit(input, event) {
-  if (!input || !event || typeof event.data !== "string" || !event.data) return false;
-  const value = String(input.value || "");
-  const start = Number.isFinite(input.selectionStart) ? input.selectionStart : value.length;
-  const end = Number.isFinite(input.selectionEnd) ? input.selectionEnd : start;
-  const nextLength = value.length - Math.max(0, end - start) + event.data.length;
-  return nextLength > GIFT_RECIPIENT_EMAIL_MAX_LENGTH;
 }
 
 function isValidRecipientEmail(email) {
@@ -155,6 +118,10 @@ function buildGiftRedeemPayload(ctx, denomination) {
   };
 }
 
+function giftCatalogKeyFromQuery(query) {
+  return `${query?.country_code || ""}:${query?.currency_code || ""}`;
+}
+
 export const giftCardRedeemMethods = {
   initGiftCardRedeem() {
     this.activeRedeemTab = GIFT_TAB;
@@ -173,6 +140,8 @@ export const giftCardRedeemMethods = {
     this.giftExchangeLoading = false;
     this.giftCatalogLoading = false;
     this.giftRecordsLoading = false;
+    this._desiredGiftCatalogKey = "";
+    this._appliedGiftCatalogKey = "";
     this.walletLocalCurrency = getRedeemCurrencyForCountry(this.state?.countryCodeEnum).symbol;
     this.showGiftCatalogSkeleton();
     this.setActiveRedeemTab(GIFT_TAB, { skipLoad: true });
@@ -206,29 +175,21 @@ export const giftCardRedeemMethods = {
   },
 
   setRecipientNameErrorVisible(visible) {
-    if (!this.$.giftRecipientNameError) return;
-    this.$.giftRecipientNameError.hidden = !visible;
-    if (this.$.inputGiftRecipientName) {
-      this.$.inputGiftRecipientName.setAttribute("aria-invalid", visible ? "true" : "false");
-      if (visible) {
-        this.$.inputGiftRecipientName.setAttribute("aria-describedby", "giftRecipientNameError");
-      } else {
-        this.$.inputGiftRecipientName.removeAttribute("aria-describedby");
-      }
-    }
+    setFieldErrorVisible(
+      this.$.inputGiftRecipientName,
+      this.$.giftRecipientNameError,
+      "giftRecipientNameError",
+      visible,
+    );
   },
 
   setRecipientEmailErrorVisible(visible) {
-    if (!this.$.giftRecipientEmailError) return;
-    this.$.giftRecipientEmailError.hidden = !visible;
-    if (this.$.inputGiftRecipientEmail) {
-      this.$.inputGiftRecipientEmail.setAttribute("aria-invalid", visible ? "true" : "false");
-      if (visible) {
-        this.$.inputGiftRecipientEmail.setAttribute("aria-describedby", "giftRecipientEmailError");
-      } else {
-        this.$.inputGiftRecipientEmail.removeAttribute("aria-describedby");
-      }
-    }
+    setFieldErrorVisible(
+      this.$.inputGiftRecipientEmail,
+      this.$.giftRecipientEmailError,
+      "giftRecipientEmailError",
+      visible,
+    );
   },
 
   hideGiftRecipientSkeleton() {
@@ -240,6 +201,8 @@ export const giftCardRedeemMethods = {
   },
 
   resetGiftCatalog() {
+    this._desiredGiftCatalogKey = "";
+    this._appliedGiftCatalogKey = "";
     this.tremendousInfo = {
       countryCode: "",
       currencyCode: "",
@@ -342,13 +305,13 @@ export const giftCardRedeemMethods = {
           e.preventDefault();
           return;
         }
-        if (willRecipientNameExceedLimit(this.$.inputGiftRecipientName, e)) {
+        if (willInputExceedLimit(this.$.inputGiftRecipientName, e, GIFT_RECIPIENT_NAME_MAX_LENGTH)) {
           this.setRecipientNameErrorVisible(true);
         }
       });
       this._addDomListener(this.$.inputGiftRecipientName, "input", () => {
         if (this.giftExchangeLoading) return;
-        const wasTrimmed = trimRecipientNameInput(this.$.inputGiftRecipientName);
+        const wasTrimmed = trimInputToMax(this.$.inputGiftRecipientName, GIFT_RECIPIENT_NAME_MAX_LENGTH);
         this.setRecipientNameErrorVisible(wasTrimmed);
         onRecipientInput();
       });
@@ -360,13 +323,13 @@ export const giftCardRedeemMethods = {
           e.preventDefault();
           return;
         }
-        if (willRecipientEmailExceedLimit(this.$.inputGiftRecipientEmail, e)) {
+        if (willInputExceedLimit(this.$.inputGiftRecipientEmail, e, GIFT_RECIPIENT_EMAIL_MAX_LENGTH)) {
           this.setRecipientEmailErrorVisible(true);
         }
       });
       this._addDomListener(this.$.inputGiftRecipientEmail, "input", () => {
         if (this.giftExchangeLoading) return;
-        const wasTrimmed = trimRecipientEmailInput(this.$.inputGiftRecipientEmail);
+        const wasTrimmed = trimInputToMax(this.$.inputGiftRecipientEmail, GIFT_RECIPIENT_EMAIL_MAX_LENGTH);
         this.setRecipientEmailErrorVisible(wasTrimmed);
         onRecipientInput();
       });
@@ -416,18 +379,31 @@ export const giftCardRedeemMethods = {
   },
 
   async loadGiftCatalog() {
+    const query = this.getTremendousQueryParams();
+    const requestKey = giftCatalogKeyFromQuery(query);
+    this._desiredGiftCatalogKey = requestKey;
+
+    // Remember the latest country/currency; replay after the in-flight request finishes.
     if (this.giftCatalogLoading) return;
+
     this.giftCatalogLoading = true;
     this.showGiftCatalogSkeleton();
-    const token = this.config.apiOptions?.token || "";
-    const query = this.getTremendousQueryParams();
+
+    const isCurrent = () =>
+      shouldApplyLookupResult({
+        requestKey,
+        desiredKey: this._desiredGiftCatalogKey,
+        currentKey: giftCatalogKeyFromQuery(this.getTremendousQueryParams()),
+      });
 
     const applyCatalog = async (data) => {
+      if (!isCurrent()) return;
       this.tremendousInfo = {
         countryCode: data?.country_code || query.country_code,
         currencyCode: data?.currency_code || query.currency_code,
         products: Array.isArray(data?.products) ? data.products : [],
       };
+      this._appliedGiftCatalogKey = requestKey;
       this.walletLocalCurrency = getRedeemCurrencyForCountry(this.tremendousInfo.countryCode).symbol;
       this.updateWalletLocalHint();
       this.renderGiftBrandGrid(this.tremendousInfo.products);
@@ -435,6 +411,7 @@ export const giftCardRedeemMethods = {
     };
 
     try {
+      const token = this.config.apiOptions?.token || "";
       let applyPromise = Promise.resolve();
       const result = await loadTremendousCatalogWithSWR(
         token,
@@ -451,13 +428,14 @@ export const giftCardRedeemMethods = {
           },
         },
       );
+      if (!isCurrent()) return;
       if (!result.ok) {
         throw result.error || new Error(t("redeem.giftCatalogFailed"));
       }
       await applyPromise;
     } catch (error) {
       logger.warn("[Tremendous] Failed to load catalog", error?.message || error);
-      if (!this.tremendousInfo.products.length) {
+      if (isCurrent() && !this.tremendousInfo.products.length) {
         await applyCatalog({
           country_code: query.country_code,
           currency_code: query.currency_code,
@@ -466,6 +444,10 @@ export const giftCardRedeemMethods = {
       }
     } finally {
       this.giftCatalogLoading = false;
+      const desired = this._desiredGiftCatalogKey;
+      if (desired && desired !== requestKey) {
+        void this.loadGiftCatalog();
+      }
     }
   },
 
@@ -714,13 +696,24 @@ export const giftCardRedeemMethods = {
     const denomination = this.giftState.selectedDenomination;
     if (!product || !denomination || this.giftExchangeLoading) return;
 
+    const currentCatalogKey = giftCatalogKeyFromQuery(this.getTremendousQueryParams());
+    if (
+      !this._appliedGiftCatalogKey ||
+      this._appliedGiftCatalogKey !== currentCatalogKey ||
+      this.tremendousInfo.countryCode !== this.getTremendousQueryParams().country_code
+    ) {
+      this.config.onExchangeFailed(t("redeem.giftCatalogFailed"));
+      void this.loadGiftCatalog();
+      return;
+    }
+
     const recipientName = getRecipientName(this);
     if (!recipientName) {
       this.config.onExchangeFailed(t("redeem.recipientNameRequired"));
       return;
     }
     if (recipientName.length > GIFT_RECIPIENT_NAME_MAX_LENGTH) {
-      trimRecipientNameInput(this.$.inputGiftRecipientName);
+      trimInputToMax(this.$.inputGiftRecipientName, GIFT_RECIPIENT_NAME_MAX_LENGTH);
       this.config.onExchangeFailed(
         t("redeem.recipientNameTooLong", { max: GIFT_RECIPIENT_NAME_MAX_LENGTH }),
       );
@@ -729,7 +722,7 @@ export const giftCardRedeemMethods = {
 
     const recipientEmail = getRecipientEmail(this);
     if (recipientEmail.length > GIFT_RECIPIENT_EMAIL_MAX_LENGTH) {
-      trimRecipientEmailInput(this.$.inputGiftRecipientEmail);
+      trimInputToMax(this.$.inputGiftRecipientEmail, GIFT_RECIPIENT_EMAIL_MAX_LENGTH);
       this.config.onExchangeFailed(
         t("redeem.recipientEmailTooLong", { max: GIFT_RECIPIENT_EMAIL_MAX_LENGTH }),
       );

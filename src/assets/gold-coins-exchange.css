@@ -22,6 +22,14 @@ body {
   flex-direction: column;
 }
 
+.redeem-root button,
+.redeem-root a,
+.redeem-root input,
+.redeem-root select,
+.redeem-root textarea {
+  touch-action: manipulation;
+}
+
 .redeem-root--gift-redeeming {
   cursor: wait;
 }
