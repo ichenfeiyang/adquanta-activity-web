@@ -202,6 +202,24 @@ export async function postActivityVideo(options = {}, body = {}) {
 }
 
 /**
+ * 新用户一次性礼包
+ * POST /api/v1/ops/activity/new-user-bonus
+ * @param {Object} options - { token? }
+ * @param {{ action: "claim_base" | "claim_video" | "dismiss", ad_event_id?: string }} body
+ */
+export async function postNewUserBonus(options = {}, body = {}) {
+  const baseUrl = BaseApiUrl;
+  const url = `${baseUrl}/api/v1/ops/activity/new-user-bonus`;
+  const payload = { action: body.action ?? "" };
+  if (body.ad_event_id) payload.ad_event_id = body.ad_event_id;
+  return fetchApi("postNewUserBonus", url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...buildAuthHeaders(options) },
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
  * 获取话费充值选项
  * GET /api/v1/ops/activity/charges
  * 参数：

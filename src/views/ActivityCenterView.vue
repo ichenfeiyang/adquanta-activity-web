@@ -169,6 +169,36 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
     </div>
   </div>
 
+  <div id="newUserBonusModal" class="new-user-bonus-overlay" style="display:none;">
+    <div class="new-user-bonus-card">
+      <div class="new-user-bonus-badge" id="newUserBonusTitle">{{ t('center.newUserBonusTitle') }}</div>
+      <div class="new-user-bonus-art" aria-hidden="true">
+        <img
+          :src="assetUrl('images/new-user-bonus-hero.png')"
+          alt=""
+          class="new-user-bonus-hero"
+          width="650"
+          height="379"
+        >
+        <span id="newUserBonusAmount" class="new-user-bonus-amount">50</span>
+      </div>
+      <h2 id="newUserBonusHeadline" class="new-user-bonus-headline">
+        You got <strong id="newUserBonusHeadlineCoin">50</strong> Coins!
+      </h2>
+      <p id="newUserBonusDesc" class="new-user-bonus-desc">
+        Watch a short video to double your reward to <strong id="newUserBonusVideoCoin">100</strong> coins.
+      </p>
+      <p id="newUserBonusFoot" class="new-user-bonus-foot">{{ t('center.newUserBonusFoot') }}</p>
+      <button id="newUserBonusDoubleBtn" type="button" class="new-user-bonus-primary">
+        <img :src="assetUrl('icons/video_outline.svg')" alt="" class="new-user-bonus-btn-icon" width="28" height="28">
+        <span id="newUserBonusDoubleBtnLabel">{{ t('center.newUserBonusDouble') }}</span>
+      </button>
+      <button id="newUserBonusMaybeLater" type="button" class="new-user-bonus-secondary">
+        {{ t('center.newUserBonusMaybeLater') }}
+      </button>
+    </div>
+  </div>
+
   <div id="signinDialog" class="signin-dialog-overlay" style="display: none;">
     <div class="signin-dialog-sheet">
       <div class="signin-dialog-handle" aria-hidden="true" />

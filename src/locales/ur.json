@@ -78,7 +78,13 @@
     "doubleReward": "اپنا انعام دوگنا کریں!",
     "boostDescHtml": "ایک مختصر ویڈیو دیکھیں تاکہ <strong>{baseCoin}</strong> سکے <strong>{totalCoin}</strong> سکوں میں بدل جائیں",
     "doubleWatchLabel": "{totalCoin} سکوں تک دوگنا · ویڈیو دیکھیں",
-    "claimBaseOnly": "نہیں، صرف {baseCoin} سکے لیں"
+    "claimBaseOnly": "نہیں، صرف {baseCoin} سکے لیں",
+    "newUserBonusTitle": "Welcome Bonus Claimed",
+    "newUserBonusHeadlineHtml": "You got <strong>{baseCoin}</strong> Coins!",
+    "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
+    "newUserBonusFoot": "One-time bonus for first-time users.",
+    "newUserBonusDouble": "Double My Coins",
+    "newUserBonusMaybeLater": "Maybe Later"
   },
   "messages": {
     "alreadyCheckedIn": "آپ آج پہلے ہی چیک اِن کر چکے ہیں۔ کل دوبارہ آئیں!",

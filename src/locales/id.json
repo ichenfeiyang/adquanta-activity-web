@@ -78,7 +78,13 @@
     "doubleReward": "Gandakan hadiah Anda!",
     "boostDescHtml": "Tonton video singkat untuk mengubah <strong>{baseCoin}</strong> koin menjadi <strong>{totalCoin}</strong> koin",
     "doubleWatchLabel": "Gandakan jadi {totalCoin} Koin · Tonton Video",
-    "claimBaseOnly": "Tidak, terima {baseCoin} koin saja"
+    "claimBaseOnly": "Tidak, terima {baseCoin} koin saja",
+    "newUserBonusTitle": "Welcome Bonus Claimed",
+    "newUserBonusHeadlineHtml": "You got <strong>{baseCoin}</strong> Coins!",
+    "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
+    "newUserBonusFoot": "One-time bonus for first-time users.",
+    "newUserBonusDouble": "Double My Coins",
+    "newUserBonusMaybeLater": "Maybe Later"
   },
   "messages": {
     "alreadyCheckedIn": "Anda sudah check-in hari ini. Kembali lagi besok!",

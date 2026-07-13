@@ -23,6 +23,7 @@ export function fingerprintActivityInfo(data) {
     userId: data?.user_info?.user_id ?? null,
     checkin,
     video,
+    newUserBonus: data?.new_user_bonus ?? null,
   });
 }
 

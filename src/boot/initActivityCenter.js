@@ -41,16 +41,23 @@ export function initActivityCenter({ router, route }) {
   let lastInterstitialAdTaskId = "task_checkin";
   const checkinWatchAdInFlight = { value: false };
   const checkinVideoClaimInFlight = { value: false };
+  const newUserBonusAdInFlight = { value: false };
+  const newUserBonusClaimInFlight = { value: false };
   const AD_CALLBACK_TIMEOUT_MS = 60000;
   let ui;
   let adapter;
   let rewardAdTimeout;
   let interstitialAdTimeout;
+  let newUserBonusAdTimeout;
 
   function resetCheckinAdState() {
     checkinWatchAdInFlight.value = false;
     checkinVideoClaimInFlight.value = false;
     ui.setSigninWatchLoading(false);
+  }
+
+  function shouldShowNewUserBonus(bonus) {
+    return bonus?.eligible === true && bonus?.show === true && bonus?.status === "pending";
   }
 
   function normalizeAdMessage(message, fallback = adFailedMessage()) {
@@ -67,6 +74,13 @@ export function initActivityCenter({ router, route }) {
     onTaskUpdate: (tasks) => ui.updateTasks(tasks),
     onCheckinUpdate: (detail) => ui.updateCheckin(detail),
     onFeatureVisibilityUpdate: (visibility) => ui.updateFeatureVisibility(visibility),
+    onNewUserBonusUpdate: (bonus) => {
+      if (shouldShowNewUserBonus(bonus)) {
+        ui.showNewUserBonusDialog(bonus);
+      } else {
+        ui.hideNewUserBonusDialog();
+      }
+    },
   });
 
   const handleSDKEventCompleted = createActivitySdkEventHandler({
@@ -86,10 +100,15 @@ export function initActivityCenter({ router, route }) {
     get interstitialAdTimeout() {
       return interstitialAdTimeout;
     },
+    get newUserBonusAdTimeout() {
+      return newUserBonusAdTimeout;
+    },
     normalizeAdMessage,
     showDailyAdLimitToast,
     checkinVideoClaimInFlight,
     checkinWatchAdInFlight,
+    newUserBonusAdInFlight,
+    newUserBonusClaimInFlight,
   });
 
   adapter = new ActivityCenterAdapter({
@@ -214,6 +233,46 @@ export function initActivityCenter({ router, route }) {
         });
       }
     },
+    onNewUserBonusVideoClick: async (bonus) => {
+      if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) return;
+      try {
+        newUserBonusAdInFlight.value = true;
+        ui.setNewUserBonusLoading(true, "video");
+        lastRewardAdTaskId = "task_new_user_bonus";
+        newUserBonusAdTimeout?.start();
+        await adapter.triggerRewardAd({
+          taskId: "task_new_user_bonus",
+          reward: bonus?.video_coin,
+        });
+      } catch (error) {
+        newUserBonusAdTimeout?.clear();
+        newUserBonusAdInFlight.value = false;
+        ui.setNewUserBonusLoading(false);
+        ui.restoreNewUserBonusVideoButton();
+        const message = normalizeAdMessage(error?.message, adNotAvailableMessage());
+        logger.error("[Ad trigger failed] reward_ad task_new_user_bonus", error);
+        showToast(message, "error");
+        adapter.trackEvent("new_user_bonus_video_error", {
+          taskId: "task_new_user_bonus",
+          error: error?.message || String(error),
+        });
+      }
+    },
+    onNewUserBonusDismissClick: async () => {
+      if (newUserBonusClaimInFlight.value) return;
+      newUserBonusClaimInFlight.value = true;
+      ui.setNewUserBonusLoading(true, "dismiss");
+      try {
+        const result = await business.submitNewUserBonusAction(apiOptions, "dismiss");
+        if (result?.ok) {
+          ui.hideNewUserBonusDialog();
+        } else {
+          ui.setNewUserBonusLoading(false);
+        }
+      } finally {
+        newUserBonusClaimInFlight.value = false;
+      }
+    },
   });
 
   rewardAdTimeout = createAdCallbackTimeout({
@@ -238,9 +297,35 @@ export function initActivityCenter({ router, route }) {
     },
   });
 
+  newUserBonusAdTimeout = createAdCallbackTimeout({
+    ms: AD_CALLBACK_TIMEOUT_MS,
+    isActive: () => newUserBonusAdInFlight.value,
+    onTimeout: () => {
+      logger.warn("[Ad timeout] reward_ad task_new_user_bonus");
+      newUserBonusAdInFlight.value = false;
+      ui.setNewUserBonusLoading(false);
+      ui.restoreNewUserBonusVideoButton();
+      showToast(newUserBonusAdTimeout.message, "warning");
+      adapter.trackEvent("new_user_bonus_video_timeout", { taskId: "task_new_user_bonus" });
+    },
+  });
+
   window.onRewardedAdError = function (error) {
-    rewardAdTimeout?.clear();
     logger.error("广告播放错误:", error);
+    if (newUserBonusAdInFlight.value) {
+      newUserBonusAdTimeout?.clear();
+      newUserBonusAdInFlight.value = false;
+      ui.setNewUserBonusLoading(false);
+      ui.restoreNewUserBonusVideoButton();
+      const message = normalizeAdMessage(error?.message, adFailedMessage());
+      showToast(message, "error");
+      adapter.trackEvent("new_user_bonus_video_error", {
+        taskId: "task_new_user_bonus",
+        error: error?.message || String(error),
+      });
+      return;
+    }
+    rewardAdTimeout?.clear();
     ui.handleRewardAdFailedForSpin(
       normalizeAdMessage(error?.message, adFailedMessage()),
     );
@@ -270,6 +355,7 @@ export function initActivityCenter({ router, route }) {
   return function disposeActivityCenter() {
     rewardAdTimeout?.clear();
     interstitialAdTimeout?.clear();
+    newUserBonusAdTimeout?.clear();
     window.onRewardedAdError = null;
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
   };

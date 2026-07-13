@@ -1,4 +1,9 @@
-import { getActivityInfo, postCheckin, postActivityVideo } from "./activity-api.js";
+import {
+  getActivityInfo,
+  postActivityVideo,
+  postCheckin,
+  postNewUserBonus,
+} from "./activity-api.js";
 import { invalidateActivityInfoCache, loadActivityInfoWithSWR } from "./activity-page-cache.js";
 import { showToast } from "./activity-alert-ui.js";
 import {
@@ -61,6 +66,8 @@ export class ActivityCenterBusiness {
 
     // 当前用户 ID（来自 user_info.user_id）
     this.userId = null;
+
+    this.newUserBonus = null;
 
     this._lastActivityInfoFingerprint = "";
 
@@ -130,7 +137,19 @@ export class ActivityCenterBusiness {
       userId: d?.user_info?.user_id ?? null,
       checkin,
       video,
+      newUserBonus: d?.new_user_bonus ?? null,
     });
+  }
+
+  normalizeNewUserBonus(value) {
+    if (!value || typeof value !== "object") return null;
+    return {
+      eligible: value.eligible === true,
+      show: value.show === true,
+      base_coin: Number(value.base_coin ?? 0) || 0,
+      video_coin: Number(value.video_coin ?? 0) || 0,
+      status: String(value.status || ""),
+    };
   }
 
   applyActivityInfoData(d) {
@@ -145,6 +164,7 @@ export class ActivityCenterBusiness {
 
     this.checkinDetail = null;
     this.adTaskStatus = this.createEmptyAdTaskStatus();
+    this.newUserBonus = this.normalizeNewUserBonus(d?.new_user_bonus);
 
     try {
       if (d.user_info != null && d.user_info.user_id != null) {
@@ -196,6 +216,7 @@ export class ActivityCenterBusiness {
         goldCoins: this.userAssets.goldCoins,
         checkin: hasCheckinTask,
         watchAd: hasVideoTask ? this.adTaskStatus : null,
+        newUserBonus: this.newUserBonus,
       });
     } catch (error) {
       logger.error("[Activity API] Failed to apply activity info UI", error);
@@ -205,6 +226,7 @@ export class ActivityCenterBusiness {
         video: hasVideoTask,
       });
       if (applied) {
+        this.config.onNewUserBonusUpdate?.(this.newUserBonus);
         this._lastActivityInfoFingerprint = fingerprint;
       }
     }
@@ -333,6 +355,31 @@ export class ActivityCenterBusiness {
       );
     }
     return { ok: false };
+  }
+
+  async submitNewUserBonusAction(apiOptions = {}, action, adEventId = "") {
+    try {
+      const res = await postNewUserBonus(apiOptions, {
+        action,
+        ad_event_id: adEventId,
+      });
+      const ok = res?.code === 200 && res?.data?.success !== false;
+      if (!ok) {
+        showToast(res?.data?.message || res?.message || claimFailedMessage(), "error");
+        return { ok: false };
+      }
+
+      await this.loadActivityInfo(apiOptions, { force: true });
+      return {
+        ok: true,
+        coin: Number(res?.data?.coin ?? res?.data?.reward_coin ?? 0) || 0,
+        message: res?.data?.message || res?.message || "",
+      };
+    } catch (error) {
+      logger.error("New user bonus action failed", error);
+      showToast(error?.message || claimFailedRetryMessage(), "error");
+      return { ok: false };
+    }
   }
 
   /**

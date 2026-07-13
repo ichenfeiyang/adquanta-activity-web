@@ -78,7 +78,13 @@
     "doubleReward": "आफ्नो पुरस्कार दोब्बर गर्नुहोस्!",
     "boostDescHtml": "छोटो भिडियो हेरेर <strong>{baseCoin}</strong> सिक्कालाई <strong>{totalCoin}</strong> सिक्कामा बदल्नुहोस्",
     "doubleWatchLabel": "{totalCoin} सिक्कासम्म दोब्बर · भिडियो हेर्नुहोस्",
-    "claimBaseOnly": "होइन, {baseCoin} सिक्का मात्र लिनुहोस्"
+    "claimBaseOnly": "होइन, {baseCoin} सिक्का मात्र लिनुहोस्",
+    "newUserBonusTitle": "Welcome Bonus Claimed",
+    "newUserBonusHeadlineHtml": "You got <strong>{baseCoin}</strong> Coins!",
+    "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
+    "newUserBonusFoot": "One-time bonus for first-time users.",
+    "newUserBonusDouble": "Double My Coins",
+    "newUserBonusMaybeLater": "Maybe Later"
   },
   "messages": {
     "alreadyCheckedIn": "तपाईं आज पहिले नै चेक-इन गरिसक्नुभयो। भोलि फेरि आउनुहोस्!",

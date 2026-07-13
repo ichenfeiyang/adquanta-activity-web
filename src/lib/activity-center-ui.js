@@ -4,6 +4,7 @@ import { showToast } from "./activity-alert-ui.js";
 import { bindPageElements } from "./bind-page-elements.js";
 import { checkinUiMixin as checkinMixin } from "./activity-center-checkin-ui.js";
 import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
+import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
 
 /**
  * UI 绑定层
@@ -43,6 +44,17 @@ export class ActivityCenterUI {
       signinDialogWatchBtnLabel: "signinDialogWatchBtnLabel",
       signinDialogWatchBtn: "signinDialogWatchBtn",
       signinDialogClaimBaseOnly: "signinDialogClaimBaseOnly",
+      newUserBonusModal: "newUserBonusModal",
+      newUserBonusTitle: "newUserBonusTitle",
+      newUserBonusAmount: "newUserBonusAmount",
+      newUserBonusHeadline: "newUserBonusHeadline",
+      newUserBonusHeadlineCoin: "newUserBonusHeadlineCoin",
+      newUserBonusDesc: "newUserBonusDesc",
+      newUserBonusVideoCoin: "newUserBonusVideoCoin",
+      newUserBonusFoot: "newUserBonusFoot",
+      newUserBonusDoubleBtn: "newUserBonusDoubleBtn",
+      newUserBonusDoubleBtnLabel: "newUserBonusDoubleBtnLabel",
+      newUserBonusMaybeLater: "newUserBonusMaybeLater",
       checkinPill: "tc-checkin-pill",
       checkinDaysContainer: "tc-checkin-days-container",
     });
@@ -58,6 +70,8 @@ export class ActivityCenterUI {
       onWithdrawClick: config.onWithdrawClick || (() => {}),
       onSigninClick: config.onSigninClick || (() => {}),
       onSigninWatchVideoClick: config.onSigninWatchVideoClick || (() => {}),
+      onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
+      onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
       ...config,
     };
 
@@ -76,6 +90,7 @@ export class ActivityCenterUI {
     this._lastGoldCoins = null;
     this._lastCheckinFingerprint = "";
     this._lastSpinPoolKey = "";
+    this._newUserBonus = null;
   }
 
 
@@ -367,6 +382,20 @@ export class ActivityCenterUI {
       });
     }
 
+    if (this.elements.newUserBonusDoubleBtn) {
+      this.elements.newUserBonusDoubleBtn.addEventListener("click", () => {
+        if (this.elements.newUserBonusDoubleBtn.disabled) return;
+        this.config.onNewUserBonusVideoClick(this._newUserBonus);
+      });
+    }
+
+    if (this.elements.newUserBonusMaybeLater) {
+      this.elements.newUserBonusMaybeLater.addEventListener("click", () => {
+        if (this.elements.newUserBonusMaybeLater.disabled) return;
+        this.config.onNewUserBonusDismissClick(this._newUserBonus);
+      });
+    }
+
     if (!this._scrollLockTouchBound) {
       this._scrollLockTouchBound = true;
       document.addEventListener(
@@ -377,6 +406,7 @@ export class ActivityCenterUI {
           if (target instanceof Node) {
             if (this.elements.spinWheelModal?.contains(target)) return;
             if (this.elements.spinRewardModal?.contains(target)) return;
+            if (this.elements.newUserBonusModal?.contains(target)) return;
           }
           e.preventDefault();
         },
@@ -391,4 +421,4 @@ export class ActivityCenterUI {
 
 }
 
-Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin);
+Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin, newUserBonusMixin);

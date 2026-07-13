@@ -43,7 +43,7 @@ export const spinUiMixin = {
   },
 
   isScrollLockOverlayOpen() {
-    return this.isSpinWheelVisible() || this.isSpinRewardVisible();
+    return this.isSpinWheelVisible() || this.isSpinRewardVisible() || this.isNewUserBonusVisible?.();
   },
 
   syncBodyScrollLock() {

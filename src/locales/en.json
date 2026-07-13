@@ -78,7 +78,13 @@
     "doubleReward": "Double your reward!",
     "boostDescHtml": "Watch a short video to turn <strong>{baseCoin}</strong> coins into <strong>{totalCoin}</strong> coins",
     "doubleWatchLabel": "Double to {totalCoin} Coins · Watch Video",
-    "claimBaseOnly": "No thanks, claim {baseCoin} coins"
+    "claimBaseOnly": "No thanks, claim {baseCoin} coins",
+    "newUserBonusTitle": "Welcome Bonus Claimed",
+    "newUserBonusHeadlineHtml": "You got <strong>{baseCoin}</strong> Coins!",
+    "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
+    "newUserBonusFoot": "One-time bonus for first-time users.",
+    "newUserBonusDouble": "Double My Coins",
+    "newUserBonusMaybeLater": "Maybe Later"
   },
   "messages": {
     "alreadyCheckedIn": "You've already checked in today. Come back tomorrow!",

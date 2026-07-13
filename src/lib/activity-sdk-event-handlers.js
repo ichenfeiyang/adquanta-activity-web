@@ -12,6 +12,8 @@ import * as logger from "./activity-logger.js";
  *   showDailyAdLimitToast: () => void,
  *   checkinVideoClaimInFlight: { value: boolean },
  *   checkinWatchAdInFlight: { value: boolean },
+ *   newUserBonusAdInFlight: { value: boolean },
+ *   newUserBonusClaimInFlight: { value: boolean },
  * }} ctx
  */
 async function handleRewardAdEvent(ctx, result) {
@@ -19,13 +21,15 @@ async function handleRewardAdEvent(ctx, result) {
     business,
     ui,
     adapter,
+    apiOptions,
     getLastRewardAdTaskId,
     rewardAdTimeout,
+    newUserBonusAdTimeout,
     normalizeAdMessage,
     showDailyAdLimitToast,
+    newUserBonusAdInFlight,
+    newUserBonusClaimInFlight,
   } = ctx;
-
-  rewardAdTimeout?.clear();
 
   const success = result.success;
   const message = result.message || "";
@@ -37,6 +41,58 @@ async function handleRewardAdEvent(ctx, result) {
     adDetail: result.adDetail,
     message,
   });
+
+  if (taskId === "task_new_user_bonus") {
+    newUserBonusAdTimeout?.clear();
+    newUserBonusAdInFlight.value = false;
+
+    if (success) {
+      if (newUserBonusClaimInFlight.value) return;
+      newUserBonusClaimInFlight.value = true;
+      ui.setNewUserBonusLoading(true, "video");
+      const adEventId =
+        result.ad_event_id ??
+        result.adEventId ??
+        result.video_id ??
+        result.videoId ??
+        result.data?.ad_event_id ??
+        result.data?.video_id ??
+        "";
+      const claimResult = await business.submitNewUserBonusAction(
+        apiOptions,
+        "claim_video",
+        adEventId,
+      );
+      newUserBonusClaimInFlight.value = false;
+      if (claimResult?.ok) {
+        ui.hideNewUserBonusDialog();
+      } else {
+        ui.setNewUserBonusLoading(false);
+        ui.restoreNewUserBonusVideoButton();
+      }
+      adapter.trackEvent("new_user_bonus_video_completed", {
+        taskId,
+        success: !!claimResult?.ok,
+        platform: adapter.getPlatform(),
+      });
+      return;
+    }
+
+    ui.setNewUserBonusLoading(false);
+    ui.restoreNewUserBonusVideoButton();
+    const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
+    showToast(displayMessage, "warning");
+    adapter.trackEvent("new_user_bonus_video_failed", {
+      taskId,
+      reason: displayMessage,
+      adStatusCode: result.adStatusCode,
+      adErrorCode: result.adErrorCode,
+      adDetail: result.adDetail,
+    });
+    return;
+  }
+
+  rewardAdTimeout?.clear();
 
   if (taskId !== "task_watch_ad") return;
 

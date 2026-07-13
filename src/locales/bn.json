@@ -78,7 +78,13 @@
     "doubleReward": "আপনার পুরস্কার দ্বিগুণ করুন!",
     "boostDescHtml": "একটি ছোট ভিডিও দেখুন এবং <strong>{baseCoin}</strong> কয়েন <strong>{totalCoin}</strong> কয়েনে পরিণত করুন",
     "doubleWatchLabel": "{totalCoin} কয়েনে দ্বিগুণ · ভিডিও দেখুন",
-    "claimBaseOnly": "না, শুধু {baseCoin} কয়েন নিন"
+    "claimBaseOnly": "না, শুধু {baseCoin} কয়েন নিন",
+    "newUserBonusTitle": "Welcome Bonus Claimed",
+    "newUserBonusHeadlineHtml": "You got <strong>{baseCoin}</strong> Coins!",
+    "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
+    "newUserBonusFoot": "One-time bonus for first-time users.",
+    "newUserBonusDouble": "Double My Coins",
+    "newUserBonusMaybeLater": "Maybe Later"
   },
   "messages": {
     "alreadyCheckedIn": "আপনি আজ ইতিমধ্যে চেক-ইন করেছেন। আগামীকাল আবার আসুন!",
