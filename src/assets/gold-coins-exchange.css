@@ -1,0 +1,932 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f8f6f6;
+  color: #111827;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.redeem-root {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background-color: #f8f6f6;
+  display: flex;
+  flex-direction: column;
+}
+
+.redeem-root button,
+.redeem-root a,
+.redeem-root input,
+.redeem-root select,
+.redeem-root textarea {
+  touch-action: manipulation;
+}
+
+.redeem-root--gift-redeeming {
+  cursor: wait;
+}
+
+.redeem-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f8f6f6;
+}
+
+.redeem-header-title {
+  grid-column: 2;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.redeem-back-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background-color: rgba(236, 91, 19, 0.12);
+  color: #ec5b13;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.redeem-main {
+  flex: 1;
+  padding: 12px 16px 24px;
+}
+
+.redeem-section {
+  margin-bottom: 18px;
+}
+
+.redeem-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.redeem-section-title--compact {
+  margin-bottom: 12px;
+}
+
+.redeem-wallet-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ec5b13, #f97316);
+  box-shadow: 0 14px 30px rgba(236, 91, 19, 0.4);
+  color: #ffffff;
+}
+
+.redeem-wallet-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.redeem-wallet-top-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.redeem-wallet-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.redeem-wallet-local {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.redeem-wallet-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.redeem-wallet-label {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.redeem-wallet-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.redeem-wallet-unit {
+  font-size: 12px;
+  margin-left: 4px;
+  opacity: 0.9;
+}
+
+.redeem-wallet-hint {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.redeem-wallet-icon span {
+  font-size: 32px;
+}
+
+.redeem-wallet-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.redeem-field {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.redeem-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.redeem-input-wrapper {
+  position: relative;
+}
+
+.redeem-input-prefix {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.redeem-countrycode-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  height: 30px;
+  padding: 0 8px 0 6px;
+  min-width: 86px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.redeem-countrycode-btn:active {
+  opacity: 0.85;
+}
+
+.redeem-countrycode-flag,
+.redeem-countrycode-item-flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.redeem-countrycode-dial {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.redeem-countrycode-chevron {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-left: 1px;
+}
+
+.redeem-countrycode-dropdown {
+  position: absolute;
+  left: 10px;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  flex-direction: column;
+  gap: 4px;
+}
+
+.redeem-countrycode-dropdown:not([hidden]) {
+  display: flex;
+}
+
+.redeem-countrycode-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.redeem-countrycode-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.redeem-countrycode-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.redeem-countrycode-item-dial {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.redeem-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px 0 128px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  font-size: 14px;
+  color: #111827;
+  position: relative;
+  z-index: 1;
+}
+
+.redeem-input--full {
+  padding: 0 12px;
+}
+
+.redeem-label--spaced {
+  margin-top: 4px;
+}
+
+.redeem-field-hint {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #9ca3af;
+}
+
+.redeem-field-error {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #dc2626;
+}
+
+.redeem-input:focus {
+  outline: none;
+  border-color: #ec5b13;
+  box-shadow: 0 0 0 1px rgba(236, 91, 19, 0.4);
+}
+
+.redeem-input:disabled {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  cursor: wait;
+}
+
+.redeem-operator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.redeem-operator-single {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.redeem-operator-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.redeem-operator-btn {
+  padding: 8px 6px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  font-size: 12px;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.redeem-operator-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+}
+
+.redeem-amount-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.redeem-amount-grid--wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.redeem-amount-type-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.redeem-amount-subtitle {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #6b7280;
+  text-align: center;
+}
+
+.redeem-amount-btn {
+  height: 58px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 6px 4px;
+}
+
+.redeem-amount-btn.redeem-amount-btn--tall,
+.redeem-amount-grid--wide .redeem-amount-btn {
+  height: auto;
+  min-height: 72px;
+  gap: 4px;
+  padding: 8px 6px;
+}
+
+.redeem-amount-btn.redeem-amount-btn--tall .redeem-amount-main,
+.redeem-amount-grid--wide .redeem-amount-main {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.redeem-amount-subtitle--placeholder {
+  visibility: hidden;
+}
+
+.redeem-amount-main {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.redeem-amount-cost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: #6b7280;
+}
+
+.redeem-amount-coin-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+
+.redeem-amount-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+}
+
+.redeem-summary {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.redeem-powered {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #9ca3af;
+  letter-spacing: normal;
+}
+
+.redeem-powered-label {
+  font-weight: 400;
+}
+
+.redeem-powered-brand {
+  margin-left: 0.25em;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.redeem-primary-btn {
+  margin-top: 12px;
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ec5b13, #f97316);
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(236, 91, 19, 0.45);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.redeem-primary-btn--disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.redeem-primary-btn:not(.redeem-primary-btn--disabled):active {
+  transform: scale(0.97);
+}
+
+.redeem-history-section {
+  margin-top: 4px;
+}
+
+.redeem-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.redeem-history-view-all {
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ec5b13;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.redeem-history-view-all:active {
+  opacity: 0.8;
+}
+
+.redeem-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.redeem-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.redeem-history-item--clickable {
+  cursor: pointer;
+}
+
+.redeem-history-item--clickable:active {
+  transform: scale(0.995);
+}
+
+.redeem-history-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  font-size: 16px;
+}
+
+.redeem-history-icon--earn {
+  background-color: rgba(236, 91, 19, 0.12);
+  color: #ec5b13;
+}
+
+.redeem-history-icon--success {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.redeem-history-icon--processing {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
+.redeem-history-icon--fail {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.redeem-history-amount--earn {
+  color: #059669;
+}
+
+.redeem-countrycode-item--active {
+  border-color: rgba(236, 91, 19, 0.35) !important;
+  background-color: rgba(236, 91, 19, 0.04) !important;
+}
+
+.redeem-history-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.redeem-history-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.redeem-history-subtitle {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.redeem-history-phone {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.redeem-history-amount {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.redeem-history-coins {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.redeem-history-coin-icon img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+@media (max-width: 414px) {
+  .redeem-root {
+    max-width: 100%;
+  }
+}
+
+.redeem-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background-color: #e5e7eb;
+}
+
+.redeem-tab {
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.redeem-tab--active {
+  background-color: #ffffff;
+  color: #ec5b13;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.redeem-tab-panel {
+  margin-top: 4px;
+}
+
+.redeem-tab-panel--hidden {
+  display: none;
+}
+
+.redeem-featured-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.redeem-featured-head .redeem-section-title {
+  margin-bottom: 0;
+}
+
+.redeem-featured-icon {
+  color: #ec5b13;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.redeem-brand-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.redeem-brand-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.redeem-brand-btn {
+  flex: 0 0 auto;
+  min-width: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 1.5px solid #e5e7eb;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.redeem-brand-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+}
+
+.redeem-brand-btn--active .redeem-brand-name {
+  color: #ec5b13;
+}
+
+.redeem-brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.redeem-brand-logo {
+  width: 76px;
+  height: 48px;
+  border-radius: 8px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.redeem-brand-icon--amazon {
+  background: rgba(236, 91, 19, 0.12);
+}
+
+.redeem-brand-icon--flipkart {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.redeem-brand-icon--google {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.redeem-brand-icon--default {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.redeem-brand-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+.redeem-gift-amount-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.redeem-gift-amount-btn {
+  min-height: 68px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
+}
+
+.redeem-gift-amount-btn--active {
+  border-color: #ec5b13;
+  background-color: rgba(236, 91, 19, 0.06);
+  color: #ec5b13;
+}
+
+.redeem-gift-amount-main {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.redeem-gift-amount-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.redeem-gift-amount-cost .redeem-amount-coin-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.redeem-empty-hint {
+  padding: 16px 12px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px dashed #e5e7eb;
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* Gift catalog loading skeleton */
+@keyframes redeem-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.redeem-skeleton-card {
+  pointer-events: none;
+  cursor: default;
+  border-color: #eef2f7;
+  background-color: #ffffff;
+}
+
+.redeem-skeleton-block {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eef2f7 0%, #f8fafc 50%, #eef2f7 100%);
+  background-size: 200% 100%;
+  animation: redeem-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes redeem-skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.redeem-skeleton-brand-logo {
+  width: 76px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.redeem-skeleton-brand-name {
+  width: 72px;
+  height: 12px;
+}
+
+.redeem-brand-btn.redeem-skeleton-card {
+  min-width: 108px;
+  animation: redeem-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.redeem-skeleton-amount-main {
+  width: 56px;
+  height: 14px;
+}
+
+.redeem-skeleton-amount-cost {
+  width: 40px;
+  height: 12px;
+}
+
+.redeem-gift-amount-btn.redeem-skeleton-card {
+  animation: redeem-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.redeem-gift-amount-btn--validating {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.redeem-gift-recipient-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.redeem-skeleton-label {
+  width: 120px;
+  height: 12px;
+}
+
+.redeem-skeleton-label--short {
+  width: 96px;
+  margin-top: 4px;
+}
+
+.redeem-skeleton-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.redeem-gift-history-section {
+  margin-top: 24px;
+}
+
+@media (max-width: 380px) {
+  .redeem-gift-amount-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

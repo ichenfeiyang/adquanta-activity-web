@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-Deploy static site files to Volcengine TOS via the S3-compatible API.
+Deploy Vite build output (dist/) to Volcengine TOS via the S3-compatible API.
 """
 
 from __future__ import annotations
 
 import hashlib
-import fnmatch
 import mimetypes
 import os
 from pathlib import Path
@@ -16,10 +15,7 @@ from botocore.client import Config
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-IGNORE_FILE = ROOT_DIR / ".tosignore"
-HARD_EXCLUDED_DIRS = {
-    ".git",
-}
+DIST_DIR = ROOT_DIR / "dist"
 CONTENT_TYPE_MAP = {
     ".html": "text/html",
     ".css": "text/css",
@@ -67,49 +63,15 @@ def build_client():
     )
 
 
-def load_ignore_patterns():
-    if not IGNORE_FILE.is_file():
-        return []
-
-    patterns = []
-    for line in IGNORE_FILE.read_text(encoding="utf-8").splitlines():
-        pattern = line.strip()
-        if not pattern or pattern.startswith("#"):
-            continue
-        patterns.append(pattern)
-    return patterns
-
-
 def iter_upload_files():
-    ignore_patterns = load_ignore_patterns()
-    for path in sorted(ROOT_DIR.rglob("*")):
+    if not DIST_DIR.is_dir():
+        raise RuntimeError("dist/ not found; run `npm run build` before deploying")
+
+    for path in sorted(DIST_DIR.rglob("*")):
         if not path.is_file():
             continue
-        relative_key = path.relative_to(ROOT_DIR).as_posix()
-        if should_exclude(path, relative_key, ignore_patterns):
-            continue
+        relative_key = path.relative_to(DIST_DIR).as_posix()
         yield path, relative_key
-
-
-def should_exclude(path: Path, relative_key: str, ignore_patterns: list[str]) -> bool:
-    parts = path.relative_to(ROOT_DIR).parts
-    if any(part in HARD_EXCLUDED_DIRS for part in parts[:-1]):
-        return True
-    for pattern in ignore_patterns:
-        if matches_pattern(relative_key, pattern):
-            return True
-    return False
-
-
-def matches_pattern(relative_key: str, pattern: str) -> bool:
-    normalized_key = relative_key.strip("/")
-    normalized_pattern = pattern.strip()
-
-    if normalized_pattern.endswith("/"):
-        prefix = normalized_pattern.rstrip("/")
-        return normalized_key == prefix or normalized_key.startswith(f"{prefix}/")
-
-    return fnmatch.fnmatch(normalized_key, normalized_pattern)
 
 
 def guess_content_type(path: Path) -> str:
@@ -162,7 +124,7 @@ def main():
     s3_client = build_client()
     upload_targets = list(iter_upload_files())
     if not upload_targets:
-        raise RuntimeError("No deployable site files found")
+        raise RuntimeError("No deployable files found under dist/")
 
     uploaded_keys = []
 
@@ -170,7 +132,7 @@ def main():
         upload_file(s3_client, bucket, key_prefix, path, relative_key)
         uploaded_keys.append(f"{key_prefix}/{relative_key}" if key_prefix else relative_key)
 
-    print(f"uploaded {len(uploaded_keys)} files to bucket {bucket}")
+    print(f"uploaded {len(uploaded_keys)} files from dist/ to bucket {bucket}")
 
     if cdn_domain:
         print("sample urls:")
