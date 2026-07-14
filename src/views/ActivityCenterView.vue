@@ -17,53 +17,81 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
 
 <template>
   <div class="task-center-root">
+    <header class="tc-page-header">
+      <h1 class="tc-page-title">{{ t('center.rewardsTitle') }}</h1>
+      <ActivityLanguageSwitcher />
+    </header>
     <main class="tc-main">
       <section id="tc-checkin-section" class="tc-section">
         <div class="tc-card tc-balance-card">
-          <div class="tc-balance-main">
-            <div class="tc-balance-icon">
-              <div class="tc-balance-icon-inner">
-                <img :src="assetUrl('icons/gold_coin.svg')" alt="coins" class="icon-img" width="24" height="24" fetchpriority="high">
+          <div class="tc-balance-top">
+            <div class="tc-balance-main">
+              <div class="tc-balance-icon" aria-hidden="true">
+                <img :src="assetUrl('icons/gold_coin.svg')" alt="" class="tc-balance-icon-img" width="44" height="44" fetchpriority="high">
+              </div>
+              <div class="tc-balance-left">
+                <div class="tc-balance-label">{{ t('center.myBalance') }}</div>
+                <div class="tc-balance-value">
+                  <span id="goldCoins">0</span>
+                  <span class="tc-balance-unit">{{ t('common.coins') }}</span>
+                </div>
               </div>
             </div>
-            <div class="tc-balance-left">
-              <div class="tc-balance-label">{{ t('center.myBalance') }}</div>
-              <div class="tc-balance-value">
-                <span id="goldCoins">0</span>
-                <span class="tc-balance-unit">{{ t('common.goldCoins') }}</span>
-              </div>
-            </div>
+            <button class="tc-primary-btn tc-balance-redeem-btn" id="exchangeBtn" type="button">{{ t('center.redeem') }}</button>
           </div>
-          <button class="tc-primary-btn" id="exchangeBtn" type="button">{{ t('center.redeem') }}</button>
+          <div id="redeemGapPanel" class="tc-redeem-gap-panel" style="display:none;">
+            <div class="tc-redeem-progress-track" aria-hidden="true">
+              <div id="redeemGapProgress" class="tc-redeem-progress-fill" style="width:0%;"></div>
+            </div>
+            <div id="redeemGapHint" class="tc-redeem-gap-hint"></div>
+          </div>
         </div>
       </section>
 
       <section id="tc-video-task-section" class="tc-section">
         <div class="tc-card tc-flow-card">
-          <h2 class="tc-flow-title">{{ t('center.flowTitle') }}</h2>
+          <h2 class="tc-flow-title">{{ t('center.flowHowTitle') }}</h2>
           <div class="tc-flow-steps">
             <div class="tc-flow-step">
               <div class="tc-flow-icon">
-                <img :src="assetUrl('icons/task_alt.svg')" alt="tasks" class="icon-img" width="24" height="24" loading="lazy" decoding="async">
+                <img :src="assetUrl('icons/gold_coin.svg')" alt="" class="icon-img" width="44" height="44" loading="lazy" decoding="async">
               </div>
-              <p class="tc-flow-text tc-flow-text--multiline">{{ t('center.flowStepTasks') }}</p>
+              <div class="tc-flow-copy">
+                <div class="tc-flow-heading">
+                  <span class="tc-flow-index">1</span>
+                  <span>{{ t('center.flowStepEarnTitle') }}</span>
+                </div>
+                <p class="tc-flow-desc">{{ t('center.flowStepEarnDesc') }}</p>
+              </div>
             </div>
+            <div class="tc-flow-arrow" aria-hidden="true">›</div>
+            <div class="tc-flow-step">
+              <div class="tc-flow-icon tc-flow-icon--threshold">
+                <span class="tc-flow-progress-icon">
+                  <span class="tc-flow-progress-fill"></span>
+                </span>
+              </div>
+              <div class="tc-flow-copy">
+                <div class="tc-flow-heading">
+                  <span class="tc-flow-index">2</span>
+                  <span>{{ t('center.flowStepThresholdTitle') }}</span>
+                </div>
+                <p class="tc-flow-desc">{{ t('center.flowStepThresholdDesc') }}</p>
+              </div>
+            </div>
+            <div class="tc-flow-arrow" aria-hidden="true">›</div>
             <div class="tc-flow-step">
               <div class="tc-flow-icon">
-                <img :src="assetUrl('icons/gold_coin.svg')" alt="coins" class="icon-img" width="24" height="24" loading="lazy" decoding="async">
+                <img :src="assetUrl('icons/card_giftcard.svg')" alt="" class="icon-img" width="44" height="44" loading="lazy" decoding="async">
               </div>
-              <p class="tc-flow-text tc-flow-text--multiline">{{ t('center.flowStepCoins') }}</p>
-            </div>
-            <div class="tc-flow-step">
-              <div class="tc-flow-icon">
-                <img :src="assetUrl('icons/phone_iphone.svg')" alt="credit" class="icon-img" width="24" height="24" loading="lazy" decoding="async">
+              <div class="tc-flow-copy">
+                <div class="tc-flow-heading">
+                  <span class="tc-flow-index">3</span>
+                  <span>{{ t('center.flowStepRedeemTitle') }}</span>
+                </div>
+                <p class="tc-flow-desc">{{ t('center.flowStepRedeemDesc') }}</p>
               </div>
-              <p class="tc-flow-text tc-flow-text--multiline">{{ t('center.flowStepCredit') }}</p>
             </div>
-          </div>
-          <div class="tc-flow-footer">
-            <span class="tc-flow-badge">{{ t('center.flowTipBadge') }}</span>
-            <span class="tc-flow-desc">{{ t('center.flowTipDesc') }}</span>
           </div>
         </div>
       </section>
@@ -76,53 +104,76 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
           </div>
           <div id="tc-checkin-days-container" class="tc-checkin-days" />
           <button id="signin-timer-btn" type="button" class="tc-primary-btn tc-primary-btn--full">
-            <img :src="assetUrl('icons/calendar_today.svg')" class="tc-icon-calendar" alt="" width="20" height="20" loading="lazy" decoding="async">
+            <img :src="assetUrl('icons/gold-coin-white.svg')" class="tc-icon-calendar" alt="" width="20" height="20" loading="lazy" decoding="async">
             <span>{{ t('center.checkinNow') }}</span>
           </button>
-          <p class="tc-checkin-tip">{{ t('center.superPrizeDay') }}</p>
+          <p class="tc-checkin-tip">
+            <img :src="assetUrl('icons/play_circle.svg')" alt="" class="tc-checkin-tip-icon" width="18" height="18" loading="lazy" decoding="async">
+            <span id="tc-checkin-video-tip">{{ t('center.checkinVideoTip', { totalCoin: 20 }) }}</span>
+          </p>
         </div>
       </section>
 
       <section id="tc-lucky-spin-section" class="tc-section">
-        <div class="tc-section-head">
-          <h2 class="tc-section-title">{{ t('center.tasksForYou') }}</h2>
-          <ActivityLanguageSwitcher />
-        </div>
         <div class="tc-card tc-video-card">
           <div class="tc-video-head">
             <div id="btn-spin-entry" class="tc-video-icon">
-              <img :src="assetUrl('icons/spin_s_80.svg')" class="tc-icon--large" alt="" width="80" height="80" loading="lazy" decoding="async">
-              <span class="tc-video-badge">{{ t('center.luckyBadge') }}</span>
-              <span class="tc-video-play-chip">{{ t('center.playBadge') }}</span>
+              <div class="tc-spin-card-wheel" aria-hidden="true">
+                <span class="tc-spin-card-label tc-spin-card-label-1">10</span>
+                <span class="tc-spin-card-label tc-spin-card-label-2">20</span>
+                <span class="tc-spin-card-label tc-spin-card-label-3">30</span>
+                <span class="tc-spin-card-label tc-spin-card-label-4">50</span>
+                <span class="tc-spin-card-label tc-spin-card-label-5">100</span>
+                <span class="tc-spin-card-label tc-spin-card-label-6">150</span>
+                <span class="tc-spin-card-label tc-spin-card-label-7">200</span>
+                <span class="tc-spin-card-label tc-spin-card-label-8">10</span>
+                <div class="tc-spin-card-wheel-center">
+                  <img :src="assetUrl('icons/gold_coin.svg')" alt="" width="32" height="32" loading="lazy" decoding="async">
+                </div>
+              </div>
             </div>
             <div class="tc-video-text">
-              <h3 class="tc-card-title">{{ t('center.luckySpinTitle') }}</h3>
+              <div class="tc-video-title-row">
+                <h3 class="tc-card-title">{{ t('center.luckySpinTitle') }}</h3>
+                <span class="tc-video-badge">{{ t('center.luckyBadge') }}</span>
+              </div>
               <p id="ad-task-desc" class="tc-card-subtitle">
-                Each video unlocks 1 lucky spin. Win up to 200 coins per spin!
+                <span>{{ t('center.luckySpinDescLine1') }}</span>
+                <span>{{ t('center.luckySpinDescLine2') }} <strong id="ad-max-coin" class="tc-spin-max-coin">200 Coins!</strong></span>
               </p>
+              <div class="tc-video-progress tc-video-stats">
+                <span class="tc-video-progress-item">
+                  <span class="tc-video-stat-icon tc-video-stat-icon--spin">+</span>
+                  <span class="tc-video-stat-copy">
+                    <span id="ad-progress-videos" class="tc-video-progress-value">0 / 5</span>
+                    <span class="tc-video-progress-label">{{ t('center.spinsLeftToday') }}</span>
+                  </span>
+                </span>
+                <span class="tc-video-stat-divider" aria-hidden="true" />
+                <span class="tc-video-progress-item tc-video-progress-item-right">
+                  <img :src="assetUrl('icons/gold_coin.svg')" alt="" class="tc-video-stat-coin" width="20" height="20" loading="lazy" decoding="async">
+                  <span class="tc-video-stat-copy">
+                    <span id="ad-earned-text" class="tc-video-progress-value">0 / 0</span>
+                    <span class="tc-video-progress-label">{{ t('center.dailyCoinLimit') }}</span>
+                  </span>
+                </span>
+              </div>
+            </div>
+            <div class="tc-video-actions tc-video-actions--single">
+              <button id="btn-watch-ad" type="button" class="tc-secondary-btn tc-watch-spin-btn">
+                <span>{{ t('center.watchVideoToSpinLine1') }}</span>
+                <span>{{ t('center.watchVideoToSpinLine2') }}</span>
+              </button>
             </div>
           </div>
-          <div class="tc-video-progress tc-video-stats">
-            <div class="tc-video-progress-header">
-              <span class="tc-video-progress-item">
-                <span class="tc-video-progress-label">{{ t('center.earnedToday') }}</span>
-                <span id="ad-earned-text">0 Coins</span>
-              </span>
-              <span class="tc-video-progress-item tc-video-progress-item-right">
-                <span class="tc-video-progress-label">{{ t('center.progress') }}</span>
-                <span id="ad-progress-videos" class="tc-video-progress-value">0 / 5 Spins</span>
-              </span>
-            </div>
-            <div class="tc-video-progress-bar">
-              <div id="ad-progress-bar-fill" class="tc-video-progress-fill" />
-            </div>
-          </div>
-          <div class="tc-video-actions tc-video-actions--single">
-            <button id="btn-watch-ad" type="button" class="tc-secondary-btn tc-watch-spin-btn">
-              <img :src="assetUrl('icons/play_arrow.svg')" class="tc-icon-play" alt="" width="20" height="20" loading="lazy" decoding="async">
-              <span>{{ t('center.watchAndSpin') }}</span>
-            </button>
-          </div>
+        </div>
+      </section>
+
+      <section id="tc-redeem-rewards-section" class="tc-section" style="display:none;">
+        <div class="tc-card tc-redeem-rewards-card">
+          <h2 class="tc-redeem-rewards-title">{{ t('center.redeemRewardsTitle') }}</h2>
+          <p class="tc-redeem-rewards-subtitle">{{ t('center.redeemRewardsSubtitle') }}</p>
+          <div id="tc-redeem-rewards-list" class="tc-redeem-rewards-list" />
         </div>
       </section>
     </main>

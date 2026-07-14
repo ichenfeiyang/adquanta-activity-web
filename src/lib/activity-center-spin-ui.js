@@ -14,7 +14,10 @@ export const spinUiMixin = {
     const btn = this.elements.btnWatchAd;
     if (!btn) return;
     btn.classList.remove("can-claim", "is-completed");
-    this.setWatchSpinButtonLabel(t("center.watchAndSpin"));
+    this.setWatchSpinButtonLabel([
+      t("center.watchVideoToSpinLine1"),
+      t("center.watchVideoToSpinLine2"),
+    ]);
     btn.disabled = false;
   },
 
@@ -97,6 +100,16 @@ export const spinUiMixin = {
   setWatchSpinButtonLabel(label) {
     const btn = this.elements.btnWatchAd;
     if (!btn) return;
+    if (Array.isArray(label)) {
+      btn.replaceChildren(
+        ...label.map((text) => {
+          const span = document.createElement("span");
+          span.textContent = text;
+          return span;
+        }),
+      );
+      return;
+    }
     const span = btn.querySelector("span");
     if (span) {
       span.textContent = label;
@@ -185,19 +198,29 @@ export const spinUiMixin = {
     this.saveSpinAvailableState();
   },
 
-  renderTurntableFromCoins(rouletteCoins = []) {
-    const list = Array.isArray(rouletteCoins) ? rouletteCoins.slice(0, 8) : [];
-    while (list.length < 8) list.push(0);
-    this.spinPrizePool = list.map((v) => {
+  normalizeRouletteCoins(rouletteCoins) {
+    if (!Array.isArray(rouletteCoins) || rouletteCoins.length === 0) return null;
+    const list = rouletteCoins.slice(0, 8).map((v) => {
       const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
+      return Number.isFinite(n) && n > 0 ? n : 0;
     });
+    if (!list.some((n) => n > 0)) return null;
+    while (list.length < 8) list.push(0);
+    return list;
+  },
+
+  renderTurntableFromCoins(rouletteCoins = []) {
+    const nextPool = this.normalizeRouletteCoins(rouletteCoins);
+    if (!nextPool) return;
+    this.spinPrizePool = nextPool;
     const poolKey = this.spinPrizePool.join(",");
     if (poolKey === this._lastSpinPoolKey) return;
     this._lastSpinPoolKey = poolKey;
     for (let i = 0; i < 8; i += 1) {
       const el = this.spinLabels[i];
       if (el) el.textContent = String(this.spinPrizePool[i] ?? 0);
+      const cardEl = this.spinCardLabels?.[i];
+      if (cardEl) cardEl.textContent = String(this.spinPrizePool[i] ?? 0);
     }
   },
 
@@ -218,9 +241,14 @@ export const spinUiMixin = {
   },
 
   setAdTaskDescription(rouletteCoins) {
-    if (!this.elements.adTaskDesc) return;
-    const coins = Array.isArray(rouletteCoins) && rouletteCoins.length ? rouletteCoins : this.spinPrizePool;
-    this.elements.adTaskDesc.textContent = formatLuckySpinDesc(maxRouletteCoin(coins));
+    const coins = this.normalizeRouletteCoins(rouletteCoins) || this.spinPrizePool;
+    const maxCoin = maxRouletteCoin(coins);
+    if (this.elements.adMaxCoin) {
+      this.elements.adMaxCoin.textContent = t("center.luckySpinMaxCoins", { maxCoin });
+    }
+    if (this.elements.adTaskDesc && !this.elements.adMaxCoin) {
+      this.elements.adTaskDesc.textContent = formatLuckySpinDesc(maxCoin);
+    }
   },
 
   syncAdTaskProgressFromTask(task) {
@@ -235,10 +263,11 @@ export const spinUiMixin = {
       task.reward ?? 0,
       dailyLimit,
       remainCount,
+      Number(roulette?.total_coins ?? 0),
     );
   },
 
-  renderAdTaskProgress(completed, earnedPool, taskReward = 0, dailyLimit = 0, remainCount = null) {
+  renderAdTaskProgress(completed, earnedPool, taskReward = 0, dailyLimit = 0, remainCount = null, totalCoinLimit = 0) {
     const limit = dailyLimit > 0 ? dailyLimit : this.dailySpinLimit;
     let used;
     if (remainCount != null && limit > 0) {
@@ -247,7 +276,13 @@ export const spinUiMixin = {
       used = Math.max(0, Number(completed) - Number(this.currentSpinAvailable || 0));
     }
     if (this.elements.adProgressVideos) {
-      this.elements.adProgressVideos.textContent = t("center.progressSpins", { used, limit });
+      const spinsLeft = remainCount != null && Number.isFinite(remainCount)
+        ? Math.max(0, Number(remainCount))
+        : Math.max(0, limit - used);
+      this.elements.adProgressVideos.textContent = t("center.spinChanceProgress", {
+        remain: spinsLeft,
+        limit,
+      });
     }
     if (this.elements.adProgressBarFill) {
       const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
@@ -255,7 +290,11 @@ export const spinUiMixin = {
     }
     if (this.elements.adEarnedText) {
       const earnedCoins = earnedPool != null ? earnedPool : completed * taskReward;
-      this.elements.adEarnedText.textContent = t("center.earnedCoins", { count: earnedCoins });
+      const totalCoins = Number(totalCoinLimit ?? 0);
+      this.elements.adEarnedText.textContent = t("center.coinLimitProgress", {
+        earned: Math.max(0, Number(earnedCoins) || 0),
+        total: totalCoins > 0 ? totalCoins : Math.max(0, Number(earnedCoins) || 0),
+      });
     }
   },
 

@@ -750,13 +750,45 @@ body {
   flex-shrink: 0;
 }
 
-.redeem-brand-logo {
+.redeem-brand-logo-shell {
   width: 76px;
   height: 48px;
   border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.redeem-brand-logo {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   display: block;
   object-fit: contain;
-  flex-shrink: 0;
+  opacity: 0;
+}
+
+.redeem-brand-logo-fallback {
+  position: absolute;
+  inset: 2px;
+  width: auto;
+  height: auto;
+  display: flex;
+}
+
+.redeem-brand-logo-shell--loaded .redeem-brand-logo {
+  opacity: 1;
+}
+
+.redeem-brand-logo-shell--loaded .redeem-brand-logo-fallback {
+  display: none;
+}
+
+.redeem-brand-logo-shell--fallback .redeem-brand-logo-fallback {
+  display: flex;
 }
 
 .redeem-brand-icon--amazon {

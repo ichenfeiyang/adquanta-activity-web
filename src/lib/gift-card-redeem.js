@@ -43,10 +43,38 @@ function formatGiftHistoryDate(value) {
 }
 
 function buildBrandIconHtml(product) {
-  if (product.logo_url) {
-    return `<img src="${escapeHtml(product.logo_url)}" alt="" class="redeem-brand-logo">`;
+  const logoUrl = String(product?.logo_url || "").trim();
+  if (logoUrl) {
+    return `<span class="redeem-brand-logo-shell">
+      <img src="${escapeHtml(logoUrl)}" alt="" class="redeem-brand-logo">
+      <span class="redeem-brand-icon redeem-brand-icon--default redeem-brand-logo-fallback" aria-hidden="true">🎁</span>
+    </span>`;
   }
   return `<span class="redeem-brand-icon redeem-brand-icon--default" aria-hidden="true">🎁</span>`;
+}
+
+function bindBrandLogoFallbacks(grid) {
+  grid.querySelectorAll(".redeem-brand-logo").forEach((logo) => {
+    const shell = logo.closest(".redeem-brand-logo-shell");
+    if (!shell) return;
+    const showFallback = () => {
+      shell.classList.add("redeem-brand-logo-shell--fallback");
+    };
+    const showLogo = () => {
+      if (logo.naturalWidth > 0) {
+        shell.classList.add("redeem-brand-logo-shell--loaded");
+      }
+    };
+    logo.addEventListener("error", showFallback, { once: true });
+    logo.addEventListener("load", showLogo, { once: true });
+    if (logo.complete) {
+      if (logo.naturalWidth > 0) {
+        showLogo();
+      } else {
+        showFallback();
+      }
+    }
+  });
 }
 
 function buildGiftAmountButtonHtml(item, currencyCode) {
@@ -472,6 +500,17 @@ export const giftCardRedeemMethods = {
         </button>`;
       })
       .join("");
+    bindBrandLogoFallbacks(grid);
+  },
+
+  updateGiftBrandSelection() {
+    this.$.giftBrandGrid
+      ?.querySelectorAll(".redeem-brand-btn")
+      .forEach((button) => {
+        const isActive = button.getAttribute("data-product-id") === this.giftState.productId;
+        button.classList.toggle("redeem-brand-btn--active", isActive);
+        button.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
   },
 
   resetGiftAmountUI() {
@@ -497,7 +536,7 @@ export const giftCardRedeemMethods = {
     this.giftState.productId = productId;
     this.giftState.selectedDenomination = previousDenomination;
     this.giftState.spendCoin = Number(previousSpendCoin ?? 0);
-    this.renderGiftBrandGrid(this.tremendousInfo.products);
+    this.updateGiftBrandSelection();
 
     const product = getSelectedProduct(this);
     if (!product) {

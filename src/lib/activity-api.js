@@ -152,7 +152,10 @@ async function fetchApi(apiName, url, init = {}) {
  */
 export async function getActivityInfo(options = {}) {
   const baseUrl = BaseApiUrl;
-  const url = `${baseUrl}/api/v1/ops/activity/info`;
+  let url = `${baseUrl}/api/v1/ops/activity/info`;
+  if (options.countryCode) {
+    url += `?country_code=${encodeURIComponent(options.countryCode)}`;
+  }
   const gaHeader = await buildGaClientIdHeader(options);
   const result = await fetchApi("getActivityInfo", url, {
     method: "GET",

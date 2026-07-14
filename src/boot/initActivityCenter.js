@@ -11,6 +11,7 @@ import {
   adFailedMessage,
   alreadyCheckedInMessage,
   adNotAvailableMessage,
+  authFailedMessage,
   initializationFailedMessage,
   videoCheckinAlreadyMessage,
 } from "../lib/activity-messages.js";
@@ -20,6 +21,25 @@ import { createAdCallbackTimeout } from "../lib/ad-callback-timeout.js";
 import { createActivitySdkEventHandler } from "../lib/activity-sdk-event-handlers.js";
 import { getActivityInfoCache, isActivityInfoCacheFresh } from "../lib/activity-page-cache.js";
 import * as logger from "../lib/activity-logger.js";
+
+function renderUnauthenticatedActivityCenterPreview() {
+  const showAuthRequired = () => showToast(authFailedMessage(), "error");
+  const ui = new ActivityCenterUI({
+    onWatchAdClick: showAuthRequired,
+    onSpinWheelOpen: showAuthRequired,
+    onSpinRequest: async () => {
+      showAuthRequired();
+      return { ok: false };
+    },
+    onWithdrawClick: showAuthRequired,
+    onSigninClick: showAuthRequired,
+    onSigninWatchVideoClick: showAuthRequired,
+    onNewUserBonusVideoClick: showAuthRequired,
+    onNewUserBonusDismissClick: showAuthRequired,
+  });
+  ui.bindEvents();
+  ui.renderInitialShell();
+}
 
 /**
  * @param {{ router: import('vue-router').Router, route: import('vue-router').RouteLocationNormalizedLoaded }} ctx
@@ -32,6 +52,7 @@ export function initActivityCenter({ router, route }) {
   });
   if (!session) {
     logger.error("Missing token. Web auth disabled; open from app.");
+    renderUnauthenticatedActivityCenterPreview();
     return;
   }
 
@@ -74,6 +95,8 @@ export function initActivityCenter({ router, route }) {
     onTaskUpdate: (tasks) => ui.updateTasks(tasks),
     onCheckinUpdate: (detail) => ui.updateCheckin(detail),
     onFeatureVisibilityUpdate: (visibility) => ui.updateFeatureVisibility(visibility),
+    onRedeemGapUpdate: (gap) => ui.updateRedeemGap(gap),
+    onRedeemRewardsUpdate: (rewards) => ui.updateRedeemRewards(rewards),
     onNewUserBonusUpdate: (bonus) => {
       if (shouldShowNewUserBonus(bonus)) {
         ui.showNewUserBonusDialog(bonus);
@@ -171,8 +194,14 @@ export function initActivityCenter({ router, route }) {
         refreshAfterSpin: () => business.loadActivityInfo(apiOptions, { force: true }),
       };
     },
-    onWithdrawClick: () => {
-      goToGoldCoinsExchange(router, activityId);
+    onWithdrawClick: (category) => {
+      if (!category) {
+        goToGoldCoinsExchange(router, activityId);
+        return;
+      }
+      goToGoldCoinsExchange(router, activityId, {
+        tab: category === "gift_cards" ? "gift" : "topup",
+      });
     },
     onSigninClick: async () => {
       resetCheckinAdState();

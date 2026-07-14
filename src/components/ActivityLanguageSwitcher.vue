@@ -72,7 +72,13 @@ onUnmounted(() => {
       aria-haspopup="listbox"
       @click="toggleMenu"
     >
-      <span class="activity-language-switcher__trigger-flag" aria-hidden="true">{{ currentOption.flag }}</span>
+      <span class="activity-language-switcher__trigger-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+          <path d="M3.5 12h17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <path d="M12 3c2.2 2.3 3.3 5.3 3.3 9S14.2 18.7 12 21c-2.2-2.3-3.3-5.3-3.3-9S9.8 5.3 12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+        </svg>
+      </span>
       <span class="activity-language-switcher__trigger-code">{{ currentOption.shortLabel }}</span>
       <span class="activity-language-switcher__trigger-chevron" aria-hidden="true">
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -118,17 +124,17 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 72px;
+  gap: 7px;
+  min-width: 76px;
   height: 36px;
-  padding-inline: 8px 10px;
-  border: 1px solid rgba(236, 91, 19, 0.16);
+  padding-inline: 11px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff 0%, #fff9f5 100%);
-  color: #374151;
+  background: #ffffff;
+  color: #050914;
   box-shadow:
-    0 6px 16px rgba(236, 91, 19, 0.2),
-    0 2px 6px rgba(15, 23, 42, 0.08);
+    0 8px 22px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(15, 23, 42, 0.03);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -137,15 +143,25 @@ onUnmounted(() => {
   direction: rtl;
 }
 
-.activity-language-switcher__trigger-flag {
-  font-size: 16px;
-  line-height: 1;
+.activity-language-switcher__trigger-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.activity-language-switcher__trigger-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .activity-language-switcher__trigger-code {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   line-height: 1;
 }
 
@@ -153,7 +169,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ec5b13;
+  color: #050914;
   margin-inline-start: -2px;
 }
 
@@ -171,7 +187,7 @@ onUnmounted(() => {
 .activity-language-switcher__menu {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 10px);
+  top: calc(100% + 10px);
   min-width: 112px;
   padding: 6px;
   border-radius: 14px;

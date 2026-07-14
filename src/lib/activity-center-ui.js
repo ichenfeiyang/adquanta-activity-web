@@ -5,6 +5,13 @@ import { bindPageElements } from "./bind-page-elements.js";
 import { checkinUiMixin as checkinMixin } from "./activity-center-checkin-ui.js";
 import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
 import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
+import { t } from "./i18n/activity-locale.js";
+
+const DEFAULT_REDEEM_REWARD_ITEMS = [
+  { type: "mobile_recharge", titleKey: "center.redeemRewardMobileRecharge", fallback: true },
+  { type: "data_packs", titleKey: "center.redeemRewardDataPacks", fallback: true },
+  { type: "gift_cards", titleKey: "center.redeemRewardGiftCards", fallback: true },
+];
 
 /**
  * UI 绑定层
@@ -27,6 +34,12 @@ export class ActivityCenterUI {
       spinRewardClose: "spinRewardClose",
       spinRewardCoins: "spinRewardCoins",
       withdrawBtn: "exchangeBtn",
+      adMaxCoin: "ad-max-coin",
+      redeemGapPanel: "redeemGapPanel",
+      redeemGapProgress: "redeemGapProgress",
+      redeemGapHint: "redeemGapHint",
+      redeemRewardsSection: "tc-redeem-rewards-section",
+      redeemRewardsList: "tc-redeem-rewards-list",
       adProgressVideos: "ad-progress-videos",
       adProgressBarFill: "ad-progress-bar-fill",
       adEarnedText: "ad-earned-text",
@@ -44,6 +57,7 @@ export class ActivityCenterUI {
       signinDialogWatchBtnLabel: "signinDialogWatchBtnLabel",
       signinDialogWatchBtn: "signinDialogWatchBtn",
       signinDialogClaimBaseOnly: "signinDialogClaimBaseOnly",
+      checkinVideoTip: "tc-checkin-video-tip",
       newUserBonusModal: "newUserBonusModal",
       newUserBonusTitle: "newUserBonusTitle",
       newUserBonusAmount: "newUserBonusAmount",
@@ -61,6 +75,9 @@ export class ActivityCenterUI {
 
     this.spinLabels = Array.from({ length: 8 }, (_, i) =>
       document.querySelector(`.tc-spin-label-${i + 1}`),
+    );
+    this.spinCardLabels = Array.from({ length: 8 }, (_, i) =>
+      document.querySelector(`.tc-spin-card-label-${i + 1}`),
     );
 
     this.config = {
@@ -176,6 +193,7 @@ export class ActivityCenterUI {
     this.renderTurntableFromCoins(this.spinPrizePool);
     this.setAdTaskDescription(this.spinPrizePool);
     this.renderAdTaskProgress(0, 0, 0);
+    this.updateRedeemRewards({ fallback: true });
     this.resetWatchSpinButton();
   }
 
@@ -237,6 +255,104 @@ export class ActivityCenterUI {
       this._lastGoldCoins = v;
       this.elements.goldCoins.textContent = v;
     }
+  }
+
+  formatCoinNumber(value) {
+    const n = Number(value ?? 0);
+    if (!Number.isFinite(n)) return "0";
+    return Math.max(0, Math.round(n)).toLocaleString("en-US");
+  }
+
+  updateRedeemGap(gap) {
+    const panel = this.elements.redeemGapPanel;
+    const hint = this.elements.redeemGapHint;
+    const progress = this.elements.redeemGapProgress;
+    if (!panel || !hint) return;
+    if (!gap || gap.enabled !== true) {
+      hint.textContent = "";
+      if (progress) progress.style.width = "0%";
+      panel.style.display = "none";
+      return;
+    }
+    const minCoin = Math.max(0, Number(gap.min_coin ?? 0) || 0);
+    const remaining = Math.max(0, Number(gap.remaining_coin ?? 0) || 0);
+    const current = Math.max(0, minCoin - remaining);
+    const percent = minCoin > 0 ? Math.min(100, Math.max(0, (current / minCoin) * 100)) : 0;
+    if (progress) progress.style.width = `${percent}%`;
+    hint.textContent =
+      gap.can_redeem === true || remaining <= 0
+        ? t("center.redeemGapReady", { count: this.formatCoinNumber(minCoin) })
+        : t("center.redeemGapNeed", {
+            count: this.formatCoinNumber(remaining),
+            target: this.formatCoinNumber(minCoin),
+          });
+    panel.style.display = "";
+  }
+
+  redeemRewardCategoryIcon(type) {
+    if (type === "data_packs") {
+      const icon = document.createElement("span");
+      icon.className = "tc-redeem-reward-wifi";
+      icon.setAttribute("aria-hidden", "true");
+      return icon;
+    }
+    const img = document.createElement("img");
+    img.alt = "";
+    img.width = 28;
+    img.height = 28;
+    img.loading = "lazy";
+    img.decoding = "async";
+    if (type === "gift_cards") {
+      img.src = assetUrl("icons/card_giftcard.svg");
+      return img;
+    }
+    img.src = assetUrl("icons/phone_iphone.svg");
+    return img;
+  }
+
+  updateRedeemRewards(rewards) {
+    const section = this.elements.redeemRewardsSection;
+    const list = this.elements.redeemRewardsList;
+    if (!section || !list) return;
+    const hasLiveItems = rewards?.enabled === true && Array.isArray(rewards.items) && rewards.items.length > 0;
+    const useFallbackItems = rewards?.fallback === true;
+    const items = hasLiveItems ? rewards.items : useFallbackItems ? DEFAULT_REDEEM_REWARD_ITEMS : [];
+    list.replaceChildren();
+    if (!items.length) {
+      section.style.display = "none";
+      return;
+    }
+    for (const item of items) {
+      const minCoin = Number(item.min_coin ?? 0) || 0;
+      const isFallback = item.fallback === true;
+      if (!isFallback && minCoin <= 0) continue;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "tc-redeem-reward-item";
+      button.dataset.category = String(item.type || "");
+      const icon = document.createElement("span");
+      icon.className = "tc-redeem-reward-icon";
+      icon.appendChild(this.redeemRewardCategoryIcon(item.type));
+      const copy = document.createElement("span");
+      copy.className = "tc-redeem-reward-copy";
+      const name = document.createElement("span");
+      name.className = "tc-redeem-reward-name";
+      name.textContent = item.title || (item.titleKey ? t(item.titleKey) : t("center.redeemRewardsFallbackTitle"));
+      const threshold = document.createElement("span");
+      threshold.className = "tc-redeem-reward-threshold";
+      threshold.textContent = isFallback
+        ? t("center.redeemRewardsThresholdLoading")
+        : t("center.redeemRewardsFromCoins", { count: this.formatCoinNumber(minCoin) });
+      copy.append(name, threshold);
+      const arrow = document.createElement("span");
+      arrow.className = "tc-redeem-reward-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.textContent = "›";
+      button.append(icon, copy, arrow);
+      button.addEventListener("click", () => this.config.onWithdrawClick(item.type));
+      list.appendChild(button);
+    }
+    section.style.display = list.children.length ? "" : "none";
   }
 
   /**

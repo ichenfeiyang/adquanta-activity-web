@@ -68,6 +68,8 @@ export class ActivityCenterBusiness {
     this.userId = null;
 
     this.newUserBonus = null;
+    this.redeemGap = null;
+    this.redeemRewards = null;
 
     this._lastActivityInfoFingerprint = "";
 
@@ -77,6 +79,8 @@ export class ActivityCenterBusiness {
       onTaskUpdate: config.onTaskUpdate || (() => {}),
       onCheckinUpdate: config.onCheckinUpdate || (() => {}),
       onFeatureVisibilityUpdate: config.onFeatureVisibilityUpdate || (() => {}),
+      onRedeemGapUpdate: config.onRedeemGapUpdate || (() => {}),
+      onRedeemRewardsUpdate: config.onRedeemRewardsUpdate || (() => {}),
       ...config,
     };
   }
@@ -138,6 +142,8 @@ export class ActivityCenterBusiness {
       checkin,
       video,
       newUserBonus: d?.new_user_bonus ?? null,
+      redeemGap: d?.redeem_gap ?? null,
+      redeemRewards: d?.redeem_rewards ?? null,
     });
   }
 
@@ -149,6 +155,45 @@ export class ActivityCenterBusiness {
       base_coin: Number(value.base_coin ?? 0) || 0,
       video_coin: Number(value.video_coin ?? 0) || 0,
       status: String(value.status || ""),
+    };
+  }
+
+  normalizeRedeemGap(value) {
+    if (!value || typeof value !== "object" || value.enabled !== true) return null;
+    const minCoin = Number(value.min_coin ?? 0) || 0;
+    const remainingCoin = Number(value.remaining_coin ?? 0) || 0;
+    if (minCoin <= 0) return null;
+    return {
+      enabled: true,
+      min_coin: minCoin,
+      remaining_coin: Math.max(0, remainingCoin),
+      can_redeem: value.can_redeem === true,
+      message: String(value.message || ""),
+    };
+  }
+
+  normalizeRedeemRewards(value, hasRedeemRewardsField = true) {
+    if (!hasRedeemRewardsField) return { fallback: true };
+    if (!value || typeof value !== "object" || value.enabled !== true) return null;
+    const items = Array.isArray(value.items) ? value.items : [];
+    const normalizedItems = items
+      .map((item) => {
+        const minCoin = Number(item?.min_coin ?? 0) || 0;
+        if (minCoin <= 0) return null;
+        const remainingCoin = Number(item?.remaining_coin ?? 0) || 0;
+        return {
+          type: String(item?.type || ""),
+          title: String(item?.title || ""),
+          min_coin: minCoin,
+          remaining_coin: Math.max(0, remainingCoin),
+          can_redeem: item?.can_redeem === true,
+        };
+      })
+      .filter(Boolean);
+    if (!normalizedItems.length) return null;
+    return {
+      enabled: true,
+      items: normalizedItems,
     };
   }
 
@@ -165,6 +210,11 @@ export class ActivityCenterBusiness {
     this.checkinDetail = null;
     this.adTaskStatus = this.createEmptyAdTaskStatus();
     this.newUserBonus = this.normalizeNewUserBonus(d?.new_user_bonus);
+    this.redeemGap = this.normalizeRedeemGap(d?.redeem_gap);
+    this.redeemRewards = this.normalizeRedeemRewards(
+      d?.redeem_rewards,
+      Object.prototype.hasOwnProperty.call(d || {}, "redeem_rewards"),
+    );
 
     try {
       if (d.user_info != null && d.user_info.user_id != null) {
@@ -217,6 +267,8 @@ export class ActivityCenterBusiness {
         checkin: hasCheckinTask,
         watchAd: hasVideoTask ? this.adTaskStatus : null,
         newUserBonus: this.newUserBonus,
+        redeemGap: this.redeemGap,
+        redeemRewards: this.redeemRewards,
       });
     } catch (error) {
       logger.error("[Activity API] Failed to apply activity info UI", error);
@@ -227,6 +279,8 @@ export class ActivityCenterBusiness {
       });
       if (applied) {
         this.config.onNewUserBonusUpdate?.(this.newUserBonus);
+        this.config.onRedeemGapUpdate?.(this.redeemGap);
+        this.config.onRedeemRewardsUpdate?.(this.redeemRewards);
         this._lastActivityInfoFingerprint = fingerprint;
       }
     }
@@ -261,6 +315,7 @@ export class ActivityCenterBusiness {
       throw result.error || new Error("API returned an error");
     } catch (error) {
       logger.error("[Activity API] Request failed", error?.message ?? error);
+      this.config.onRedeemRewardsUpdate?.({ fallback: true });
       showToast(activityLoadFailedMessage(), "warning");
       return { ok: false, error };
     }

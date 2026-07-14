@@ -25,7 +25,7 @@ function ensureCheckinDayGrid(container, cache) {
   return nodes;
 }
 
-function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
+function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isDay7, superReward }) {
   const { dayEl, dotEl, labelEl } = node;
   dayEl.dataset.day = String(day);
 
@@ -36,6 +36,10 @@ function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
     labelClass += " tc-checkin-label--super";
   } else if (isDone) {
     dayClass += " tc-checkin-day--done";
+  }
+  if (isCurrent && !isDone && !isDay7) {
+    dayClass += " tc-checkin-day--current";
+    labelClass += " tc-checkin-label--current";
   }
   dayEl.className = dayClass;
   labelEl.className = labelClass;
@@ -61,10 +65,7 @@ function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
     dotEl.className = "tc-checkin-dot";
     const mark = document.createElement("span");
     mark.textContent = "✓";
-    const amount = document.createElement("span");
-    amount.textContent = `+${coin}`;
     dotEl.appendChild(mark);
-    dotEl.appendChild(amount);
     return;
   }
 
@@ -73,6 +74,12 @@ function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
 }
 
 export const checkinUiMixin = {
+  updateCheckinVideoTip(totalCoin = 20) {
+    if (this.elements.checkinVideoTip) {
+      this.elements.checkinVideoTip.textContent = t("center.checkinVideoTip", { totalCoin });
+    }
+  },
+
   showSigninDialog(reward) {
     const alreadyChecked = !!reward?.alreadyChecked;
     const { baseCoin, totalCoin } = resolveSigninRewardCoins(reward);
@@ -140,6 +147,7 @@ export const checkinUiMixin = {
           day,
           coin: 0,
           isDone: false,
+          isCurrent: false,
           isDay7: day === 7,
           superReward: 0,
         });
@@ -151,6 +159,7 @@ export const checkinUiMixin = {
         if (span) span.textContent = t("center.checkinNow");
       }
       this._signinVideoCompleted = false;
+      this.updateCheckinVideoTip();
       return;
     }
 
@@ -165,6 +174,7 @@ export const checkinUiMixin = {
         day: dayInfo.day,
         coin: dayInfo.coin,
         isDone,
+        isCurrent: dayInfo.current === true,
         isDay7,
         superReward,
       });
@@ -175,14 +185,20 @@ export const checkinUiMixin = {
         day: idx + 1,
         coin: 0,
         isDone: false,
+        isCurrent: false,
         isDay7: idx === 6,
         superReward,
       });
     }
 
     const signinBtn = this.elements.signinTimerBtn;
+    const today = daysList.find((d) => d.current === true);
+    const { totalCoin } = resolveSigninRewardCoins({
+      coin: today?.coin,
+      video_coin: today?.video_coin,
+    });
+    this.updateCheckinVideoTip(totalCoin || 20);
     if (signinBtn) {
-      const today = daysList.find((d) => d.current === true);
       const received = !!today?.received;
       const videoReceived = !!today?.video_received;
       this._signinVideoCompleted = videoReceived;

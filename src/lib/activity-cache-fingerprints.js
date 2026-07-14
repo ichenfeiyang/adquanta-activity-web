@@ -24,6 +24,8 @@ export function fingerprintActivityInfo(data) {
     checkin,
     video,
     newUserBonus: data?.new_user_bonus ?? null,
+    redeemGap: data?.redeem_gap ?? null,
+    redeemRewards: data?.redeem_rewards ?? null,
   });
 }
 
