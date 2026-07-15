@@ -107,10 +107,6 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
             <img :src="assetUrl('icons/gold-coin-white.svg')" class="tc-icon-calendar" alt="" width="20" height="20" loading="lazy" decoding="async">
             <span>{{ t('center.checkinNow') }}</span>
           </button>
-          <p class="tc-checkin-tip">
-            <img :src="assetUrl('icons/play_circle.svg')" alt="" class="tc-checkin-tip-icon" width="18" height="18" loading="lazy" decoding="async">
-            <span id="tc-checkin-video-tip">{{ t('center.checkinVideoTip', { totalCoin: 20 }) }}</span>
-          </p>
         </div>
       </section>
 
