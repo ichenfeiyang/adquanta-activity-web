@@ -734,6 +734,8 @@ body {
 }
 
 .tc-page-header {
+  position: relative;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1969,6 +1971,19 @@ body {
   gap: 12px;
 }
 
+.tc-redeem-rewards-list--count-1 {
+  grid-template-columns: 1fr;
+}
+
+.tc-redeem-rewards-list--count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tc-redeem-rewards-list--count-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .tc-redeem-reward-item {
   position: relative;
   min-width: 0;
@@ -1986,6 +2001,14 @@ body {
   cursor: pointer;
 }
 
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-item {
+  min-height: 64px;
+  padding: 10px 25px 10px 9px;
+  grid-template-columns: 25px minmax(0, 1fr);
+  gap: 7px;
+  text-align: start;
+}
+
 .tc-redeem-reward-icon {
   width: 32px;
   height: 32px;
@@ -1999,6 +2022,39 @@ body {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-icon {
+  width: 25px;
+  height: 25px;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.tc-redeem-reward-item[data-category="gift_cards"] .tc-redeem-reward-icon img {
+  filter: hue-rotate(190deg) saturate(1.9) brightness(0.72);
+}
+
+.tc-redeem-reward-currency {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #146dcc;
+  font-size: 33px;
+  line-height: 0.9;
+  font-weight: 900;
+  font-family: Arial, sans-serif;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-currency {
+  width: 24px;
+  height: 24px;
+  font-size: 30px;
 }
 
 .tc-redeem-reward-wifi {
@@ -2032,6 +2088,24 @@ body {
   border-width: 5px;
 }
 
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-wifi {
+  width: 24px;
+  height: 20px;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-wifi::before {
+  width: 24px;
+  height: 24px;
+  border-width: 5px;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-wifi::after {
+  top: 8px;
+  width: 14px;
+  height: 14px;
+  border-width: 4px;
+}
+
 .tc-redeem-reward-copy {
   min-width: 0;
   display: flex;
@@ -2051,12 +2125,32 @@ body {
   -webkit-box-orient: vertical;
 }
 
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-copy {
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-name {
+  max-width: 100%;
+  font-size: 10.5px;
+  line-height: 1.05;
+  -webkit-line-clamp: 1;
+}
+
 .tc-redeem-reward-threshold {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 11.5px;
   line-height: 1.2;
   font-weight: 500;
   color: #4f5871;
   white-space: nowrap;
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-threshold {
+  font-size: 8.5px;
+  line-height: 1.05;
 }
 
 .tc-redeem-reward-arrow {
@@ -2067,6 +2161,14 @@ body {
   font-size: 24px;
   line-height: 1;
   font-weight: 800;
+  transform: translateY(-50%);
+}
+
+.tc-redeem-rewards-list--count-3 .tc-redeem-reward-arrow {
+  right: 7px;
+  top: 50%;
+  bottom: auto;
+  font-size: 18px;
   transform: translateY(-50%);
 }
 
@@ -2197,11 +2299,31 @@ body {
     gap: 8px;
   }
 
+  .tc-redeem-rewards-list--count-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .tc-redeem-rewards-list--count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tc-redeem-rewards-list--count-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
   .tc-redeem-reward-item {
     min-height: 66px;
     padding: 9px 22px 9px 9px;
     grid-template-columns: 24px minmax(0, 1fr);
     gap: 7px;
+  }
+
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-item {
+    min-height: 58px;
+    padding: 8px 19px 8px 6px;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 5px;
   }
 
   .tc-redeem-reward-icon,
@@ -2210,15 +2332,38 @@ body {
     height: 25px;
   }
 
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-icon,
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-icon img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-currency {
+    width: 20px;
+    height: 20px;
+    font-size: 26px;
+  }
+
   .tc-redeem-reward-wifi {
     width: 25px;
     height: 20px;
+  }
+
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-wifi {
+    width: 20px;
+    height: 17px;
   }
 
   .tc-redeem-reward-wifi::before {
     width: 25px;
     height: 25px;
     border-width: 5px;
+  }
+
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-wifi::before {
+    width: 20px;
+    height: 20px;
+    border-width: 4px;
   }
 
   .tc-redeem-reward-wifi::after {
@@ -2228,9 +2373,23 @@ body {
     border-width: 4px;
   }
 
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-wifi::after {
+    top: 7px;
+    width: 12px;
+    height: 12px;
+    border-width: 3px;
+  }
+
   .tc-redeem-reward-name {
     font-size: 11px;
     line-height: 1.15;
+  }
+
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-name {
+    max-width: 100%;
+    font-size: 8.5px;
+    line-height: 1.05;
+    -webkit-line-clamp: 1;
   }
 
   .tc-redeem-reward-threshold {
@@ -2238,9 +2397,20 @@ body {
     line-height: 1.15;
   }
 
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-threshold {
+    font-size: 7.5px;
+    line-height: 1.05;
+  }
+
   .tc-redeem-reward-arrow {
     right: 7px;
     font-size: 18px;
+  }
+
+  .tc-redeem-rewards-list--count-3 .tc-redeem-reward-arrow {
+    right: 5px;
+    bottom: auto;
+    font-size: 15px;
   }
 }
 

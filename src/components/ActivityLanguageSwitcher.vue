@@ -117,6 +117,7 @@ onUnmounted(() => {
 <style scoped>
 .activity-language-switcher {
   position: relative;
+  z-index: 40;
   display: inline-flex;
 }
 
@@ -186,6 +187,7 @@ onUnmounted(() => {
 
 .activity-language-switcher__menu {
   position: absolute;
+  z-index: 41;
   right: 0;
   top: calc(100% + 10px);
   min-width: 112px;

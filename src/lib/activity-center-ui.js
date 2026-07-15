@@ -290,6 +290,13 @@ export class ActivityCenterUI {
   }
 
   redeemRewardCategoryIcon(type) {
+    if (type === "mobile_recharge") {
+      const icon = document.createElement("span");
+      icon.className = "tc-redeem-reward-currency";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = "₹";
+      return icon;
+    }
     if (type === "data_packs") {
       const icon = document.createElement("span");
       icon.className = "tc-redeem-reward-wifi";
@@ -318,6 +325,7 @@ export class ActivityCenterUI {
     const useFallbackItems = rewards?.fallback === true;
     const items = hasLiveItems ? rewards.items : useFallbackItems ? DEFAULT_REDEEM_REWARD_ITEMS : [];
     list.replaceChildren();
+    list.className = "tc-redeem-rewards-list";
     if (!items.length) {
       section.style.display = "none";
       return;
@@ -352,7 +360,11 @@ export class ActivityCenterUI {
       button.addEventListener("click", () => this.config.onWithdrawClick(item.type));
       list.appendChild(button);
     }
-    section.style.display = list.children.length ? "" : "none";
+    const renderedCount = list.children.length;
+    if (renderedCount > 0) {
+      list.classList.add(`tc-redeem-rewards-list--count-${Math.min(renderedCount, 3)}`);
+    }
+    section.style.display = renderedCount ? "" : "none";
   }
 
   /**
