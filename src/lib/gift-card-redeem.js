@@ -137,6 +137,7 @@ function hasValidGiftContact(ctx) {
 function buildGiftRedeemPayload(ctx, denomination) {
   return {
     product_id: ctx.giftState.productId,
+    country_code: ctx.tremendousInfo.countryCode,
     denomination: denomination.denomination,
     currency_code: ctx.tremendousInfo.currencyCode,
     recipient_name: getRecipientName(ctx),

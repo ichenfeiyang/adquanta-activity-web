@@ -152,10 +152,7 @@ async function fetchApi(apiName, url, init = {}) {
  */
 export async function getActivityInfo(options = {}) {
   const baseUrl = BaseApiUrl;
-  let url = `${baseUrl}/api/v1/ops/activity/info`;
-  if (options.countryCode) {
-    url += `?country_code=${encodeURIComponent(options.countryCode)}`;
-  }
+  const url = `${baseUrl}/api/v1/ops/activity/info`;
   const gaHeader = await buildGaClientIdHeader(options);
   const result = await fetchApi("getActivityInfo", url, {
     method: "GET",
@@ -334,6 +331,7 @@ export async function postTremendousRedeem(options = {}, body = {}) {
     },
     body: JSON.stringify({
       product_id: body.product_id ?? "",
+      country_code: body.country_code ?? "",
       denomination: body.denomination ?? 0,
       currency_code: body.currency_code ?? "",
       recipient_name: body.recipient_name ?? "",

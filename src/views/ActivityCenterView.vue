@@ -48,54 +48,6 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
         </div>
       </section>
 
-      <section id="tc-video-task-section" class="tc-section">
-        <div class="tc-card tc-flow-card">
-          <h2 class="tc-flow-title">{{ t('center.flowHowTitle') }}</h2>
-          <div class="tc-flow-steps">
-            <div class="tc-flow-step">
-              <div class="tc-flow-icon">
-                <img :src="assetUrl('icons/gold_coin.svg')" alt="" class="icon-img" width="44" height="44" loading="lazy" decoding="async">
-              </div>
-              <div class="tc-flow-copy">
-                <div class="tc-flow-heading">
-                  <span class="tc-flow-index">1</span>
-                  <span>{{ t('center.flowStepEarnTitle') }}</span>
-                </div>
-                <p class="tc-flow-desc">{{ t('center.flowStepEarnDesc') }}</p>
-              </div>
-            </div>
-            <div class="tc-flow-arrow" aria-hidden="true">›</div>
-            <div class="tc-flow-step">
-              <div class="tc-flow-icon tc-flow-icon--threshold">
-                <span class="tc-flow-progress-icon">
-                  <span class="tc-flow-progress-fill"></span>
-                </span>
-              </div>
-              <div class="tc-flow-copy">
-                <div class="tc-flow-heading">
-                  <span class="tc-flow-index">2</span>
-                  <span>{{ t('center.flowStepThresholdTitle') }}</span>
-                </div>
-                <p class="tc-flow-desc">{{ t('center.flowStepThresholdDesc') }}</p>
-              </div>
-            </div>
-            <div class="tc-flow-arrow" aria-hidden="true">›</div>
-            <div class="tc-flow-step">
-              <div class="tc-flow-icon">
-                <img :src="assetUrl('icons/card_giftcard.svg')" alt="" class="icon-img" width="44" height="44" loading="lazy" decoding="async">
-              </div>
-              <div class="tc-flow-copy">
-                <div class="tc-flow-heading">
-                  <span class="tc-flow-index">3</span>
-                  <span>{{ t('center.flowStepRedeemTitle') }}</span>
-                </div>
-                <p class="tc-flow-desc">{{ t('center.flowStepRedeemDesc') }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section id="tc-daily-checkin-section" class="tc-section">
         <div class="tc-card tc-checkin-card">
           <div class="tc-card-header">
@@ -170,6 +122,54 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
           <h2 class="tc-redeem-rewards-title">{{ t('center.redeemRewardsTitle') }}</h2>
           <p class="tc-redeem-rewards-subtitle">{{ t('center.redeemRewardsSubtitle') }}</p>
           <div id="tc-redeem-rewards-list" class="tc-redeem-rewards-list" />
+        </div>
+      </section>
+
+      <section id="tc-video-task-section" class="tc-section">
+        <div class="tc-card tc-flow-card">
+          <h2 class="tc-flow-title">{{ t('center.flowHowTitle') }}</h2>
+          <div class="tc-flow-steps">
+            <div class="tc-flow-step">
+              <div class="tc-flow-icon">
+                <img :src="assetUrl('icons/gold_coin.svg')" alt="" class="icon-img" width="44" height="44" loading="lazy" decoding="async">
+              </div>
+              <div class="tc-flow-copy">
+                <div class="tc-flow-heading">
+                  <span class="tc-flow-index">1</span>
+                  <span>{{ t('center.flowStepEarnTitle') }}</span>
+                </div>
+                <p class="tc-flow-desc">{{ t('center.flowStepEarnDesc') }}</p>
+              </div>
+            </div>
+            <div class="tc-flow-arrow" aria-hidden="true">›</div>
+            <div class="tc-flow-step">
+              <div class="tc-flow-icon tc-flow-icon--threshold">
+                <span class="tc-flow-progress-icon">
+                  <span class="tc-flow-progress-fill"></span>
+                </span>
+              </div>
+              <div class="tc-flow-copy">
+                <div class="tc-flow-heading">
+                  <span class="tc-flow-index">2</span>
+                  <span>{{ t('center.flowStepThresholdTitle') }}</span>
+                </div>
+                <p class="tc-flow-desc">{{ t('center.flowStepThresholdDesc') }}</p>
+              </div>
+            </div>
+            <div class="tc-flow-arrow" aria-hidden="true">›</div>
+            <div class="tc-flow-step">
+              <div class="tc-flow-icon">
+                <img :src="assetUrl('icons/card_giftcard.svg')" alt="" class="icon-img" width="44" height="44" loading="lazy" decoding="async">
+              </div>
+              <div class="tc-flow-copy">
+                <div class="tc-flow-heading">
+                  <span class="tc-flow-index">3</span>
+                  <span>{{ t('center.flowStepRedeemTitle') }}</span>
+                </div>
+                <p class="tc-flow-desc">{{ t('center.flowStepRedeemDesc') }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

@@ -34,7 +34,6 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
             <span id="userGoldCoins" class="redeem-wallet-value">0</span>
             <span class="redeem-wallet-unit">{{ t('common.goldCoins') }}</span>
           </div>
-          <div id="walletLocalHint" class="redeem-wallet-local">{{ t('redeem.localCurrencyHint', { amount: '—' }) }}</div>
         </div>
       </section>
 
@@ -64,6 +63,24 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
       </section>
 
       <section id="giftCardPanel" class="redeem-tab-panel" role="tabpanel" aria-labelledby="tabGiftCards">
+        <div class="redeem-field redeem-gift-country-field">
+          <label class="redeem-label">{{ t('redeem.selectCountry') }}</label>
+          <div class="redeem-gift-country-wrapper">
+            <button
+              id="giftCountryBtn"
+              type="button"
+              class="redeem-gift-country-btn"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span class="redeem-countrycode-flag" aria-hidden="true">🇮🇳</span>
+              <span class="redeem-gift-country-name">India</span>
+              <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="giftCountryDropdown" class="redeem-countrycode-dropdown redeem-gift-country-dropdown" role="listbox" hidden />
+          </div>
+        </div>
+
         <div class="redeem-featured-head">
           <span class="redeem-featured-icon" aria-hidden="true">★</span>
           <h2 class="redeem-section-title">{{ t('redeem.featuredRewards') }}</h2>
@@ -82,6 +99,10 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
         <div id="giftRecipientSection" class="redeem-field">
           <div id="giftRecipientSkeleton" class="redeem-gift-recipient-skeleton" hidden />
           <div id="giftRecipientForm">
+            <div class="redeem-recipient-title-row">
+              <span class="redeem-recipient-title-icon" aria-hidden="true"></span>
+              <h2 class="redeem-section-title">{{ t('redeem.recipientInformation') }}</h2>
+            </div>
             <label class="redeem-label" for="inputGiftRecipientName">{{ t('redeem.recipientName') }}</label>
             <input
               id="inputGiftRecipientName"

@@ -1562,29 +1562,23 @@ body {
   width: 88px;
   height: 88px;
   border-radius: 999px;
-  background:
-    radial-gradient(circle at 50% 50%, transparent 0 22px, rgba(255, 255, 255, 0.35) 23px 24px, transparent 25px),
-    conic-gradient(
-      from -22.5deg,
-      #7c3ddc 0deg 45deg,
-      #f47d2b 45deg 90deg,
-      #12a86f 90deg 135deg,
-      #4bb85f 135deg 180deg,
-      #e65499 180deg 225deg,
-      #7443ce 225deg 270deg,
-      #1fb4d5 270deg 315deg,
-      #f47d2b 315deg 360deg
-    );
+  background: conic-gradient(
+    from -22.5deg,
+    #7c3ddc 0deg 45deg,
+    #f47d2b 45deg 90deg,
+    #12a86f 90deg 135deg,
+    #4bb85f 135deg 180deg,
+    #e65499 180deg 225deg,
+    #7443ce 225deg 270deg,
+    #1fb4d5 270deg 315deg,
+    #f47d2b 315deg 360deg
+  );
   border: 6px solid #7e35d8;
   box-shadow: 0 7px 12px rgba(97, 49, 171, 0.24);
 }
 
 .tc-spin-card-wheel::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  content: none;
 }
 
 .tc-spin-card-wheel::after {

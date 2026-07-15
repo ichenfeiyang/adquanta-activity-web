@@ -686,6 +686,59 @@ body {
   display: none;
 }
 
+.redeem-gift-country-field {
+  margin-top: 18px;
+  margin-bottom: 18px;
+}
+
+.redeem-gift-country-wrapper {
+  position: relative;
+}
+
+.redeem-gift-country-btn {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid #dce4ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.05);
+  color: #050914;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.redeem-gift-country-btn:active {
+  opacity: 0.88;
+}
+
+.redeem-gift-country-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 700;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.redeem-gift-country-chevron {
+  flex: 0 0 auto;
+  color: #94a3b8;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.redeem-gift-country-dropdown {
+  left: 0;
+  right: 0;
+  min-width: 100%;
+}
+
 .redeem-featured-head {
   display: flex;
   align-items: center;
@@ -701,6 +754,49 @@ body {
   color: #ec5b13;
   font-size: 16px;
   line-height: 1;
+}
+
+.redeem-recipient-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 8px;
+}
+
+.redeem-recipient-title-row .redeem-section-title {
+  margin: 0;
+}
+
+.redeem-recipient-title-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.redeem-recipient-title-icon::before,
+.redeem-recipient-title-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 2px solid #ec5b13;
+}
+
+.redeem-recipient-title-icon::before {
+  top: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.redeem-recipient-title-icon::after {
+  bottom: 1px;
+  width: 12px;
+  height: 6px;
+  border-top-left-radius: 999px;
+  border-top-right-radius: 999px;
+  border-bottom: 0;
 }
 
 .redeem-brand-grid {

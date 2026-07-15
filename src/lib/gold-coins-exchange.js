@@ -125,6 +125,8 @@ export class GoldCoinsExchange {
       tabMobileTopup: "tabMobileTopup",
       giftCardPanel: "giftCardPanel",
       mobileTopupPanel: "mobileTopupPanel",
+      giftCountryBtn: "giftCountryBtn",
+      giftCountryDropdown: "giftCountryDropdown",
       giftBrandGrid: "giftBrandGrid",
       giftAmountSection: "giftAmountSection",
       giftAmountGrid: "giftAmountGrid",
@@ -203,7 +205,9 @@ export class GoldCoinsExchange {
 
   refreshCountryCodeUI() {
     this.updateCountryCodeBtnView();
+    this.updateGiftCountryBtnView();
     this.renderCountryCodeDropdown(this.$.countryCodeDropdown);
+    this.renderCountryCodeDropdown(this.$.giftCountryDropdown);
   }
 
   getChargesLookupKey(mobile) {
@@ -214,11 +218,18 @@ export class GoldCoinsExchange {
     this._countryDropdownOpen = isOpen;
     this._countryDropdownTarget = isOpen ? target : null;
     const mobileOpen = isOpen && target === "mobile";
+    const giftOpen = isOpen && target === "gift";
     if (this.$.countryCodeDropdown) {
       this.$.countryCodeDropdown.hidden = !mobileOpen;
     }
     if (this.$.countryCodeBtn) {
       this.$.countryCodeBtn.setAttribute("aria-expanded", mobileOpen ? "true" : "false");
+    }
+    if (this.$.giftCountryDropdown) {
+      this.$.giftCountryDropdown.hidden = !giftOpen;
+    }
+    if (this.$.giftCountryBtn) {
+      this.$.giftCountryBtn.setAttribute("aria-expanded", giftOpen ? "true" : "false");
     }
   }
 
@@ -240,6 +251,20 @@ export class GoldCoinsExchange {
         this._countryDropdownOpen && this._countryDropdownTarget === "mobile" ? "true" : "false",
       );
     }
+  }
+
+  updateGiftCountryBtnView() {
+    const country = resolveRedeemCountry(this.state.countryCodeEnum);
+    if (!this.$.giftCountryBtn) return;
+    this.$.giftCountryBtn.innerHTML = `
+      <span class="redeem-countrycode-flag" aria-hidden="true">${country.flag}</span>
+      <span class="redeem-gift-country-name">${escapeHtml(country.name)}</span>
+      <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+    `;
+    this.$.giftCountryBtn.setAttribute(
+      "aria-expanded",
+      this._countryDropdownOpen && this._countryDropdownTarget === "gift" ? "true" : "false",
+    );
   }
 
   renderCountryCodeDropdown(dropdownEl) {
@@ -268,6 +293,14 @@ export class GoldCoinsExchange {
       return;
     }
     this.setCountryDropdownOpen(true, "mobile");
+  }
+
+  toggleGiftCountryDropdown() {
+    if (this._countryDropdownOpen && this._countryDropdownTarget === "gift") {
+      this.closeCountryCodeDropdown();
+      return;
+    }
+    this.setCountryDropdownOpen(true, "gift");
   }
 
   closeCountryCodeDropdown() {
@@ -928,6 +961,22 @@ export class GoldCoinsExchange {
    * 绑定事件
    */
   bindCountryCodeEvents() {
+    if (this.$.giftCountryBtn) {
+      this._addDomListener(this.$.giftCountryBtn, "click", (e) => {
+        e.stopPropagation();
+        this.toggleGiftCountryDropdown();
+      });
+    }
+
+    if (this.$.giftCountryDropdown) {
+      this._addDomListener(this.$.giftCountryDropdown, "click", (e) => {
+        const item = e.target.closest("[data-country-iso]");
+        if (!item) return;
+        e.stopPropagation();
+        this.selectCountry(item.getAttribute("data-country-iso"));
+      });
+    }
+
     if (this.$.countryCodeBtn) {
       this._addDomListener(this.$.countryCodeBtn, "click", (e) => {
         e.stopPropagation();
