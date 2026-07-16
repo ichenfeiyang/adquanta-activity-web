@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 H5 活动页面静态文件服务器
-提供 index.html、activity-center.html 等静态文件服务
+提供 Vue SPA 静态文件服务
 """
 from flask import Flask, send_from_directory, request, Response, redirect
 import os
@@ -137,7 +137,6 @@ def activity_entry():
     return _redirect_activity_center()
 
 
-@app.route("/activity-center.html")
 @app.route("/gold-coins-exchange.html")
 @app.route("/topup-status.html")
 def legacy_html_redirect():
@@ -176,7 +175,7 @@ if __name__ == '__main__':
     print(f"本机：http://127.0.0.1:8848")
     print(f"手机/局域网：{MOBILE_ACCESS_URL}（同 WiFi 下打开；监听 0.0.0.0:8848 已放通网内访问）")
     _lan_url_warning(MOBILE_ACCESS_URL)
-    print("默认入口：/ -> /index.html（Vue SPA）；旧 /activity-center.html 会 302 到 /index.html")
+    print("默认入口：/ -> /index.html（Vue SPA）")
     print("=" * 60)
     # 0.0.0.0：手机用 http://<电脑局域网IP>:8848 即达，不绑定单一 IP
     app.run(host="0.0.0.0", port=8848, debug=True)

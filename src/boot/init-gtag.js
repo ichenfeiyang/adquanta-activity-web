@@ -1,4 +1,5 @@
 import { getGaMeasurementId } from "../lib/ga-client-id.js";
+import { normalizeGaPagePath } from "../lib/ga-page-path.js";
 
 function scheduleIdle(task, timeoutMs) {
   if (typeof requestIdleCallback === "function") {
@@ -28,7 +29,7 @@ export function initGtag() {
 
   function trackPageView() {
     gtag("config", measurementId, {
-      page_path: location.pathname,
+      page_path: normalizeGaPagePath(location.pathname),
       page_title: document.title,
     });
   }
@@ -56,7 +57,7 @@ export function initGtag() {
         const el =
           e.target.closest('button, a, [role="button"], input, select, textarea') || e.target;
         gtag("event", "click", {
-          page_path: location.pathname,
+          page_path: normalizeGaPagePath(location.pathname),
           element: el.tagName,
           element_id: el.id || undefined,
           element_class: typeof el.className === "string" ? el.className.slice(0, 100) : undefined,

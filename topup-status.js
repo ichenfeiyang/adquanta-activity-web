@@ -269,7 +269,7 @@ async function main() {
     if (token) p.set("token", token);
     if (activityId) p.set("activity_id", activityId);
     // "Back to Tasks" should return to the activity center page (not the redeem page).
-    window.location.href = `/activity-center.html?${p.toString()}`;
+    window.location.href = `/index.html?${p.toString()}`;
   };
 
   // Left-top back arrow should behave like a normal back navigation (previous page).
