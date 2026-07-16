@@ -1650,7 +1650,8 @@ body {
 }
 
 .tc-video-text .tc-card-title {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 17px;
   line-height: 1.05;
   font-weight: 800;
@@ -1676,6 +1677,7 @@ body {
 }
 
 .tc-video-badge {
+  flex: 0 0 auto;
   min-width: 42px;
   min-height: 18px;
   padding: 2px 7px;
@@ -2129,7 +2131,10 @@ body {
   max-width: 100%;
   font-size: 10.5px;
   line-height: 1.05;
-  -webkit-line-clamp: 1;
+  display: block;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: unset;
 }
 
 .tc-redeem-reward-threshold {
@@ -2222,10 +2227,14 @@ body {
 
   .tc-video-title-row {
     gap: 5px;
+    flex-wrap: wrap;
+    row-gap: 3px;
   }
 
   .tc-video-text .tc-card-title {
     font-size: 13.5px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .tc-video-badge {
@@ -2238,6 +2247,14 @@ body {
   .tc-video-text .tc-card-subtitle {
     font-size: 9.5px;
     line-height: 1.22;
+  }
+
+  .tc-video-text .tc-card-subtitle span {
+    white-space: normal;
+  }
+
+  .tc-spin-max-coin {
+    white-space: nowrap;
   }
 
   .tc-video-stats {
@@ -2389,7 +2406,10 @@ body {
     max-width: 100%;
     font-size: 8.5px;
     line-height: 1.05;
-    -webkit-line-clamp: 1;
+    display: block;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    -webkit-line-clamp: unset;
   }
 
   .tc-redeem-reward-threshold {

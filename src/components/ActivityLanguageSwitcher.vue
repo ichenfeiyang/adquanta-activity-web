@@ -191,7 +191,9 @@ onUnmounted(() => {
   right: 0;
   top: calc(100% + 10px);
   min-width: 112px;
+  max-width: calc(100vw - 24px);
   padding: 6px;
+  box-sizing: border-box;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: #ffffff;
@@ -199,6 +201,8 @@ onUnmounted(() => {
 }
 
 .activity-language-switcher__menu--rtl {
+  right: auto;
+  left: 0;
   direction: rtl;
 }
 

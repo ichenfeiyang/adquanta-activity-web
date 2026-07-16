@@ -13,6 +13,12 @@ const DEFAULT_REDEEM_REWARD_ITEMS = [
   { type: "gift_cards", titleKey: "center.redeemRewardGiftCards", fallback: true },
 ];
 
+const REDEEM_REWARD_TITLE_KEYS = {
+  mobile_recharge: "center.redeemRewardMobileRecharge",
+  data_packs: "center.redeemRewardDataPacks",
+  gift_cards: "center.redeemRewardGiftCards",
+};
+
 /**
  * UI 绑定层
  * 负责：DOM 操作、UI 更新、事件绑定
@@ -345,7 +351,8 @@ export class ActivityCenterUI {
       copy.className = "tc-redeem-reward-copy";
       const name = document.createElement("span");
       name.className = "tc-redeem-reward-name";
-      name.textContent = item.title || (item.titleKey ? t(item.titleKey) : t("center.redeemRewardsFallbackTitle"));
+      const titleKey = REDEEM_REWARD_TITLE_KEYS[item.type] || item.titleKey;
+      name.textContent = titleKey ? t(titleKey) : item.title || t("center.redeemRewardsFallbackTitle");
       const threshold = document.createElement("span");
       threshold.className = "tc-redeem-reward-threshold";
       threshold.textContent = isFallback
