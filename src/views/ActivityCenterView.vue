@@ -246,6 +246,17 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
     </div>
   </div>
 
+  <div id="checkinChestModal" class="new-user-bonus-overlay" style="display:none;">
+    <div class="new-user-bonus-card">
+      <div class="new-user-bonus-badge">SIGN-IN CHEST</div>
+      <div class="new-user-bonus-art" aria-hidden="true">🎁</div>
+      <h2 class="new-user-bonus-headline">A coin chest dropped!</h2>
+      <p class="new-user-bonus-desc">Watch a short video to open it and get coins now.</p>
+      <button id="checkinChestWatchBtn" type="button" class="new-user-bonus-primary">Watch to open</button>
+      <button id="checkinChestDismissBtn" type="button" class="new-user-bonus-secondary">Maybe later</button>
+    </div>
+  </div>
+
   <div id="signinDialog" class="signin-dialog-overlay" style="display: none;">
     <div class="signin-dialog-sheet">
       <div class="signin-dialog-handle" aria-hidden="true" />

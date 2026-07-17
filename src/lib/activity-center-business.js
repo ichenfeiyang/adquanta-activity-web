@@ -2,6 +2,7 @@ import {
   getActivityInfo,
   postActivityVideo,
   postCheckin,
+  postCheckinChest,
   postNewUserBonus,
 } from "./activity-api.js";
 import { invalidateActivityInfoCache, loadActivityInfoWithSWR } from "./activity-page-cache.js";
@@ -19,6 +20,9 @@ import {
   videoCompletedRewardMessage,
 } from "./activity-messages.js";
 import * as logger from "./activity-logger.js";
+import { normalizeCheckinChests } from "./checkin-chest.js";
+
+export { normalizeCheckinChests } from "./checkin-chest.js";
 
 export function getDailyAdLimitMessage() {
   return dailyAdLimitMessage();
@@ -38,6 +42,21 @@ function normalizeWalletCoin(value) {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+const CHECKIN_CHEST_QUEUE_KEY = "activity_checkin_chest_queue_v1";
+
+function readCheckinChestQueue() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(CHECKIN_CHEST_QUEUE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCheckinChestQueue(queue) {
+  try { sessionStorage.setItem(CHECKIN_CHEST_QUEUE_KEY, JSON.stringify(queue)); } catch { /* unavailable storage */ }
 }
 
 /**
@@ -63,6 +82,7 @@ export class ActivityCenterBusiness {
 
     // 签到任务详情（来自 tasks[] 中 type === 'checkin' 的 task.detail）
     this.checkinDetail = null;
+    this.checkinChests = [];
 
     // 当前用户 ID（来自 user_info.user_id）
     this.userId = null;
@@ -78,6 +98,7 @@ export class ActivityCenterBusiness {
       onAssetsUpdate: config.onAssetsUpdate || (() => {}),
       onTaskUpdate: config.onTaskUpdate || (() => {}),
       onCheckinUpdate: config.onCheckinUpdate || (() => {}),
+      onCheckinChestUpdate: config.onCheckinChestUpdate || (() => {}),
       onFeatureVisibilityUpdate: config.onFeatureVisibilityUpdate || (() => {}),
       onRedeemGapUpdate: config.onRedeemGapUpdate || (() => {}),
       onRedeemRewardsUpdate: config.onRedeemRewardsUpdate || (() => {}),
@@ -208,6 +229,7 @@ export class ActivityCenterBusiness {
     let applied = false;
 
     this.checkinDetail = null;
+    this.checkinChests = [];
     this.adTaskStatus = this.createEmptyAdTaskStatus();
     this.newUserBonus = this.normalizeNewUserBonus(d?.new_user_bonus);
     this.redeemGap = this.normalizeRedeemGap(d?.redeem_gap);
@@ -231,6 +253,7 @@ export class ActivityCenterBusiness {
         if (task.type === "checkin" && task.detail != null) {
           hasCheckinTask = true;
           this.checkinDetail = task.detail;
+          this.checkinChests = normalizeCheckinChests(task.detail?.chests);
           this.config.onCheckinUpdate(task.detail);
         }
         if (task.type === "video" && task.detail != null) {
@@ -257,6 +280,7 @@ export class ActivityCenterBusiness {
       if (!hasCheckinTask) {
         this.config.onCheckinUpdate(null);
       }
+      this.config.onCheckinChestUpdate(this.checkinChests[0] || null);
       if (!hasVideoTask) {
         this.config.onTaskUpdate({ watchAd: null });
       }
@@ -297,6 +321,7 @@ export class ActivityCenterBusiness {
     const token = apiOptions.token || "";
 
     try {
+      await this.flushCheckinChestQueue(apiOptions);
       if (force) {
         invalidateActivityInfoCache(token);
       }
@@ -334,11 +359,16 @@ export class ActivityCenterBusiness {
         return { ok: false };
       }
       const coinFromCheckin = res.data?.coin ?? res.coin ?? 0;
+      const chest = normalizeCheckinChests(res.data?.chest ? [res.data.chest] : [])[0] || null;
+      if (chest) {
+        this.checkinChests = [chest];
+        this.config.onCheckinChestUpdate(chest);
+      }
       await this.loadActivityInfo(apiOptions, { force: true });
       const today = this.getTodayCheckinDay();
       const video_coin = today?.video_coin ?? 0;
       const multiplier = (today?.coin > 0) ? Math.floor((today.video_coin ?? 0) / today.coin) : 0;
-      return { ok: true, coinFromCheckin, video_coin, multiplier };
+      return { ok: true, coinFromCheckin, video_coin, multiplier, chest };
     } catch (error) {
       logger.error("Do checkin failed", error);
       showToast(error?.message || checkinFailedRetryMessage(), "error");
@@ -360,6 +390,11 @@ export class ActivityCenterBusiness {
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200) {
         success = true;
+        const chest = normalizeCheckinChests(res.data?.chest ? [res.data.chest] : [])[0] || null;
+        if (chest) {
+          this.checkinChests = [chest];
+          this.config.onCheckinChestUpdate(chest);
+        }
         showToast(videoCheckinSuccessMessage(), "success");
       } else {
         showToast(msg || claimFailedMessage(), "error");
@@ -373,6 +408,47 @@ export class ActivityCenterBusiness {
       await this.loadActivityInfo(apiOptions, { force: true });
     }
     return { ok: success };
+  }
+
+  queueCheckinChestAction(action, chestId, adEventId = "") {
+    const item = { chest_id: Number(chestId), action, ad_event_id: String(adEventId || "") };
+    if (!item.chest_id) return;
+    const queue = readCheckinChestQueue().filter((entry) => entry.chest_id !== item.chest_id);
+    queue.push(item);
+    writeCheckinChestQueue(queue);
+  }
+
+  async flushCheckinChestQueue(apiOptions = {}) {
+    const queue = readCheckinChestQueue();
+    if (!queue.length) return;
+    // Dismissals go first so a declined chest cannot reappear after reconnecting.
+    const ordered = [...queue].sort((a, b) => (a.action === "dismiss" ? -1 : 0) - (b.action === "dismiss" ? -1 : 0));
+    const remaining = [];
+    for (const item of ordered) {
+      try {
+        const res = await postCheckinChest(apiOptions, item);
+        if (res?.code !== 200) remaining.push(item);
+      } catch {
+        remaining.push(item);
+      }
+    }
+    writeCheckinChestQueue(remaining);
+  }
+
+  async submitCheckinChestAction(apiOptions = {}, action, chestId, adEventId = "") {
+    try {
+      const res = await postCheckinChest(apiOptions, { chest_id: chestId, action, ad_event_id: adEventId });
+      const ok = res?.code === 200 && res?.data?.success !== false;
+      if (!ok) return { ok: false, message: res?.data?.message || res?.message || claimFailedMessage() };
+      this.checkinChests = this.checkinChests.filter((chest) => chest.id !== Number(chestId));
+      this.config.onCheckinChestUpdate(this.checkinChests[0] || null);
+      await this.loadActivityInfo(apiOptions, { force: true });
+      return { ok: true, coin: Number(res?.data?.coin ?? 0) || 0, totalCoin: Number(res?.data?.total_coin ?? 0) || 0 };
+    } catch (error) {
+      this.queueCheckinChestAction(action, chestId, adEventId);
+      logger.warn("Check-in chest action queued for retry", { action, chestId, message: error?.message });
+      return { ok: false, queued: true };
+    }
   }
 
   /**

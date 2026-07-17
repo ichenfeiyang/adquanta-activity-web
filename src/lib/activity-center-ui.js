@@ -5,6 +5,7 @@ import { bindPageElements } from "./bind-page-elements.js";
 import { checkinUiMixin as checkinMixin } from "./activity-center-checkin-ui.js";
 import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
 import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
+import { checkinChestUiMixin as checkinChestMixin } from "./activity-center-checkin-chest-ui.js";
 import { t } from "./i18n/activity-locale.js";
 
 const DEFAULT_REDEEM_REWARD_ITEMS = [
@@ -75,6 +76,9 @@ export class ActivityCenterUI {
       newUserBonusDoubleBtn: "newUserBonusDoubleBtn",
       newUserBonusDoubleBtnLabel: "newUserBonusDoubleBtnLabel",
       newUserBonusMaybeLater: "newUserBonusMaybeLater",
+      checkinChestModal: "checkinChestModal",
+      checkinChestWatchBtn: "checkinChestWatchBtn",
+      checkinChestDismissBtn: "checkinChestDismissBtn",
       checkinPill: "tc-checkin-pill",
       checkinDaysContainer: "tc-checkin-days-container",
     });
@@ -95,6 +99,8 @@ export class ActivityCenterUI {
       onSigninWatchVideoClick: config.onSigninWatchVideoClick || (() => {}),
       onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
       onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
+      onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
+      onCheckinChestDismissClick: config.onCheckinChestDismissClick || (() => {}),
       ...config,
     };
 
@@ -114,6 +120,7 @@ export class ActivityCenterUI {
     this._lastCheckinFingerprint = "";
     this._lastSpinPoolKey = "";
     this._newUserBonus = null;
+    this._checkinChest = null;
   }
 
 
@@ -531,6 +538,17 @@ export class ActivityCenterUI {
       });
     }
 
+    if (this.elements.checkinChestWatchBtn) {
+      this.elements.checkinChestWatchBtn.addEventListener("click", () => {
+        if (!this.elements.checkinChestWatchBtn.disabled) this.config.onCheckinChestWatchClick(this._checkinChest);
+      });
+    }
+    if (this.elements.checkinChestDismissBtn) {
+      this.elements.checkinChestDismissBtn.addEventListener("click", () => {
+        if (!this.elements.checkinChestDismissBtn.disabled) this.config.onCheckinChestDismissClick(this._checkinChest);
+      });
+    }
+
     if (!this._scrollLockTouchBound) {
       this._scrollLockTouchBound = true;
       document.addEventListener(
@@ -556,4 +574,4 @@ export class ActivityCenterUI {
 
 }
 
-Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin, newUserBonusMixin);
+Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin, newUserBonusMixin, checkinChestMixin);

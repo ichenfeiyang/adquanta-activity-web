@@ -36,6 +36,8 @@ function renderUnauthenticatedActivityCenterPreview() {
     onSigninWatchVideoClick: showAuthRequired,
     onNewUserBonusVideoClick: showAuthRequired,
     onNewUserBonusDismissClick: showAuthRequired,
+    onCheckinChestWatchClick: showAuthRequired,
+    onCheckinChestDismissClick: showAuthRequired,
   });
   ui.bindEvents();
   ui.renderInitialShell();
@@ -64,12 +66,15 @@ export function initActivityCenter({ router, route }) {
   const checkinVideoClaimInFlight = { value: false };
   const newUserBonusAdInFlight = { value: false };
   const newUserBonusClaimInFlight = { value: false };
+  const checkinChestAdInFlight = { value: false };
+  const checkinChestClaimInFlight = { value: false };
   const AD_CALLBACK_TIMEOUT_MS = 60000;
   let ui;
   let adapter;
   let rewardAdTimeout;
   let interstitialAdTimeout;
   let newUserBonusAdTimeout;
+  let checkinChestAdTimeout;
 
   function resetCheckinAdState() {
     checkinWatchAdInFlight.value = false;
@@ -104,6 +109,10 @@ export function initActivityCenter({ router, route }) {
         ui.hideNewUserBonusDialog();
       }
     },
+    onCheckinChestUpdate: (chest) => {
+      if (chest?.status === "pending") ui.showCheckinChestDialog(chest);
+      else ui.hideCheckinChestDialog();
+    },
   });
 
   const handleSDKEventCompleted = createActivitySdkEventHandler({
@@ -132,6 +141,10 @@ export function initActivityCenter({ router, route }) {
     checkinWatchAdInFlight,
     newUserBonusAdInFlight,
     newUserBonusClaimInFlight,
+    checkinChestAdInFlight,
+    checkinChestClaimInFlight,
+    getCheckinChest: () => ui._checkinChest,
+    get checkinChestAdTimeout() { return checkinChestAdTimeout; },
   });
 
   adapter = new ActivityCenterAdapter({
@@ -302,6 +315,31 @@ export function initActivityCenter({ router, route }) {
         newUserBonusClaimInFlight.value = false;
       }
     },
+    onCheckinChestWatchClick: async (chest) => {
+      if (!chest?.id || checkinChestAdInFlight.value || checkinChestClaimInFlight.value) return;
+      try {
+        checkinChestAdInFlight.value = true;
+        ui.setCheckinChestLoading(true);
+        lastRewardAdTaskId = "task_checkin_chest";
+        checkinChestAdTimeout?.start();
+        adapter.trackEvent("checkin_chest_watch_video_click", { taskId: "task_checkin_chest", chestId: chest.id });
+        await adapter.triggerRewardAd({ taskId: "task_checkin_chest", reward: 0 });
+      } catch (error) {
+        checkinChestAdTimeout?.clear();
+        checkinChestAdInFlight.value = false;
+        ui.setCheckinChestLoading(false);
+        showToast(normalizeAdMessage(error?.message, adNotAvailableMessage()), "error");
+      }
+    },
+    onCheckinChestDismissClick: async (chest) => {
+      if (!chest?.id || checkinChestClaimInFlight.value) return;
+      checkinChestClaimInFlight.value = true;
+      ui.setCheckinChestLoading(true);
+      const result = await business.submitCheckinChestAction(apiOptions, "dismiss", chest.id);
+      checkinChestClaimInFlight.value = false;
+      if (result?.ok || result?.queued) ui.hideCheckinChestDialog();
+      else ui.setCheckinChestLoading(false);
+    },
   });
 
   rewardAdTimeout = createAdCallbackTimeout({
@@ -339,8 +377,31 @@ export function initActivityCenter({ router, route }) {
     },
   });
 
+  checkinChestAdTimeout = createAdCallbackTimeout({
+    ms: AD_CALLBACK_TIMEOUT_MS,
+    isActive: () => checkinChestAdInFlight.value,
+    onTimeout: () => {
+      checkinChestAdInFlight.value = false;
+      ui.setCheckinChestLoading(false);
+      showToast(checkinChestAdTimeout.message, "warning");
+      adapter.trackEvent("checkin_chest_ad_failed", { taskId: "task_checkin_chest", reason: "timeout" });
+    },
+  });
+
   window.onRewardedAdError = function (error) {
     logger.error("广告播放错误:", error);
+    if (checkinChestAdInFlight.value) {
+      checkinChestAdTimeout?.clear();
+      checkinChestAdInFlight.value = false;
+      ui.setCheckinChestLoading(false);
+      const message = normalizeAdMessage(error?.message, adFailedMessage());
+      showToast(message, "error");
+      adapter.trackEvent("checkin_chest_ad_failed", {
+        taskId: "task_checkin_chest",
+        error: error?.message || String(error),
+      });
+      return;
+    }
     if (newUserBonusAdInFlight.value) {
       newUserBonusAdTimeout?.clear();
       newUserBonusAdInFlight.value = false;
@@ -385,6 +446,7 @@ export function initActivityCenter({ router, route }) {
     rewardAdTimeout?.clear();
     interstitialAdTimeout?.clear();
     newUserBonusAdTimeout?.clear();
+    checkinChestAdTimeout?.clear();
     window.onRewardedAdError = null;
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
   };

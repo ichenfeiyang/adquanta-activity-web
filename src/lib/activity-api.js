@@ -183,6 +183,18 @@ export async function postCheckin(options = {}, body = {}) {
   });
 }
 
+/** Settle or dismiss a server-issued check-in chest. */
+export async function postCheckinChest(options = {}, body = {}) {
+  const url = `${BaseApiUrl}/api/v1/ops/activity/checkin/chest`;
+  const payload = { chest_id: body.chest_id ?? 0, action: body.action ?? "" };
+  if (body.ad_event_id) payload.ad_event_id = body.ad_event_id;
+  return fetchApi("postCheckinChest", url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...buildAuthHeaders(options) },
+    body: JSON.stringify(payload),
+  });
+}
+
 /**
  * 转动转盘获取金币（每日看视频完成后调用，消耗一次转盘机会并由服务端结算本次金币）
  * POST /api/v1/ops/activity/video

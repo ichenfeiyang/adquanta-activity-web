@@ -14,6 +14,8 @@ import * as logger from "./activity-logger.js";
  *   checkinWatchAdInFlight: { value: boolean },
  *   newUserBonusAdInFlight: { value: boolean },
  *   newUserBonusClaimInFlight: { value: boolean },
+ *   checkinChestAdInFlight: { value: boolean },
+ *   checkinChestClaimInFlight: { value: boolean },
  * }} ctx
  */
 async function handleRewardAdEvent(ctx, result) {
@@ -29,6 +31,10 @@ async function handleRewardAdEvent(ctx, result) {
     showDailyAdLimitToast,
     newUserBonusAdInFlight,
     newUserBonusClaimInFlight,
+    checkinChestAdInFlight,
+    checkinChestClaimInFlight,
+    getCheckinChest,
+    checkinChestAdTimeout,
   } = ctx;
 
   const success = result.success;
@@ -89,6 +95,36 @@ async function handleRewardAdEvent(ctx, result) {
       adErrorCode: result.adErrorCode,
       adDetail: result.adDetail,
     });
+    return;
+  }
+
+  if (taskId === "task_checkin_chest") {
+    checkinChestAdTimeout?.clear();
+    checkinChestAdInFlight.value = false;
+    const chest = getCheckinChest?.();
+    if (!success || !chest?.id) {
+      ui.setCheckinChestLoading(false);
+      const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
+      if (!success) showToast(displayMessage, "warning");
+      adapter.trackEvent("checkin_chest_ad_failed", { taskId, reason: displayMessage });
+      return;
+    }
+    if (checkinChestClaimInFlight.value) return;
+    checkinChestClaimInFlight.value = true;
+    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? "";
+    const claimResult = await business.submitCheckinChestAction(apiOptions, "claim", chest.id, adEventId);
+    checkinChestClaimInFlight.value = false;
+    ui.setCheckinChestLoading(false);
+    if (claimResult?.ok) {
+      ui.hideCheckinChestDialog();
+      showToast(`+${claimResult.coin} Coins`, "success");
+      adapter.trackEvent("checkin_chest_reward_granted", { taskId, chestId: chest.id, coin: claimResult.coin });
+    } else if (claimResult?.queued) {
+      ui.hideCheckinChestDialog();
+      adapter.trackEvent("checkin_chest_reward_queued", { taskId, chestId: chest.id });
+    } else {
+      showToast(claimResult?.message || adNotCompletedMessage(), "error");
+    }
     return;
   }
 

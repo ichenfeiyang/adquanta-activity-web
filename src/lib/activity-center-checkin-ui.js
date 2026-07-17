@@ -122,6 +122,7 @@ export const checkinUiMixin = {
       ? JSON.stringify({
           continuous_days: detail.continuous_days,
           days: detail.days,
+          chests: detail.chests,
         })
       : "empty";
     if (fingerprint === this._lastCheckinFingerprint) return;
@@ -148,7 +149,7 @@ export const checkinUiMixin = {
           coin: 0,
           isDone: false,
           isCurrent: false,
-          isDay7: day === 7,
+          isDay7: false,
           superReward: 0,
         });
       }
@@ -164,11 +165,14 @@ export const checkinUiMixin = {
     }
 
     const superReward = detail.days[6]?.coin ?? 0;
+    const chestDays = new Set((Array.isArray(detail.chests) ? detail.chests : [])
+      .filter((chest) => chest?.status === "pending")
+      .map((chest) => Number(chest.continuous_day)));
     const daysList = detail.days.slice(0, 7);
     const nodes = ensureCheckinDayGrid(container, this._checkinGridCache);
 
     daysList.forEach((dayInfo, idx) => {
-      const isDay7 = dayInfo.day === 7 || idx === 6;
+      const isDay7 = chestDays.has(Number(dayInfo.day));
       const isDone = dayInfo.day <= continuousDays;
       paintCheckinDayNode(nodes[idx], {
         day: dayInfo.day,
@@ -186,7 +190,7 @@ export const checkinUiMixin = {
         coin: 0,
         isDone: false,
         isCurrent: false,
-        isDay7: idx === 6,
+        isDay7: false,
         superReward,
       });
     }
@@ -202,7 +206,8 @@ export const checkinUiMixin = {
       const received = !!today?.received;
       const videoReceived = !!today?.video_received;
       this._signinVideoCompleted = videoReceived;
-      const allCompleted = received && videoReceived;
+      const pendingChest = chestDays.has(Number(today?.day));
+      const allCompleted = received && videoReceived && !pendingChest;
       const canCheckin = !allCompleted;
       signinBtn.disabled = false;
       signinBtn.removeAttribute("aria-disabled");
