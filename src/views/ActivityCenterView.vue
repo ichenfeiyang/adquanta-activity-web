@@ -93,7 +93,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
                 <span class="tc-video-progress-item">
                   <span class="tc-video-stat-icon tc-video-stat-icon--spin">+</span>
                   <span class="tc-video-stat-copy">
-                    <span id="ad-progress-videos" class="tc-video-progress-value">0 / 5</span>
+                    <span id="ad-progress-videos" class="tc-video-progress-value">0 / 20</span>
                     <span class="tc-video-progress-label">{{ t('center.spinsLeftToday') }}</span>
                   </span>
                 </span>

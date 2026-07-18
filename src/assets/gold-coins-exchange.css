@@ -691,6 +691,11 @@ body {
   margin-bottom: 18px;
 }
 
+.redeem-gift-currency-field {
+  margin-top: 0;
+  margin-bottom: 22px;
+}
+
 .redeem-gift-country-wrapper {
   position: relative;
 }
@@ -731,6 +736,19 @@ body {
   color: #94a3b8;
   font-size: 20px;
   line-height: 1;
+}
+
+.redeem-gift-currency-symbol {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff5eb;
+  color: #ec5b13;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .redeem-gift-country-dropdown {

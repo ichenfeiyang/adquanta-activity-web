@@ -6,6 +6,18 @@ export function shouldApplyLookupResult({ requestKey, desiredKey, currentKey }) 
   return Boolean(requestKey) && requestKey === desiredKey && requestKey === currentKey;
 }
 
+export function findCurrentDenomination(denominations, selectedDenomination) {
+  const selectedValue = Number(selectedDenomination?.denomination);
+  if (!Number.isFinite(selectedValue) || selectedValue <= 0) return null;
+  const list = Array.isArray(denominations) ? denominations : [];
+  return list.find((item) => Number(item?.denomination) === selectedValue) || null;
+}
+
+export function isInsufficientCoinMessage(message) {
+  const normalized = String(message || "").trim().toLowerCase();
+  return normalized.includes("余额不足") || normalized.includes("insufficient coin");
+}
+
 /** @returns {boolean} true when the value was truncated */
 export function trimInputToMax(input, maxLength) {
   if (!input) return false;

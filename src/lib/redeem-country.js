@@ -1,17 +1,19 @@
 export const DEFAULT_REDEEM_COUNTRY = {
   iso: "IN",
   dialCode: "+91",
+  // English fallback; UI should prefer nameKey via i18n.
   name: "India",
+  nameKey: "redeem.countryIN",
   flag: "🇮🇳",
 };
 
 export const SUPPORTED_REDEEM_COUNTRIES = [
   DEFAULT_REDEEM_COUNTRY,
-  { iso: "ID", dialCode: "+62", name: "Indonesia", flag: "🇮🇩" },
-  { iso: "PH", dialCode: "+63", name: "Philippines", flag: "🇵🇭" },
-  { iso: "PK", dialCode: "+92", name: "Pakistan", flag: "🇵🇰" },
-  { iso: "BD", dialCode: "+880", name: "Bangladesh", flag: "🇧🇩" },
-  { iso: "NP", dialCode: "+977", name: "Nepal", flag: "🇳🇵" },
+  { iso: "ID", dialCode: "+62", name: "Indonesia", nameKey: "redeem.countryID", flag: "🇮🇩" },
+  { iso: "PH", dialCode: "+63", name: "Philippines", nameKey: "redeem.countryPH", flag: "🇵🇭" },
+  { iso: "PK", dialCode: "+92", name: "Pakistan", nameKey: "redeem.countryPK", flag: "🇵🇰" },
+  { iso: "BD", dialCode: "+880", name: "Bangladesh", nameKey: "redeem.countryBD", flag: "🇧🇩" },
+  { iso: "NP", dialCode: "+977", name: "Nepal", nameKey: "redeem.countryNP", flag: "🇳🇵" },
 ];
 
 const USER_SELECTION_KEY = "redeem_country_user_v1";
@@ -56,11 +58,46 @@ export const REDEEM_COUNTRY_CURRENCIES = {
   US: { code: "USD", symbol: "$" },
 };
 
+const GIFT_CURRENCY_CODES_BY_COUNTRY = {
+  IN: ["INR", "USD"],
+  ID: ["IDR", "USD"],
+  PH: ["PHP", "USD"],
+  // USD is first where the current activity catalog has no local-currency products.
+  PK: ["USD", "PKR"],
+  BD: ["BDT", "USD"],
+  NP: ["USD", "NPR"],
+  US: ["USD"],
+};
+
+const GIFT_CURRENCY_LABEL_KEYS = {
+  INR: "redeem.currencyINR",
+  IDR: "redeem.currencyIDR",
+  PHP: "redeem.currencyPHP",
+  PKR: "redeem.currencyPKR",
+  BDT: "redeem.currencyBDT",
+  NPR: "redeem.currencyNPR",
+  USD: "redeem.currencyUSD",
+};
+
 export function getRedeemCurrencyForCountry(iso) {
   const code = String(iso || "")
     .trim()
     .toUpperCase();
   return REDEEM_COUNTRY_CURRENCIES[code] || REDEEM_COUNTRY_CURRENCIES.IN;
+}
+
+export function getGiftCurrenciesForCountry(iso) {
+  const countryCode = String(iso || "").trim().toUpperCase();
+  const codes = GIFT_CURRENCY_CODES_BY_COUNTRY[countryCode] || [getRedeemCurrencyForCountry(countryCode).code, "USD"];
+  return [...new Set(codes)].map((code) => ({
+    code,
+    labelKey: GIFT_CURRENCY_LABEL_KEYS[code] || "",
+    ...getCurrencyDisplayByCode(code),
+  }));
+}
+
+export function getInitialGiftCurrencyForCountry(iso) {
+  return getGiftCurrenciesForCountry(iso)[0] || REDEEM_COUNTRY_CURRENCIES.USD;
 }
 
 export function getCurrencyDisplayByCode(currencyCode) {

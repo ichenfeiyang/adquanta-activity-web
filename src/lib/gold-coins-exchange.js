@@ -37,6 +37,13 @@ import {
 } from "./redeem-country.js";
 import { shouldApplyLookupResult } from "./redeem-request-guard.js";
 
+function formatRedeemCountryLabel(country) {
+  const fallback = country?.name || country?.iso || "";
+  if (!country?.nameKey) return fallback;
+  const translated = t(country.nameKey);
+  return !translated || translated === country.nameKey ? fallback : translated;
+}
+
 function buildAmountButtonHtml(item, { showTypeBadge = false, uniformLayout = false } = {}) {
   const typeBadgeHtml = showTypeBadge
     ? `<span class="redeem-amount-type-badge">${escapeHtml(getProductTypeLabel(item.product_type))}</span>`
@@ -127,6 +134,9 @@ export class GoldCoinsExchange {
       mobileTopupPanel: "mobileTopupPanel",
       giftCountryBtn: "giftCountryBtn",
       giftCountryDropdown: "giftCountryDropdown",
+      giftCurrencyField: "giftCurrencyField",
+      giftCurrencyBtn: "giftCurrencyBtn",
+      giftCurrencyDropdown: "giftCurrencyDropdown",
       giftBrandGrid: "giftBrandGrid",
       giftAmountSection: "giftAmountSection",
       giftAmountGrid: "giftAmountGrid",
@@ -258,7 +268,7 @@ export class GoldCoinsExchange {
     if (!this.$.giftCountryBtn) return;
     this.$.giftCountryBtn.innerHTML = `
       <span class="redeem-countrycode-flag" aria-hidden="true">${country.flag}</span>
-      <span class="redeem-gift-country-name">${escapeHtml(country.name)}</span>
+      <span class="redeem-gift-country-name">${escapeHtml(formatRedeemCountryLabel(country))}</span>
       <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
     `;
     this.$.giftCountryBtn.setAttribute(
@@ -280,7 +290,7 @@ export class GoldCoinsExchange {
       >
         <span class="redeem-countrycode-item-flag" aria-hidden="true">${country.flag}</span>
         <span class="redeem-countrycode-item-main">
-          <span class="redeem-countrycode-item-name">${escapeHtml(country.name)}</span>
+          <span class="redeem-countrycode-item-name">${escapeHtml(formatRedeemCountryLabel(country))}</span>
           <span class="redeem-countrycode-item-dial">${escapeHtml(country.dialCode)}</span>
         </span>
       </button>`;
@@ -296,6 +306,7 @@ export class GoldCoinsExchange {
   }
 
   toggleGiftCountryDropdown() {
+    this.closeGiftCurrencyDropdown?.();
     if (this._countryDropdownOpen && this._countryDropdownTarget === "gift") {
       this.closeCountryCodeDropdown();
       return;
@@ -310,9 +321,10 @@ export class GoldCoinsExchange {
   selectCountry(iso) {
     this.setCountryState(saveRedeemCountry(iso));
     this.closeCountryCodeDropdown();
+    this.closeGiftCurrencyDropdown?.();
     this.refreshCountryCodeUI();
     this.resetChargesUI();
-    this.resetGiftCatalog?.();
+    this.resetGiftCatalog?.({ resetCurrency: true });
     this.maybeLoadChargesForMobile(this.state.mobile);
     this.updateRedeemState();
     this.updateGiftRedeemState?.();

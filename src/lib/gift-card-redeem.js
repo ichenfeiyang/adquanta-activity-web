@@ -15,10 +15,19 @@ import { t } from "./i18n/activity-locale.js";
 import { showToast } from "./activity-alert-ui.js";
 import {
   formatRedeemDenomination,
+  getGiftCurrenciesForCountry,
+  getInitialGiftCurrencyForCountry,
   getRedeemCurrencyForCountry,
   resolveRedeemCountry,
 } from "./redeem-country.js";
-import { shouldApplyLookupResult, trimInputToMax, willInputExceedLimit, setFieldErrorVisible } from "./redeem-request-guard.js";
+import {
+  findCurrentDenomination,
+  isInsufficientCoinMessage,
+  shouldApplyLookupResult,
+  trimInputToMax,
+  willInputExceedLimit,
+  setFieldErrorVisible,
+} from "./redeem-request-guard.js";
 
 const GIFT_TAB = "gift";
 const TOPUP_TAB = "topup";
@@ -27,6 +36,12 @@ const GIFT_RECIPIENT_NAME_MAX_LENGTH = 80;
 const GIFT_RECIPIENT_EMAIL_MAX_LENGTH = 50;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function formatGiftCurrencyLabel(currency) {
+  const code = String(currency?.code || "").toUpperCase();
+  const name = currency?.labelKey ? t(currency.labelKey) : code;
+  return name === code ? code : `${code} - ${name}`;
+}
 
 function isApiEnvelopeOk(res) {
   return res?.code === 200 || res?.code === 0;
@@ -139,7 +154,7 @@ function buildGiftRedeemPayload(ctx, denomination) {
     product_id: ctx.giftState.productId,
     country_code: ctx.tremendousInfo.countryCode,
     denomination: denomination.denomination,
-    currency_code: ctx.tremendousInfo.currencyCode,
+    currency_code: ctx.giftState.currencyCode,
     recipient_name: getRecipientName(ctx),
     delivery_method: GIFT_DELIVERY_EMAIL,
     recipient_email: getRecipientEmail(ctx),
@@ -165,13 +180,16 @@ export const giftCardRedeemMethods = {
       productId: null,
       selectedDenomination: null,
       spendCoin: 0,
+      currencyCode: getInitialGiftCurrencyForCountry(this.state?.countryCodeEnum).code,
     };
+    this._giftCurrencyDropdownOpen = false;
     this.giftExchangeLoading = false;
     this.giftCatalogLoading = false;
     this.giftRecordsLoading = false;
     this._desiredGiftCatalogKey = "";
     this._appliedGiftCatalogKey = "";
     this.walletLocalCurrency = getRedeemCurrencyForCountry(this.state?.countryCodeEnum).symbol;
+    this.updateGiftCurrencyUI();
     this.showGiftCatalogSkeleton();
     this.setActiveRedeemTab(GIFT_TAB, { skipLoad: true });
   },
@@ -229,7 +247,7 @@ export const giftCardRedeemMethods = {
     if (this.$.giftRecipientForm) this.$.giftRecipientForm.hidden = false;
   },
 
-  resetGiftCatalog() {
+  resetGiftCatalog({ resetCurrency = false } = {}) {
     this._desiredGiftCatalogKey = "";
     this._appliedGiftCatalogKey = "";
     this.tremendousInfo = {
@@ -241,18 +259,74 @@ export const giftCardRedeemMethods = {
       productId: null,
       selectedDenomination: null,
       spendCoin: 0,
+      currencyCode: resetCurrency
+        ? getInitialGiftCurrencyForCountry(this.state?.countryCodeEnum).code
+        : this.giftState?.currencyCode || getInitialGiftCurrencyForCountry(this.state?.countryCodeEnum).code,
     };
+    this.updateGiftCurrencyUI();
     this.resetGiftAmountUI();
   },
 
   getTremendousQueryParams() {
     const country = resolveRedeemCountry(this.state?.countryCodeEnum);
-    const currency = getRedeemCurrencyForCountry(country.iso);
+    const options = getGiftCurrenciesForCountry(country.iso);
+    const selected = options.find((item) => item.code === this.giftState?.currencyCode) || options[0];
     return {
       country_code: country.iso,
-      currency_code: currency.code,
-      currencySymbol: currency.symbol,
+      currency_code: selected?.code || getRedeemCurrencyForCountry(country.iso).code,
+      currencySymbol: selected?.symbol || getRedeemCurrencyForCountry(country.iso).symbol,
     };
+  },
+
+  updateGiftCurrencyUI() {
+    const country = resolveRedeemCountry(this.state?.countryCodeEnum);
+    const options = getGiftCurrenciesForCountry(country.iso);
+    const selected = options.find((item) => item.code === this.giftState?.currencyCode) || options[0];
+    if (selected && this.giftState) this.giftState.currencyCode = selected.code;
+    if (this.$.giftCurrencyField) this.$.giftCurrencyField.hidden = options.length <= 1;
+    if (this.$.giftCurrencyBtn && selected) {
+      this.$.giftCurrencyBtn.innerHTML = `
+        <span class="redeem-gift-currency-symbol" aria-hidden="true">${escapeHtml(selected.symbol)}</span>
+        <span class="redeem-gift-country-name">${escapeHtml(formatGiftCurrencyLabel(selected))}</span>
+        <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+      `;
+      this.$.giftCurrencyBtn.setAttribute("aria-expanded", this._giftCurrencyDropdownOpen ? "true" : "false");
+    }
+    if (this.$.giftCurrencyDropdown) {
+      this.$.giftCurrencyDropdown.innerHTML = options.map((item) => {
+        const active = item.code === selected?.code ? " redeem-countrycode-item--active" : "";
+        return `<button type="button" class="redeem-countrycode-item${active}" role="option" data-gift-currency="${escapeHtml(item.code)}" aria-selected="${item.code === selected?.code ? "true" : "false"}">
+          <span class="redeem-countrycode-item-flag redeem-gift-currency-symbol" aria-hidden="true">${escapeHtml(item.symbol)}</span>
+          <span class="redeem-countrycode-item-main"><span class="redeem-countrycode-item-name">${escapeHtml(formatGiftCurrencyLabel(item))}</span></span>
+        </button>`;
+      }).join("");
+      this.$.giftCurrencyDropdown.hidden = !this._giftCurrencyDropdownOpen;
+    }
+  },
+
+  closeGiftCurrencyDropdown() {
+    this._giftCurrencyDropdownOpen = false;
+    this.updateGiftCurrencyUI();
+  },
+
+  toggleGiftCurrencyDropdown() {
+    if (this.giftExchangeLoading || getGiftCurrenciesForCountry(this.state?.countryCodeEnum).length <= 1) return;
+    this.closeCountryCodeDropdown?.();
+    this._giftCurrencyDropdownOpen = !this._giftCurrencyDropdownOpen;
+    this.updateGiftCurrencyUI();
+  },
+
+  selectGiftCurrency(currencyCode) {
+    const options = getGiftCurrenciesForCountry(this.state?.countryCodeEnum);
+    const selected = options.find((item) => item.code === String(currencyCode || "").toUpperCase());
+    if (!selected || selected.code === this.giftState.currencyCode) {
+      this.closeGiftCurrencyDropdown();
+      return;
+    }
+    this.giftState.currencyCode = selected.code;
+    this.closeGiftCurrencyDropdown();
+    this.resetGiftCatalog();
+    if (this.activeRedeemTab === GIFT_TAB) void this.loadGiftCatalog();
   },
 
   setActiveRedeemTab(tab, options = {}) {
@@ -303,6 +377,24 @@ export const giftCardRedeemMethods = {
   },
 
   bindGiftCardEvents() {
+    if (this.$.giftCurrencyBtn) {
+      this._addDomListener(this.$.giftCurrencyBtn, "click", (e) => {
+        e.stopPropagation();
+        this.toggleGiftCurrencyDropdown();
+      });
+    }
+    if (this.$.giftCurrencyDropdown) {
+      this._addDomListener(this.$.giftCurrencyDropdown, "click", (e) => {
+        const item = e.target.closest("[data-gift-currency]");
+        if (!item) return;
+        e.stopPropagation();
+        this.selectGiftCurrency(item.getAttribute("data-gift-currency"));
+      });
+    }
+    this._addDomListener(document, "click", () => this.closeGiftCurrencyDropdown());
+    this._addDomListener(document, "keydown", (e) => {
+      if (e.key === "Escape") this.closeGiftCurrencyDropdown();
+    });
     if (this.$.giftBrandGrid) {
       this._addDomListener(this.$.giftBrandGrid, "click", (e) => {
         if (this.giftExchangeLoading) return;
@@ -407,7 +499,8 @@ export const giftCardRedeemMethods = {
     await this.selectGiftProduct(productId, { preserveDenomination: Boolean(currentProduct) });
   },
 
-  async loadGiftCatalog() {
+  async loadGiftCatalog(options = {}) {
+    const { force = false } = options;
     const query = this.getTremendousQueryParams();
     const requestKey = giftCatalogKeyFromQuery(query);
     this._desiredGiftCatalogKey = requestKey;
@@ -447,6 +540,7 @@ export const giftCardRedeemMethods = {
         query.country_code,
         query.currency_code,
         {
+          force,
           fetcher: () =>
             getTremendousProducts(this.config.apiOptions, {
               country_code: query.country_code,
@@ -530,13 +624,7 @@ export const giftCardRedeemMethods = {
     const previousDenomination = shouldPreserveDenomination
       ? this.giftState.selectedDenomination
       : null;
-    const previousSpendCoin = shouldPreserveDenomination
-      ? this.giftState.spendCoin
-      : 0;
-
     this.giftState.productId = productId;
-    this.giftState.selectedDenomination = previousDenomination;
-    this.giftState.spendCoin = Number(previousSpendCoin ?? 0);
     this.updateGiftBrandSelection();
 
     const product = getSelectedProduct(this);
@@ -545,12 +633,19 @@ export const giftCardRedeemMethods = {
       return;
     }
 
+    const currentDenomination = findCurrentDenomination(
+      product.denominations,
+      previousDenomination,
+    );
+    this.giftState.selectedDenomination = currentDenomination;
+    this.giftState.spendCoin = Number(currentDenomination?.spend_coin ?? 0);
+
     if (this.$.giftAmountSection) this.$.giftAmountSection.hidden = false;
     if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = false;
     this.hideGiftRecipientSkeleton();
     this.renderGiftAmountGrid(product.denominations || []);
-    if (previousDenomination) {
-      const denomination = Number(previousDenomination.denomination);
+    if (currentDenomination) {
+      const denomination = Number(currentDenomination.denomination);
       const button = Array.from(
         this.$.giftAmountGrid?.querySelectorAll(".redeem-gift-amount-btn") || [],
       ).find((el) => Number(el.getAttribute("data-denomination")) === denomination);
@@ -563,7 +658,7 @@ export const giftCardRedeemMethods = {
     const grid = this.$.giftAmountGrid;
     if (!grid) return;
     const list = Array.isArray(denominations) ? denominations : [];
-    const currencyCode = this.tremendousInfo.currencyCode;
+    const currencyCode = this.giftState.currencyCode;
     if (!list.length) {
       grid.innerHTML = `<div class="redeem-empty-hint">${escapeHtml(t("redeem.giftProductsEmpty"))}</div>`;
       return;
@@ -599,7 +694,7 @@ export const giftCardRedeemMethods = {
     }
 
     const coins = Number(this.giftState.spendCoin ?? 0);
-    const label = formatRedeemDenomination(denomination.denomination, this.tremendousInfo.currencyCode);
+    const label = formatRedeemDenomination(denomination.denomination, this.giftState.currencyCode);
     const contactReady = hasValidGiftContact(this);
     if (summaryEl) {
       if (!recipientName) {
@@ -732,8 +827,8 @@ export const giftCardRedeemMethods = {
   },
 
   async performGiftRedeem() {
-    const product = getSelectedProduct(this);
-    const denomination = this.giftState.selectedDenomination;
+    let product = getSelectedProduct(this);
+    let denomination = this.giftState.selectedDenomination;
     if (!product || !denomination || this.giftExchangeLoading) return;
 
     const currentCatalogKey = giftCatalogKeyFromQuery(this.getTremendousQueryParams());
@@ -774,13 +869,6 @@ export const giftCardRedeemMethods = {
       return;
     }
 
-    const redeemPayload = buildGiftRedeemPayload(this, denomination);
-    const coins = Number(this.giftState.spendCoin ?? 0);
-    if (coins > 0 && this.userGoldCoins < coins) {
-      this.config.onExchangeFailed(t("redeem.notEnoughCoins"));
-      return;
-    }
-
     this.giftExchangeLoading = true;
     this.setGiftRedeemBusy(true);
     this.updateGiftRedeemState();
@@ -790,6 +878,25 @@ export const giftCardRedeemMethods = {
     }
 
     try {
+      // The page uses SWR caches for both wallet and catalog. Refresh both before
+      // submitting so the affordability check uses the server's current values.
+      await Promise.all([
+        this.loadActivityInfo?.({ force: true }),
+        this.loadGiftCatalog({ force: true }),
+      ]);
+
+      product = getSelectedProduct(this);
+      denomination = this.giftState.selectedDenomination;
+      if (!product || !denomination) {
+        throw new Error(t("redeem.giftCatalogFailed"));
+      }
+
+      const coins = Number(this.giftState.spendCoin ?? 0);
+      if (coins > 0 && this.userGoldCoins < coins) {
+        throw new Error(t("redeem.notEnoughCoins"));
+      }
+
+      const redeemPayload = buildGiftRedeemPayload(this, denomination);
       const res = await postTremendousRedeem(this.config.apiOptions, redeemPayload);
       const result = res?.data;
       if (!isApiEnvelopeOk(res) || !result?.success) {
@@ -819,6 +926,12 @@ export const giftCardRedeemMethods = {
       }
     } catch (error) {
       logger.error("Tremendous redeem failed", error);
+      if (isInsufficientCoinMessage(error?.message)) {
+        await Promise.allSettled([
+          this.loadActivityInfo?.({ force: true }),
+          this.loadGiftCatalog({ force: true }),
+        ]);
+      }
       this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {
       this.giftExchangeLoading = false;

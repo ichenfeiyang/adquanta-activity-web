@@ -74,10 +74,28 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               aria-expanded="false"
             >
               <span class="redeem-countrycode-flag" aria-hidden="true">🇮🇳</span>
-              <span class="redeem-gift-country-name">India</span>
+              <span class="redeem-gift-country-name">{{ t('redeem.countryIN') }}</span>
               <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
             </button>
             <div id="giftCountryDropdown" class="redeem-countrycode-dropdown redeem-gift-country-dropdown" role="listbox" hidden />
+          </div>
+        </div>
+
+        <div id="giftCurrencyField" class="redeem-field redeem-gift-currency-field" hidden>
+          <label class="redeem-label">{{ t('redeem.selectCurrency') }}</label>
+          <div class="redeem-gift-country-wrapper">
+            <button
+              id="giftCurrencyBtn"
+              type="button"
+              class="redeem-gift-country-btn"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span class="redeem-gift-currency-symbol" aria-hidden="true">₹</span>
+              <span class="redeem-gift-country-name">INR - Indian Rupee</span>
+              <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="giftCurrencyDropdown" class="redeem-countrycode-dropdown redeem-gift-country-dropdown" role="listbox" hidden />
           </div>
         </div>
 

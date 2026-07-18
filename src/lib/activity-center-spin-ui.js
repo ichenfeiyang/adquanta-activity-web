@@ -1,5 +1,9 @@
 import { showToast } from "./activity-alert-ui.js";
-import { formatLuckySpinDesc, maxRouletteCoin } from "./activity-center-ui-helpers.js";
+import {
+  formatLuckySpinDesc,
+  LUCKY_SPIN_PROMO_MAX_COIN,
+  resolveCompletedVideoCount,
+} from "./activity-center-ui-helpers.js";
 import {
   adFailedMessage,
   dailyAdLimitMessage,
@@ -241,8 +245,7 @@ export const spinUiMixin = {
   },
 
   setAdTaskDescription(rouletteCoins) {
-    const coins = this.normalizeRouletteCoins(rouletteCoins) || this.spinPrizePool;
-    const maxCoin = maxRouletteCoin(coins);
+    const maxCoin = LUCKY_SPIN_PROMO_MAX_COIN;
     if (this.elements.adMaxCoin) {
       this.elements.adMaxCoin.textContent = t("center.luckySpinMaxCoins", { maxCoin });
     }
@@ -269,18 +272,10 @@ export const spinUiMixin = {
 
   renderAdTaskProgress(completed, earnedPool, taskReward = 0, dailyLimit = 0, remainCount = null, totalCoinLimit = 0) {
     const limit = dailyLimit > 0 ? dailyLimit : this.dailySpinLimit;
-    let used;
-    if (remainCount != null && limit > 0) {
-      used = Math.max(0, Math.min(limit, limit - Number(remainCount)));
-    } else {
-      used = Math.max(0, Number(completed) - Number(this.currentSpinAvailable || 0));
-    }
+    const used = resolveCompletedVideoCount(completed, limit, remainCount);
     if (this.elements.adProgressVideos) {
-      const spinsLeft = remainCount != null && Number.isFinite(remainCount)
-        ? Math.max(0, Number(remainCount))
-        : Math.max(0, limit - used);
       this.elements.adProgressVideos.textContent = t("center.spinChanceProgress", {
-        remain: spinsLeft,
+        used,
         limit,
       });
     }

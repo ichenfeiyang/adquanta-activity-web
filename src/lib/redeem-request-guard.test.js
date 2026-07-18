@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  findCurrentDenomination,
+  isInsufficientCoinMessage,
   shouldApplyLookupResult,
   trimInputToMax,
   willInputExceedLimit,
@@ -42,6 +44,24 @@ test("shouldApplyLookupResult rejects stale gift catalog country responses", () 
     }),
     true,
   );
+});
+
+test("findCurrentDenomination replaces a cached gift price with the refreshed option", () => {
+  const refreshed = findCurrentDenomination(
+    [
+      { denomination: 100, spend_coin: 80 },
+      { denomination: 200, spend_coin: 150 },
+    ],
+    { denomination: 100, spend_coin: 50 },
+  );
+  assert.deepEqual(refreshed, { denomination: 100, spend_coin: 80 });
+  assert.equal(findCurrentDenomination([{ denomination: 200, spend_coin: 150 }], { denomination: 100 }), null);
+});
+
+test("isInsufficientCoinMessage recognizes backend balance errors", () => {
+  assert.equal(isInsufficientCoinMessage("金币余额不足"), true);
+  assert.equal(isInsufficientCoinMessage("Insufficient coin balance"), true);
+  assert.equal(isInsufficientCoinMessage("礼品配置不可用"), false);
 });
 
 test("trimInputToMax truncates oversized values", () => {
