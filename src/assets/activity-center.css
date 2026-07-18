@@ -1647,6 +1647,8 @@ body {
   align-items: center;
   gap: 6px;
   min-width: 0;
+  flex-wrap: wrap;
+  row-gap: 3px;
 }
 
 .tc-video-text .tc-card-title {
@@ -1655,7 +1657,10 @@ body {
   font-size: 17px;
   line-height: 1.05;
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .tc-video-text .tc-card-subtitle {
@@ -1668,7 +1673,11 @@ body {
 }
 
 .tc-video-text .tc-card-subtitle span {
-  white-space: nowrap;
+  /* Long localized copy may wrap at spaces, but never split an individual word. */
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
 }
 
 .tc-spin-max-coin {
@@ -2234,7 +2243,9 @@ body {
   .tc-video-text .tc-card-title {
     font-size: 13.5px;
     white-space: normal;
-    overflow-wrap: anywhere;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
   }
 
   .tc-video-badge {
@@ -2251,6 +2262,9 @@ body {
 
   .tc-video-text .tc-card-subtitle span {
     white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
   }
 
   .tc-spin-max-coin {
