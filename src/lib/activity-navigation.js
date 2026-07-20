@@ -45,6 +45,14 @@ export function goToGoldCoinsExchange(router, activityId, options = {}) {
   });
 }
 
+export function goToFeedback(router, activityId) {
+  return router.push({ name: ROUTE_NAMES.FEEDBACK, query: activityCenterQuery(activityId) });
+}
+
+export function goToFeedbackSuccess(router, activityId) {
+  return router.replace({ name: ROUTE_NAMES.FEEDBACK_SUCCESS, query: activityCenterQuery(activityId) });
+}
+
 export function goToTopupStatus(router, payload = {}) {
   const { businessId, distributorRef } = resolveTopupRefs(payload);
 

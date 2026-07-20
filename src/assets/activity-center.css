@@ -960,6 +960,65 @@ body {
   padding: 18px 16px 10px;
 }
 
+.tc-page-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.tc-feedback-entry {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 120px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #050914;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(15, 23, 42, 0.03);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tc-feedback-entry-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.tc-feedback-entry-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tc-feedback-entry:active {
+  transform: scale(0.96);
+}
+
+.tc-feedback-entry:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(236, 91, 19, 0.18),
+    0 6px 16px rgba(236, 91, 19, 0.2);
+}
+
 .tc-page-title {
   min-width: 0;
   margin: 0;
@@ -977,6 +1036,16 @@ body {
 
   .tc-page-title {
     font-size: 28px;
+  }
+
+  .tc-page-header-actions {
+    gap: 4px;
+  }
+
+  .tc-feedback-entry {
+    min-width: 112px;
+    padding-inline: 12px;
+    font-size: 13px;
   }
 }
 
@@ -1803,7 +1872,7 @@ body {
 
 .tc-video-head {
   display: grid;
-  grid-template-columns: 94px minmax(0, 1fr) 88px;
+  grid-template-columns: 94px minmax(0, 1fr) 74px;
   align-items: center;
   gap: 12px;
 }
@@ -1850,7 +1919,7 @@ body {
   position: absolute;
   left: 50%;
   bottom: -13px;
-  width: 68px;
+  width: 74px;
   height: 14px;
   border-radius: 999px;
   background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0));
@@ -1931,7 +2000,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 11.5px;
+  font-size: 10.5px;
   line-height: 1.28;
   color: #111827;
 }
@@ -2206,14 +2275,14 @@ html[lang="en"] .tc-video-progress-label {
 }
 
 .tc-watch-spin-btn {
-  width: 88px;
-  min-height: 58px;
-  padding: 8px 8px;
+  width: 74px;
+  min-height: 44px;
+  padding: 2px 1px;
   border: none;
   border-radius: 8px;
   background: linear-gradient(180deg, #ff5b05 0%, #f24700 100%);
   color: #ffffff;
-  font-size: 12.5px;
+  font-size: 10.5px;
   line-height: 1.2;
   font-weight: 800;
   flex-direction: column;
@@ -2471,7 +2540,7 @@ html[lang="en"] .tc-video-progress-label {
   }
 
   .tc-video-head {
-    grid-template-columns: 78px minmax(0, 1fr) 76px;
+    grid-template-columns: 78px minmax(0, 1fr) 74px;
     gap: 7px;
   }
 
@@ -2585,10 +2654,10 @@ html[lang="en"] .tc-video-progress-label {
   }
 
   .tc-watch-spin-btn {
-    width: 76px;
-    min-height: 52px;
-    padding: 7px 6px;
-    font-size: 10.5px;
+    width: 74px;
+    min-height: 44px;
+    padding: 1px;
+    font-size: 10px;
   }
 
   .tc-card.tc-redeem-rewards-card {

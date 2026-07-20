@@ -231,6 +231,18 @@ export async function postNewUserBonus(options = {}, body = {}) {
   });
 }
 
+/** Submit user feedback and up to three images in a single request. */
+export async function postActivityFeedback(options = {}, body = {}) {
+  const data = new FormData();
+  data.append("content", String(body.content || ""));
+  data.append("client_request_id", String(body.clientRequestId || ""));
+  data.append("locale", String(body.locale || ""));
+  for (const file of body.images || []) data.append("images", file);
+  return fetchApi("postActivityFeedback", `${BaseApiUrl}/api/v1/ops/activity/feedback`, {
+    method: "POST", headers: { ...buildAuthHeaders(options) }, body: data, timeoutMs: 15_000,
+  });
+}
+
 /**
  * 获取话费充值选项
  * GET /api/v1/ops/activity/charges

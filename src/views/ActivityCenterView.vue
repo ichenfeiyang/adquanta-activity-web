@@ -4,9 +4,19 @@ import { assetUrl } from "../lib/asset-url.js";
 import { ROUTE_NAMES } from "../lib/activity-pages.js";
 import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useI18n } from "../composables/useI18n.js";
+import { useRoute, useRouter } from "vue-router";
+import { goToFeedback } from "../lib/activity-navigation.js";
 import ActivityLanguageSwitcher from "../components/ActivityLanguageSwitcher.vue";
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+function openFeedback() {
+  window.ActivityBridgeHelper?.trackEvent?.('rewards_feedback_entry_click', {
+    page_id: '/activity-center', element_id: 'feedback_entry', element_name: '点击活动中心首页反馈按钮',
+  });
+  goToFeedback(router, String(route.query.activity_id || ""));
+}
 
 useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
   logTag: "ActivityCenter",
@@ -19,7 +29,20 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
   <div class="task-center-root">
     <header class="tc-page-header">
       <h1 class="tc-page-title">{{ t('center.rewardsTitle') }}</h1>
-      <ActivityLanguageSwitcher />
+      <div class="tc-page-header-actions">
+        <button type="button" class="tc-feedback-entry" @click="openFeedback">
+          <span class="tc-feedback-entry-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5.5 4.5h13a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7.2L7 20v-3.5H5.5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              <circle cx="8" cy="10.5" r="1" fill="currentColor" />
+              <circle cx="12" cy="10.5" r="1" fill="currentColor" />
+              <circle cx="16" cy="10.5" r="1" fill="currentColor" />
+            </svg>
+          </span>
+          <span>{{ t('pages.feedback') }}</span>
+        </button>
+        <ActivityLanguageSwitcher />
+      </div>
     </header>
     <main class="tc-main">
       <section id="tc-checkin-section" class="tc-section">

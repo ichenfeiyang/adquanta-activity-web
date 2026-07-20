@@ -3,6 +3,8 @@
     "activityCenter": "Rewards Center",
     "goldCoinsExchange": "Redeem Coins",
     "topupStatus": "Top-up Status",
+    "feedback": "Feedback",
+    "feedbackSubmitted": "Feedback Submitted",
     "default": "Page"
   },
   "common": {
@@ -28,6 +30,7 @@
     "failedTitle": "Authorization Failed",
     "failedMessage": "Missing token. Please reopen this page from the app and try again."
   },
+  "feedback": { "title":"Feedback", "heroTitle":"Tell us what you think", "heroDesc":"Share your ideas about rewards, activities and features. We will continue improving your experience.", "describe":"Describe Your Feedback", "placeholder":"Describe Your Feedback", "upload":"Upload Image (Optional)", "uploadTitle":"Upload Image", "optional":"(Optional)", "addImage":"Upload Image", "imageHint":"Up to 3 images · JPG / PNG · ≤10MB each", "imageInvalid":"Use JPG or PNG images up to 10MB.", "contentRequired":"Please enter your feedback.", "submitFailed":"Unable to submit feedback. Please try again.", "submit":"Submit Feedback", "submitting":"Submitting...", "submittedTitle":"Feedback Submitted", "submittedDesc":"Thanks for your feedback! We will continue improving the Rewards Center experience based on user suggestions.", "back":"Back to Rewards Center" },
   "alert": {
     "notice": "Notice",
     "success": "Success",
