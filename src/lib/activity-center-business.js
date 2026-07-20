@@ -21,6 +21,7 @@ import {
 } from "./activity-messages.js";
 import * as logger from "./activity-logger.js";
 import { normalizeCheckinChests } from "./checkin-chest.js";
+import { normalizeRecentRedemptions } from "./recent-redemptions.js";
 
 export { normalizeCheckinChests } from "./checkin-chest.js";
 
@@ -90,6 +91,7 @@ export class ActivityCenterBusiness {
     this.newUserBonus = null;
     this.redeemGap = null;
     this.redeemRewards = null;
+    this.recentRedemptions = [];
 
     this._lastActivityInfoFingerprint = "";
 
@@ -102,6 +104,7 @@ export class ActivityCenterBusiness {
       onFeatureVisibilityUpdate: config.onFeatureVisibilityUpdate || (() => {}),
       onRedeemGapUpdate: config.onRedeemGapUpdate || (() => {}),
       onRedeemRewardsUpdate: config.onRedeemRewardsUpdate || (() => {}),
+      onRecentRedemptionsUpdate: config.onRecentRedemptionsUpdate || (() => {}),
       ...config,
     };
   }
@@ -165,6 +168,7 @@ export class ActivityCenterBusiness {
       newUserBonus: d?.new_user_bonus ?? null,
       redeemGap: d?.redeem_gap ?? null,
       redeemRewards: d?.redeem_rewards ?? null,
+      recentRedemptions: d?.recent_redemptions ?? [],
     });
   }
 
@@ -237,6 +241,7 @@ export class ActivityCenterBusiness {
       d?.redeem_rewards,
       Object.prototype.hasOwnProperty.call(d || {}, "redeem_rewards"),
     );
+    this.recentRedemptions = normalizeRecentRedemptions(d?.recent_redemptions);
 
     try {
       if (d.user_info != null && d.user_info.user_id != null) {
@@ -293,6 +298,7 @@ export class ActivityCenterBusiness {
         newUserBonus: this.newUserBonus,
         redeemGap: this.redeemGap,
         redeemRewards: this.redeemRewards,
+        recentRedemptions: this.recentRedemptions,
       });
     } catch (error) {
       logger.error("[Activity API] Failed to apply activity info UI", error);
@@ -305,6 +311,7 @@ export class ActivityCenterBusiness {
         this.config.onNewUserBonusUpdate?.(this.newUserBonus);
         this.config.onRedeemGapUpdate?.(this.redeemGap);
         this.config.onRedeemRewardsUpdate?.(this.redeemRewards);
+        this.config.onRecentRedemptionsUpdate?.(this.recentRedemptions);
         this._lastActivityInfoFingerprint = fingerprint;
       }
     }

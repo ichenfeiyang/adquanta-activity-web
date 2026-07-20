@@ -7,6 +7,10 @@ import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
 import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
 import { checkinChestUiMixin as checkinChestMixin } from "./activity-center-checkin-chest-ui.js";
 import { t } from "./i18n/activity-locale.js";
+import {
+  chunkRecentRedemptions,
+  nextRecentRedemptionBatchIndex,
+} from "./recent-redemptions.js";
 
 const DEFAULT_REDEEM_REWARD_ITEMS = [
   { type: "mobile_recharge", titleKey: "center.redeemRewardMobileRecharge", fallback: true },
@@ -47,6 +51,8 @@ export class ActivityCenterUI {
       redeemGapHint: "redeemGapHint",
       redeemRewardsSection: "tc-redeem-rewards-section",
       redeemRewardsList: "tc-redeem-rewards-list",
+      recentRedemptionsSection: "tc-recent-redemptions-section",
+      recentRedemptionsList: "tc-recent-redemptions-list",
       adProgressVideos: "ad-progress-videos",
       adProgressBarFill: "ad-progress-bar-fill",
       adEarnedText: "ad-earned-text",
@@ -127,6 +133,14 @@ export class ActivityCenterUI {
     this._lastSpinPoolKey = "";
     this._newUserBonus = null;
     this._checkinChest = null;
+    this.recentRedemptionBatches = [];
+    this.recentRedemptionBatchIndex = 0;
+    this.recentRedemptionTimer = 0;
+    this._recentVisibilityHandler = () => {
+      if (document.hidden) this.stopRecentRedemptionRotation();
+      else this.startRecentRedemptionRotation();
+    };
+    document.addEventListener("visibilitychange", this._recentVisibilityHandler);
   }
 
 
@@ -213,6 +227,7 @@ export class ActivityCenterUI {
     this.setAdTaskDescription(this.spinPrizePool);
     this.renderAdTaskProgress(0, 0, 0);
     this.updateRedeemRewards({ fallback: true });
+    this.updateRecentRedemptions([]);
     this.resetWatchSpinButton();
   }
 
@@ -385,6 +400,111 @@ export class ActivityCenterUI {
       list.classList.add(`tc-redeem-rewards-list--count-${Math.min(renderedCount, 3)}`);
     }
     section.style.display = renderedCount ? "" : "none";
+  }
+
+  updateRecentRedemptions(items) {
+    const section = this.elements.recentRedemptionsSection;
+    const list = this.elements.recentRedemptionsList;
+    if (!section || !list) return;
+    this.stopRecentRedemptionRotation();
+    this.recentRedemptionBatches = chunkRecentRedemptions(Array.isArray(items) ? items : [], 3);
+    this.recentRedemptionBatchIndex = 0;
+    if (!this.recentRedemptionBatches.length) {
+      list.replaceChildren();
+      section.style.display = "none";
+      return;
+    }
+    section.style.display = "";
+    this.renderRecentRedemptionBatch();
+    this.startRecentRedemptionRotation();
+  }
+
+  renderRecentRedemptionBatch() {
+    const list = this.elements.recentRedemptionsList;
+    if (!list) return;
+    const batch = this.recentRedemptionBatches[this.recentRedemptionBatchIndex] || [];
+    const fragment = document.createDocumentFragment();
+    for (const item of batch) {
+      const row = document.createElement("div");
+      row.className = "tc-recent-redemption-item";
+
+      const user = document.createElement("span");
+      user.className = "tc-recent-redemption-user";
+      user.textContent = item.maskedUserId;
+
+      const reward = document.createElement("span");
+      reward.className = "tc-recent-redemption-reward";
+      const icon = document.createElement("span");
+      icon.className = `tc-recent-redemption-icon tc-recent-redemption-icon--${item.rewardType}`;
+      icon.appendChild(this.recentRedemptionIcon(item));
+      const name = document.createElement("span");
+      name.className = "tc-recent-redemption-name";
+      name.textContent = item.rewardName;
+      reward.append(icon, name);
+
+      const date = document.createElement("time");
+      date.className = "tc-recent-redemption-date";
+      date.dateTime = item.redeemedDate;
+      date.textContent = item.redeemedDate;
+
+      const success = document.createElement("span");
+      success.className = "tc-recent-redemption-success";
+      success.setAttribute("aria-label", t("common.completed"));
+      success.textContent = "✓";
+      row.append(user, reward, date, success);
+      fragment.appendChild(row);
+    }
+    list.replaceChildren(fragment);
+  }
+
+  recentRedemptionIcon(item) {
+    if (item.rewardIconUrl) {
+      const image = document.createElement("img");
+      image.src = item.rewardIconUrl;
+      image.alt = "";
+      image.width = 24;
+      image.height = 24;
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.referrerPolicy = "no-referrer";
+      return image;
+    }
+    if (item.rewardType === "data") {
+      const glyph = document.createElement("span");
+      glyph.className = "tc-recent-redemption-data-glyph";
+      glyph.textContent = "↕";
+      return glyph;
+    }
+    const image = document.createElement("img");
+    image.src = assetUrl(item.rewardType === "gift_card" ? "icons/card_giftcard.svg" : "icons/phone_iphone.svg");
+    image.alt = "";
+    image.width = 24;
+    image.height = 24;
+    image.loading = "lazy";
+    image.decoding = "async";
+    return image;
+  }
+
+  startRecentRedemptionRotation() {
+    if (document.hidden || this.recentRedemptionTimer || this.recentRedemptionBatches.length <= 1) return;
+    this.recentRedemptionTimer = window.setInterval(() => {
+      this.recentRedemptionBatchIndex = nextRecentRedemptionBatchIndex(
+        this.recentRedemptionBatchIndex,
+        this.recentRedemptionBatches.length,
+      );
+      this.renderRecentRedemptionBatch();
+    }, 3000);
+  }
+
+  stopRecentRedemptionRotation() {
+    if (!this.recentRedemptionTimer) return;
+    window.clearInterval(this.recentRedemptionTimer);
+    this.recentRedemptionTimer = 0;
+  }
+
+  destroyRecentRedemptions() {
+    this.stopRecentRedemptionRotation();
+    document.removeEventListener("visibilitychange", this._recentVisibilityHandler);
   }
 
   /**

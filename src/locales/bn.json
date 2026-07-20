@@ -61,6 +61,7 @@
     "redeemGapNeed": "{target}-এ পৌঁছাতে আরও {count} কয়েন বাকি",
     "redeemGapReady": "আপনি এখন পুরস্কার রিডিম করতে পারেন",
     "redeemRewardsTitle": "পুরস্কার রিডিম করুন",
+    "recentRedemptionsTitle": "যেসব ব্যবহারকারী পুরস্কার নিয়েছেন",
     "redeemRewardsSubtitle": "মোবাইল রিচার্জ, ডেটা প্যাক ও গিফট কার্ড পেতে কয়েন ব্যবহার করুন।",
     "redeemRewardsFromCoins": "{count} কয়েন থেকে",
     "redeemRewardsFallbackTitle": "পুরস্কার",

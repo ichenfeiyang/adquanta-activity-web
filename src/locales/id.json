@@ -61,6 +61,7 @@
     "redeemGapNeed": "{count} koin lagi untuk mencapai {target}",
     "redeemGapReady": "Anda bisa menukar hadiah sekarang",
     "redeemRewardsTitle": "Tukar Hadiah",
+    "recentRedemptionsTitle": "Pengguna yang Berhasil Menukar Hadiah",
     "redeemRewardsSubtitle": "Gunakan koin untuk isi ulang, paket data & kartu hadiah.",
     "redeemRewardsFromCoins": "Mulai {count} koin",
     "redeemRewardsFallbackTitle": "Hadiah",

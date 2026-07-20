@@ -141,6 +141,7 @@ export function initActivityCenter({ router, route }) {
     onFeatureVisibilityUpdate: (visibility) => ui.updateFeatureVisibility(visibility),
     onRedeemGapUpdate: (gap) => ui.updateRedeemGap(gap),
     onRedeemRewardsUpdate: (rewards) => ui.updateRedeemRewards(rewards),
+    onRecentRedemptionsUpdate: (items) => ui.updateRecentRedemptions(items),
     onNewUserBonusUpdate: (bonus) => {
       if (shouldShowNewUserBonus(bonus)) {
         ui.showNewUserBonusDialog(bonus);
@@ -499,6 +500,7 @@ export function initActivityCenter({ router, route }) {
     interstitialAdTimeout?.clear();
     newUserBonusAdTimeout?.clear();
     checkinChestAdTimeout?.clear();
+    ui.destroyRecentRedemptions();
     window.onRewardedAdError = null;
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
   };

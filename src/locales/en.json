@@ -61,6 +61,7 @@
     "redeemGapNeed": "{count} coins to go to reach {target}",
     "redeemGapReady": "You can redeem rewards now",
     "redeemRewardsTitle": "Redeem Rewards",
+    "recentRedemptionsTitle": "Users Who Claimed Rewards",
     "redeemRewardsSubtitle": "Use your coins to get mobile recharge, data packs & gift cards.",
     "redeemRewardsFromCoins": "From {count} coins",
     "redeemRewardsFallbackTitle": "Rewards",

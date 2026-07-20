@@ -2296,6 +2296,119 @@ html[lang="en"] .tc-video-progress-label {
   white-space: nowrap;
 }
 
+.tc-card.tc-recent-redemptions-card {
+  padding: 18px 20px 14px;
+  overflow: hidden;
+}
+
+.tc-recent-redemptions-title {
+  margin: 0 0 10px;
+  color: #151515;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.tc-recent-redemptions-list {
+  min-height: 132px;
+  overflow: hidden;
+}
+
+.tc-recent-redemption-item {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.9fr) minmax(118px, 1.35fr) auto 22px;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 44px;
+  border-bottom: 1px solid rgba(70, 48, 36, 0.08);
+  animation: tc-recent-redemption-in 180ms ease-out;
+}
+
+.tc-recent-redemption-item:last-child {
+  border-bottom: 0;
+}
+
+.tc-recent-redemption-user,
+.tc-recent-redemption-date {
+  color: #555b67;
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.tc-recent-redemption-reward {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.tc-recent-redemption-icon {
+  display: grid;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #fff5ee;
+  color: #7969d8;
+}
+
+.tc-recent-redemption-icon img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.tc-recent-redemption-icon--data {
+  border-radius: 50%;
+  background: #8e72e8;
+  color: #fff;
+}
+
+.tc-recent-redemption-data-glyph {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tc-recent-redemption-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #282b31;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-recent-redemption-success {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: #4dc47d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@keyframes tc-recent-redemption-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .tc-card.tc-redeem-rewards-card {
   padding: 18px 16px 20px;
   border-radius: 16px;
@@ -2535,6 +2648,33 @@ html[lang="en"] .tc-video-progress-label {
 }
 
 @media (max-width: 430px) {
+  .tc-card.tc-recent-redemptions-card {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .tc-recent-redemption-item {
+    grid-template-columns: minmax(76px, 0.85fr) minmax(98px, 1.25fr) auto 18px;
+    column-gap: 5px;
+  }
+
+  .tc-recent-redemption-user,
+  .tc-recent-redemption-name,
+  .tc-recent-redemption-date {
+    font-size: 10px;
+  }
+
+  .tc-recent-redemption-icon {
+    flex-basis: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .tc-recent-redemption-icon img {
+    width: 19px;
+    height: 19px;
+  }
+
   .tc-card.tc-video-card {
     padding: 15px 10px;
   }

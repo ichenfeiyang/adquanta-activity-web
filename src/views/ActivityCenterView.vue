@@ -140,6 +140,13 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
         </div>
       </section>
 
+      <section id="tc-recent-redemptions-section" class="tc-section" style="display:none;">
+        <div class="tc-card tc-recent-redemptions-card">
+          <h2 class="tc-recent-redemptions-title">{{ t('center.recentRedemptionsTitle') }}</h2>
+          <div id="tc-recent-redemptions-list" class="tc-recent-redemptions-list" />
+        </div>
+      </section>
+
       <section id="tc-redeem-rewards-section" class="tc-section" style="display:none;">
         <div class="tc-card tc-redeem-rewards-card">
           <h2 class="tc-redeem-rewards-title">{{ t('center.redeemRewardsTitle') }}</h2>
