@@ -411,7 +411,9 @@ export class ActivityCenterBusiness {
   }
 
   queueCheckinChestAction(action, chestId, adEventId = "") {
-    const item = { chest_id: Number(chestId), action, ad_event_id: String(adEventId || "") };
+    // Soft-close no longer uses dismiss; only claim needs offline replay.
+    if (action !== "claim") return;
+    const item = { chest_id: Number(chestId), action: "claim", ad_event_id: String(adEventId || "") };
     if (!item.chest_id) return;
     const queue = readCheckinChestQueue().filter((entry) => entry.chest_id !== item.chest_id);
     queue.push(item);
@@ -421,10 +423,10 @@ export class ActivityCenterBusiness {
   async flushCheckinChestQueue(apiOptions = {}) {
     const queue = readCheckinChestQueue();
     if (!queue.length) return;
-    // Dismissals go first so a declined chest cannot reappear after reconnecting.
-    const ordered = [...queue].sort((a, b) => (a.action === "dismiss" ? -1 : 0) - (b.action === "dismiss" ? -1 : 0));
+    // Drop legacy dismiss entries so soft-close chests stay reopenable.
+    const claims = queue.filter((item) => item?.action === "claim");
     const remaining = [];
-    for (const item of ordered) {
+    for (const item of claims) {
       try {
         const res = await postCheckinChest(apiOptions, item);
         if (res?.code !== 200) remaining.push(item);
@@ -445,9 +447,9 @@ export class ActivityCenterBusiness {
       await this.loadActivityInfo(apiOptions, { force: true });
       return { ok: true, coin: Number(res?.data?.coin ?? 0) || 0, totalCoin: Number(res?.data?.total_coin ?? 0) || 0 };
     } catch (error) {
-      this.queueCheckinChestAction(action, chestId, adEventId);
+      if (action === "claim") this.queueCheckinChestAction(action, chestId, adEventId);
       logger.warn("Check-in chest action queued for retry", { action, chestId, message: error?.message });
-      return { ok: false, queued: true };
+      return { ok: false, queued: action === "claim" };
     }
   }
 

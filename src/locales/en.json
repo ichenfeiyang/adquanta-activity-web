@@ -113,7 +113,15 @@
     "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
     "newUserBonusFoot": "One-time bonus for first-time users.",
     "newUserBonusDouble": "Double My Coins",
-    "newUserBonusMaybeLater": "OK"
+    "newUserBonusMaybeLater": "OK",
+    "checkinChestDropped": "Lucky Chest Dropped!",
+    "checkinChestDescLine1": "Watch a video to open the chest",
+    "checkinChestDescLine2": "and claim your reward.",
+    "checkinChestWatchVideo": "Watch Video",
+    "checkinChestDismiss": "No, thanks",
+    "checkinChestCongratulations": "Congratulations!",
+    "checkinChestYouGot": "You got",
+    "checkinChestClaim": "Claim"
   },
   "messages": {
     "alreadyCheckedIn": "You've already checked in today. Come back tomorrow!",

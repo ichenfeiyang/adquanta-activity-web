@@ -20,6 +20,11 @@ import { reloadActivityPage } from "../lib/reload-activity-page.js";
 import { createAdCallbackTimeout } from "../lib/ad-callback-timeout.js";
 import { createActivitySdkEventHandler } from "../lib/activity-sdk-event-handlers.js";
 import { getActivityInfoCache, isActivityInfoCacheFresh } from "../lib/activity-page-cache.js";
+import {
+  clearCheckinChestSoftClosed,
+  markCheckinChestSoftClosed,
+  readSoftClosedCheckinChestIds,
+} from "../lib/checkin-chest.js";
 import * as logger from "../lib/activity-logger.js";
 
 function renderUnauthenticatedActivityCenterPreview() {
@@ -38,6 +43,7 @@ function renderUnauthenticatedActivityCenterPreview() {
     onNewUserBonusDismissClick: showAuthRequired,
     onCheckinChestWatchClick: showAuthRequired,
     onCheckinChestDismissClick: showAuthRequired,
+    onCheckinChestDayClick: showAuthRequired,
   });
   ui.bindEvents();
   ui.renderInitialShell();
@@ -75,6 +81,39 @@ export function initActivityCenter({ router, route }) {
   let interstitialAdTimeout;
   let newUserBonusAdTimeout;
   let checkinChestAdTimeout;
+  let deferCheckinChestDialog = false;
+  let deferredCheckinChest = null;
+
+  function isCheckinChestSoftClosed(chestId) {
+    return readSoftClosedCheckinChestIds().has(Number(chestId));
+  }
+
+  function updateCheckinChestDialog(chest, { force = false } = {}) {
+    deferredCheckinChest = chest?.status === "pending" ? chest : null;
+    if (!deferredCheckinChest) {
+      ui.hideCheckinChestDialog();
+      return;
+    }
+    if (deferCheckinChestDialog) return;
+    const chestId = Number(deferredCheckinChest.id);
+    // Always re-read sessionStorage so refresh / multi-path updates stay consistent.
+    if (!force && isCheckinChestSoftClosed(chestId)) {
+      ui.hideCheckinChestDialog();
+      return;
+    }
+    if (force) clearCheckinChestSoftClosed(chestId);
+    ui.showCheckinChestDialog(deferredCheckinChest);
+  }
+
+  function beginCheckinChestDeferral() {
+    deferCheckinChestDialog = true;
+  }
+
+  function revealDeferredCheckinChest() {
+    deferCheckinChestDialog = false;
+    // First reveal after check-in; if user already tapped No thanks, stay closed.
+    updateCheckinChestDialog(deferredCheckinChest);
+  }
 
   function resetCheckinAdState() {
     checkinWatchAdInFlight.value = false;
@@ -110,8 +149,7 @@ export function initActivityCenter({ router, route }) {
       }
     },
     onCheckinChestUpdate: (chest) => {
-      if (chest?.status === "pending") ui.showCheckinChestDialog(chest);
-      else ui.hideCheckinChestDialog();
+      updateCheckinChestDialog(chest);
     },
   });
 
@@ -143,6 +181,10 @@ export function initActivityCenter({ router, route }) {
     newUserBonusClaimInFlight,
     checkinChestAdInFlight,
     checkinChestClaimInFlight,
+    onCheckinVideoRewardClaimed: () => {
+      ui.hideSigninDialog();
+      revealDeferredCheckinChest();
+    },
     getCheckinChest: () => ui._checkinChest,
     get checkinChestAdTimeout() { return checkinChestAdTimeout; },
   });
@@ -224,12 +266,15 @@ export function initActivityCenter({ router, route }) {
       const videoReceived = !!today?.video_received;
 
       if (!received) {
+        beginCheckinChestDeferral();
         const result = await business.doCheckin(apiOptions);
         if (result.ok) ui.showSigninDialog(result);
+        else revealDeferredCheckinChest();
         return;
       }
 
       if (received && !videoReceived) {
+        beginCheckinChestDeferral();
         const coin = Number(today?.coin ?? 0);
         const video_coin = Number(today?.video_coin ?? 0);
         const multiplier = coin > 0 ? Math.floor(video_coin / coin) : 0;
@@ -239,6 +284,12 @@ export function initActivityCenter({ router, route }) {
           multiplier,
           alreadyChecked: true,
         });
+        return;
+      }
+
+      const pendingChest = business.checkinChests?.[0];
+      if (pendingChest?.id) {
+        updateCheckinChestDialog(pendingChest, { force: true });
         return;
       }
 
@@ -275,6 +326,7 @@ export function initActivityCenter({ router, route }) {
         });
       }
     },
+    onSigninDialogDismiss: () => revealDeferredCheckinChest(),
     onNewUserBonusVideoClick: async (bonus) => {
       if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) return;
       try {
@@ -332,13 +384,13 @@ export function initActivityCenter({ router, route }) {
       }
     },
     onCheckinChestDismissClick: async (chest) => {
-      if (!chest?.id || checkinChestClaimInFlight.value) return;
-      checkinChestClaimInFlight.value = true;
-      ui.setCheckinChestLoading(true);
-      const result = await business.submitCheckinChestAction(apiOptions, "dismiss", chest.id);
-      checkinChestClaimInFlight.value = false;
-      if (result?.ok || result?.queued) ui.hideCheckinChestDialog();
-      else ui.setCheckinChestLoading(false);
+      // Soft-close only: keep pending, suppress auto-popup across refresh, allow reopen from day node.
+      if (chest?.id) markCheckinChestSoftClosed(chest.id);
+      ui.hideCheckinChestDialog();
+    },
+    onCheckinChestDayClick: (chest) => {
+      if (!chest?.id || checkinChestAdInFlight.value || checkinChestClaimInFlight.value) return;
+      updateCheckinChestDialog(chest, { force: true });
     },
   });
 

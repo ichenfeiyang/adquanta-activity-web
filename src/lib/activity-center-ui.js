@@ -79,6 +79,10 @@ export class ActivityCenterUI {
       checkinChestModal: "checkinChestModal",
       checkinChestWatchBtn: "checkinChestWatchBtn",
       checkinChestDismissBtn: "checkinChestDismissBtn",
+      checkinChestRewardModal: "checkinChestRewardModal",
+      checkinChestRewardCoins: "checkinChestRewardCoins",
+      checkinChestRewardClose: "checkinChestRewardClose",
+      checkinChestRewardClaimBtn: "checkinChestRewardClaimBtn",
       checkinPill: "tc-checkin-pill",
       checkinDaysContainer: "tc-checkin-days-container",
     });
@@ -97,10 +101,12 @@ export class ActivityCenterUI {
       onWithdrawClick: config.onWithdrawClick || (() => {}),
       onSigninClick: config.onSigninClick || (() => {}),
       onSigninWatchVideoClick: config.onSigninWatchVideoClick || (() => {}),
+      onSigninDialogDismiss: config.onSigninDialogDismiss || (() => {}),
       onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
       onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
       onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
       onCheckinChestDismissClick: config.onCheckinChestDismissClick || (() => {}),
+      onCheckinChestDayClick: config.onCheckinChestDayClick || (() => {}),
       ...config,
     };
 
@@ -512,6 +518,7 @@ export class ActivityCenterUI {
     if (this.elements.signinDialogClaimBaseOnly) {
       this.elements.signinDialogClaimBaseOnly.addEventListener("click", () => {
         this.hideSigninDialog();
+        this.config.onSigninDialogDismiss();
       });
     }
 
@@ -519,7 +526,6 @@ export class ActivityCenterUI {
     if (this.elements.signinDialogWatchBtn) {
       this.elements.signinDialogWatchBtn.addEventListener("click", () => {
         if (this.elements.signinDialogWatchBtn.disabled) return;
-        this.hideSigninDialog();
         this.config.onSigninWatchVideoClick();
       });
     }
@@ -547,6 +553,9 @@ export class ActivityCenterUI {
       this.elements.checkinChestDismissBtn.addEventListener("click", () => {
         if (!this.elements.checkinChestDismissBtn.disabled) this.config.onCheckinChestDismissClick(this._checkinChest);
       });
+    }
+    for (const element of [this.elements.checkinChestRewardClose, this.elements.checkinChestRewardClaimBtn]) {
+      element?.addEventListener("click", () => this.hideCheckinChestRewardDialog());
     }
 
     if (!this._scrollLockTouchBound) {

@@ -113,7 +113,15 @@
     "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
     "newUserBonusFoot": "One-time bonus for first-time users.",
     "newUserBonusDouble": "Double My Coins",
-    "newUserBonusMaybeLater": "OK"
+    "newUserBonusMaybeLater": "OK",
+    "checkinChestDropped": "লাকি চেস্ট পাওয়া গেছে!",
+    "checkinChestDescLine1": "চেস্ট খুলতে একটি ভিডিও দেখুন",
+    "checkinChestDescLine2": "এবং আপনার পুরস্কার নিন।",
+    "checkinChestWatchVideo": "ভিডিও দেখুন",
+    "checkinChestDismiss": "না, ধন্যবাদ",
+    "checkinChestCongratulations": "অভিনন্দন!",
+    "checkinChestYouGot": "আপনি পেয়েছেন",
+    "checkinChestClaim": "ক্লেইম করুন"
   },
   "messages": {
     "alreadyCheckedIn": "আপনি আজ ইতিমধ্যে চেক-ইন করেছেন। আগামীকাল আবার আসুন!",

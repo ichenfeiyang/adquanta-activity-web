@@ -113,7 +113,15 @@
     "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
     "newUserBonusFoot": "One-time bonus for first-time users.",
     "newUserBonusDouble": "Double My Coins",
-    "newUserBonusMaybeLater": "OK"
+    "newUserBonusMaybeLater": "OK",
+    "checkinChestDropped": "Peti Keberuntungan Didapatkan!",
+    "checkinChestDescLine1": "Tonton video untuk membuka peti",
+    "checkinChestDescLine2": "dan klaim hadiah Anda.",
+    "checkinChestWatchVideo": "Tonton Video",
+    "checkinChestDismiss": "Tidak, terima kasih",
+    "checkinChestCongratulations": "Selamat!",
+    "checkinChestYouGot": "Anda mendapat",
+    "checkinChestClaim": "Klaim"
   },
   "messages": {
     "alreadyCheckedIn": "Anda sudah check-in hari ini. Kembali lagi besok!",

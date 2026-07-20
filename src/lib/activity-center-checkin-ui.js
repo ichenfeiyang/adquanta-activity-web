@@ -1,4 +1,5 @@
 import { assetUrl } from "./asset-url.js";
+import { normalizeCheckinChestEligibleDays } from "./checkin-chest.js";
 import { resolveSigninRewardCoins } from "./activity-center-ui-helpers.js";
 import { t } from "./i18n/activity-locale.js";
 
@@ -25,19 +26,24 @@ function ensureCheckinDayGrid(container, cache) {
   return nodes;
 }
 
-function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isDay7, superReward }) {
+function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isChestDay, hasPendingChest }) {
   const { dayEl, dotEl, labelEl } = node;
   dayEl.dataset.day = String(day);
 
   let dayClass = "tc-checkin-day";
   let labelClass = "tc-checkin-label";
-  if (isDay7) {
-    dayClass += " tc-checkin-day--super";
-    labelClass += " tc-checkin-label--super";
+  // Pending = already dropped (deeper style). Eligible-only = future preview (lighter).
+  const showChestMarker = hasPendingChest || (!isDone && isChestDay);
+  if (hasPendingChest) {
+    dayClass += " tc-checkin-day--chest tc-checkin-day--pending-chest";
+    labelClass += " tc-checkin-label--chest tc-checkin-label--pending-chest";
   } else if (isDone) {
     dayClass += " tc-checkin-day--done";
+  } else if (isChestDay) {
+    dayClass += " tc-checkin-day--chest tc-checkin-day--eligible-chest";
+    labelClass += " tc-checkin-label--chest";
   }
-  if (isCurrent && !isDone && !isDay7) {
+  if (isCurrent && !isDone && !showChestMarker) {
     dayClass += " tc-checkin-day--current";
     labelClass += " tc-checkin-label--current";
   }
@@ -46,18 +52,23 @@ function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isDay7, super
   labelEl.textContent = t("common.day", { day });
 
   dotEl.replaceChildren();
-  if (isDay7) {
-    dotEl.className = "tc-checkin-dot tc-checkin-dot--super";
-    const amount = isDone ? coin : superReward;
+  if (hasPendingChest) {
+    dotEl.className = "tc-checkin-dot tc-checkin-dot--chest tc-checkin-dot--pending-chest";
     const img = document.createElement("img");
     img.src = assetUrl("icons/card_giftcard.svg");
-    img.alt = "gift";
-    img.className = "tc-checkin-super-icon-img";
-    const reward = document.createElement("span");
-    reward.className = "tc-checkin-super-reward";
-    reward.textContent = `+${amount}`;
+    img.alt = "";
+    img.className = "tc-checkin-chest-icon-img";
     dotEl.appendChild(img);
-    dotEl.appendChild(reward);
+    return;
+  }
+
+  if (!isDone && isChestDay) {
+    dotEl.className = "tc-checkin-dot tc-checkin-dot--chest tc-checkin-dot--eligible-chest";
+    const img = document.createElement("img");
+    img.src = assetUrl("icons/card_giftcard.svg");
+    img.alt = "";
+    img.className = "tc-checkin-chest-icon-img";
+    dotEl.appendChild(img);
     return;
   }
 
@@ -122,6 +133,7 @@ export const checkinUiMixin = {
       ? JSON.stringify({
           continuous_days: detail.continuous_days,
           days: detail.days,
+          chest_eligible_days: detail.chest_eligible_days,
           chests: detail.chests,
         })
       : "empty";
@@ -149,8 +161,8 @@ export const checkinUiMixin = {
           coin: 0,
           isDone: false,
           isCurrent: false,
-          isDay7: false,
-          superReward: 0,
+          isChestDay: false,
+          hasPendingChest: false,
         });
       }
       if (this.elements.signinTimerBtn) {
@@ -164,24 +176,42 @@ export const checkinUiMixin = {
       return;
     }
 
-    const superReward = detail.days[6]?.coin ?? 0;
-    const chestDays = new Set((Array.isArray(detail.chests) ? detail.chests : [])
-      .filter((chest) => chest?.status === "pending")
-      .map((chest) => Number(chest.continuous_day)));
+    const eligibleChestDays = new Set(normalizeCheckinChestEligibleDays(detail.chest_eligible_days));
+    const pendingChests = (Array.isArray(detail.chests) ? detail.chests : []).filter(
+      (chest) => chest?.status === "pending",
+    );
+    const pendingChestByDay = new Map(
+      pendingChests.map((chest) => [Number(chest.continuous_day), chest]),
+    );
     const daysList = detail.days.slice(0, 7);
     const nodes = ensureCheckinDayGrid(container, this._checkinGridCache);
 
     daysList.forEach((dayInfo, idx) => {
-      const isDay7 = chestDays.has(Number(dayInfo.day));
+      const dayNumber = Number(dayInfo.day);
+      const pendingChest = pendingChestByDay.get(dayNumber) || null;
+      const hasPendingChest = !!pendingChest;
+      const isChestDay = eligibleChestDays.has(dayNumber) || hasPendingChest;
       const isDone = dayInfo.day <= continuousDays;
       paintCheckinDayNode(nodes[idx], {
         day: dayInfo.day,
         coin: dayInfo.coin,
         isDone,
         isCurrent: dayInfo.current === true,
-        isDay7,
-        superReward,
+        isChestDay,
+        hasPendingChest,
       });
+      const dayEl = nodes[idx]?.dayEl;
+      if (dayEl) {
+        if (hasPendingChest) {
+          dayEl.setAttribute("role", "button");
+          dayEl.tabIndex = 0;
+          dayEl.onclick = () => this.config.onCheckinChestDayClick?.(pendingChest);
+        } else {
+          dayEl.removeAttribute("role");
+          dayEl.removeAttribute("tabindex");
+          dayEl.onclick = null;
+        }
+      }
     });
 
     for (let idx = daysList.length; idx < 7; idx += 1) {
@@ -190,9 +220,14 @@ export const checkinUiMixin = {
         coin: 0,
         isDone: false,
         isCurrent: false,
-        isDay7: false,
-        superReward,
+        isChestDay: false,
+        hasPendingChest: false,
       });
+      if (nodes[idx]?.dayEl) {
+        nodes[idx].dayEl.removeAttribute("role");
+        nodes[idx].dayEl.removeAttribute("tabindex");
+        nodes[idx].dayEl.onclick = null;
+      }
     }
 
     const signinBtn = this.elements.signinTimerBtn;
@@ -206,9 +241,9 @@ export const checkinUiMixin = {
       const received = !!today?.received;
       const videoReceived = !!today?.video_received;
       this._signinVideoCompleted = videoReceived;
-      const pendingChest = chestDays.has(Number(today?.day));
-      const allCompleted = received && videoReceived && !pendingChest;
-      const canCheckin = !allCompleted;
+      const hasPendingChest = pendingChestByDay.has(Number(today?.day));
+      const checkinFlowDone = received && videoReceived;
+      const allCompleted = checkinFlowDone && !hasPendingChest;
       signinBtn.disabled = false;
       signinBtn.removeAttribute("aria-disabled");
       if (allCompleted) {
@@ -219,7 +254,9 @@ export const checkinUiMixin = {
       }
       const span = signinBtn.querySelector("span");
       if (span) {
-        span.textContent = canCheckin ? t("center.checkinNow") : t("common.completed");
+        if (allCompleted) span.textContent = t("common.completed");
+        else if (checkinFlowDone && hasPendingChest) span.textContent = t("center.checkinChestWatchVideo");
+        else span.textContent = t("center.checkinNow");
       }
     }
     this.updateSigninDialogVideoButtonState();

@@ -246,14 +246,30 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
     </div>
   </div>
 
-  <div id="checkinChestModal" class="new-user-bonus-overlay" style="display:none;">
-    <div class="new-user-bonus-card">
-      <div class="new-user-bonus-badge">SIGN-IN CHEST</div>
-      <div class="new-user-bonus-art" aria-hidden="true">🎁</div>
-      <h2 class="new-user-bonus-headline">A coin chest dropped!</h2>
-      <p class="new-user-bonus-desc">Watch a short video to open it and get coins now.</p>
-      <button id="checkinChestWatchBtn" type="button" class="new-user-bonus-primary">Watch to open</button>
-      <button id="checkinChestDismissBtn" type="button" class="new-user-bonus-secondary">Maybe later</button>
+  <div id="checkinChestModal" class="checkin-chest-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="checkinChestHeading">
+    <div class="checkin-chest-card">
+      <img :src="assetUrl('images/checkin-chest-hero.png')" alt="" class="checkin-chest-hero" width="450" height="304">
+      <div class="checkin-chest-copy">
+        <h2 id="checkinChestHeading" class="checkin-chest-headline">{{ t('center.checkinChestDropped') }}</h2>
+        <p class="checkin-chest-desc">{{ t('center.checkinChestDescLine1') }}<br>{{ t('center.checkinChestDescLine2') }}</p>
+      </div>
+      <div class="checkin-chest-actions">
+        <button id="checkinChestWatchBtn" type="button" class="checkin-chest-primary"><img :src="assetUrl('icons/video_outline.svg')" alt="" width="28" height="28">{{ t('center.checkinChestWatchVideo') }}</button>
+        <button id="checkinChestDismissBtn" type="button" class="checkin-chest-secondary">{{ t('center.checkinChestDismiss') }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="checkinChestRewardModal" class="checkin-chest-result-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="checkinChestRewardHeading">
+    <div class="checkin-chest-result-card">
+      <button id="checkinChestRewardClose" type="button" class="checkin-chest-result-close" :aria-label="t('common.close')">×</button>
+      <img :src="assetUrl('images/checkin-chest-reward-hero.png')" alt="" class="checkin-chest-result-hero" width="420" height="350">
+      <div class="checkin-chest-result-copy">
+        <h2 id="checkinChestRewardHeading" class="checkin-chest-result-title"><span aria-hidden="true">🎉</span> {{ t('center.checkinChestCongratulations') }}</h2>
+        <p class="checkin-chest-result-subtitle">{{ t('center.checkinChestYouGot') }}</p>
+        <p class="checkin-chest-result-amount"><strong id="checkinChestRewardCoins">+0</strong> <span>{{ t('common.coins') }}</span></p>
+      </div>
+      <button id="checkinChestRewardClaimBtn" type="button" class="checkin-chest-result-claim">{{ t('center.checkinChestClaim') }}</button>
     </div>
   </div>
 

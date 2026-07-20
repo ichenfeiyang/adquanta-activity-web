@@ -113,7 +113,15 @@
     "newUserBonusDescHtml": "Watch a short video to double your reward to <strong>{videoCoin}</strong> coins.",
     "newUserBonusFoot": "One-time bonus for first-time users.",
     "newUserBonusDouble": "Double My Coins",
-    "newUserBonusMaybeLater": "OK"
+    "newUserBonusMaybeLater": "OK",
+    "checkinChestDropped": "लक्की चेस्ट प्राप्त भयो!",
+    "checkinChestDescLine1": "चेस्ट खोल्न भिडियो हेर्नुहोस्",
+    "checkinChestDescLine2": "र आफ्नो पुरस्कार दाबी गर्नुहोस्।",
+    "checkinChestWatchVideo": "भिडियो हेर्नुहोस्",
+    "checkinChestDismiss": "होइन, धन्यवाद",
+    "checkinChestCongratulations": "बधाई छ!",
+    "checkinChestYouGot": "तपाईंले पाउनुभयो",
+    "checkinChestClaim": "दाबी गर्नुहोस्"
   },
   "messages": {
     "alreadyCheckedIn": "तपाईं आज पहिले नै चेक-इन गरिसक्नुभयो। भोलि फेरि आउनुहोस्!",

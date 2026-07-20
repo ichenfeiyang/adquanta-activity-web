@@ -1,5 +1,4 @@
-import { getDailyAdLimitMessage } from "./activity-center-business.js";
-import { adNotCompletedMessage } from "./activity-messages.js";
+import { adNotCompletedMessage, dailyAdLimitMessage } from "./activity-messages.js";
 import { showToast } from "./activity-alert-ui.js";
 import * as logger from "./activity-logger.js";
 
@@ -16,6 +15,7 @@ import * as logger from "./activity-logger.js";
  *   newUserBonusClaimInFlight: { value: boolean },
  *   checkinChestAdInFlight: { value: boolean },
  *   checkinChestClaimInFlight: { value: boolean },
+ *   onCheckinVideoRewardClaimed: () => void,
  * }} ctx
  */
 async function handleRewardAdEvent(ctx, result) {
@@ -117,7 +117,7 @@ async function handleRewardAdEvent(ctx, result) {
     ui.setCheckinChestLoading(false);
     if (claimResult?.ok) {
       ui.hideCheckinChestDialog();
-      showToast(`+${claimResult.coin} Coins`, "success");
+      ui.showCheckinChestRewardDialog(claimResult.coin);
       adapter.trackEvent("checkin_chest_reward_granted", { taskId, chestId: chest.id, coin: claimResult.coin });
     } else if (claimResult?.queued) {
       ui.hideCheckinChestDialog();
@@ -138,7 +138,7 @@ async function handleRewardAdEvent(ctx, result) {
       adapter.trackEvent("daily_video_completed", {
         taskId: "task_watch_ad",
         success: false,
-        reason: getDailyAdLimitMessage(),
+        reason: dailyAdLimitMessage(),
         platform: adapter.getPlatform(),
       });
       return;
@@ -182,6 +182,7 @@ async function handleInterstitialAdEvent(ctx, result) {
     normalizeAdMessage,
     checkinVideoClaimInFlight,
     checkinWatchAdInFlight,
+    onCheckinVideoRewardClaimed,
   } = ctx;
 
   interstitialAdTimeout?.clear();
@@ -209,6 +210,7 @@ async function handleInterstitialAdEvent(ctx, result) {
       .then((claimResult) => {
         if (claimResult?.ok) {
           ui.markSigninVideoCompleted();
+          onCheckinVideoRewardClaimed?.();
         }
       })
       .finally(() => {
