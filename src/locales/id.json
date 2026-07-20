@@ -30,7 +30,20 @@
     "failedTitle": "Otorisasi Gagal",
     "failedMessage": "Token tidak ditemukan. Silakan buka kembali halaman ini dari aplikasi dan coba lagi."
   },
-  "feedback": { "title":"Masukan", "heroTitle":"Ceritakan pendapat Anda", "heroDesc":"Bagikan ide tentang hadiah, aktivitas, dan fitur.", "describe":"Jelaskan Masukan Anda", "placeholder":"Jelaskan Masukan Anda", "upload":"Unggah Gambar (Opsional)", "uploadTitle":"Unggah Gambar", "optional":"(Opsional)", "addImage":"Tambah Gambar", "imageHint":"Maksimal 3 gambar · JPG / PNG · masing-masing 10MB", "imageInvalid":"Gunakan gambar JPG atau PNG hingga 10MB.", "contentRequired":"Silakan masukkan masukan Anda.", "submitFailed":"Masukan tidak dapat dikirim. Coba lagi.", "submit":"Kirim Masukan", "submitting":"Mengirim...", "submittedTitle":"Masukan Terkirim", "submittedDesc":"Terima kasih atas masukan Anda!", "back":"Kembali ke Rewards Center" },
+  "feedback": {
+    "title": "Masukan",
+    "heroTitle": "Ceritakan pendapat Anda",
+    "heroDesc": "Bagikan ide tentang hadiah, aktivitas, dan fitur.",
+    "describe": "Jelaskan Masukan Anda",
+    "placeholder": "Jelaskan Masukan Anda",
+    "contentRequired": "Silakan masukkan masukan Anda.",
+    "submitFailed": "Masukan tidak dapat dikirim. Coba lagi.",
+    "submit": "Kirim Masukan",
+    "submitting": "Mengirim...",
+    "submittedTitle": "Masukan Terkirim",
+    "submittedDesc": "Terima kasih atas masukan Anda!",
+    "back": "Kembali ke Rewards Center"
+  },
   "alert": {
     "notice": "Pemberitahuan",
     "success": "Berhasil",

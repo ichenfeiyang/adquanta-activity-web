@@ -30,7 +30,20 @@
     "failedTitle": "অনুমোদন ব্যর্থ",
     "failedMessage": "টোকেন নেই। অনুগ্রহ করে অ্যাপ থেকে এই পৃষ্ঠাটি আবার খুলুন এবং আবার চেষ্টা করুন।"
   },
-  "feedback": { "title":"মতামত", "heroTitle":"আপনার মতামত জানান", "heroDesc":"পুরস্কার, কার্যক্রম ও ফিচার সম্পর্কে আপনার ধারণা শেয়ার করুন।", "describe":"আপনার মতামত লিখুন", "placeholder":"আপনার মতামত লিখুন", "upload":"ছবি আপলোড করুন (ঐচ্ছিক)", "uploadTitle":"ছবি আপলোড করুন", "optional":"(ঐচ্ছিক)", "addImage":"ছবি যোগ করুন", "imageHint":"সর্বোচ্চ ৩টি ছবি · JPG / PNG · প্রতিটি 10MB", "imageInvalid":"10MB পর্যন্ত JPG বা PNG ছবি ব্যবহার করুন।", "contentRequired":"অনুগ্রহ করে আপনার মতামত লিখুন।", "submitFailed":"মতামত জমা দেওয়া যায়নি।", "submit":"মতামত জমা দিন", "submitting":"জমা হচ্ছে...", "submittedTitle":"মতামত জমা হয়েছে", "submittedDesc":"মতামতের জন্য ধন্যবাদ!", "back":"Rewards Center এ ফিরে যান" },
+  "feedback": {
+    "title": "মতামত",
+    "heroTitle": "আপনার মতামত জানান",
+    "heroDesc": "পুরস্কার, কার্যক্রম ও ফিচার সম্পর্কে আপনার ধারণা শেয়ার করুন।",
+    "describe": "আপনার মতামত লিখুন",
+    "placeholder": "আপনার মতামত লিখুন",
+    "contentRequired": "অনুগ্রহ করে আপনার মতামত লিখুন।",
+    "submitFailed": "মতামত জমা দেওয়া যায়নি।",
+    "submit": "মতামত জমা দিন",
+    "submitting": "জমা হচ্ছে...",
+    "submittedTitle": "মতামত জমা হয়েছে",
+    "submittedDesc": "মতামতের জন্য ধন্যবাদ!",
+    "back": "Rewards Center এ ফিরে যান"
+  },
   "alert": {
     "notice": "নোটিশ",
     "success": "সফল",

@@ -231,15 +231,20 @@ export async function postNewUserBonus(options = {}, body = {}) {
   });
 }
 
-/** Submit user feedback and up to three images in a single request. */
+/** Submit text-only user feedback as JSON. */
 export async function postActivityFeedback(options = {}, body = {}) {
-  const data = new FormData();
-  data.append("content", String(body.content || ""));
-  data.append("client_request_id", String(body.clientRequestId || ""));
-  data.append("locale", String(body.locale || ""));
-  for (const file of body.images || []) data.append("images", file);
   return fetchApi("postActivityFeedback", `${BaseApiUrl}/api/v1/ops/activity/feedback`, {
-    method: "POST", headers: { ...buildAuthHeaders(options) }, body: data, timeoutMs: 15_000,
+    method: "POST",
+    headers: {
+      ...buildAuthHeaders(options),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      content: String(body.content || ""),
+      client_request_id: String(body.clientRequestId || ""),
+      locale: String(body.locale || ""),
+    }),
+    timeoutMs: 15_000,
   });
 }
 

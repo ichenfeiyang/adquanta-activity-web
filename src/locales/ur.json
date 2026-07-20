@@ -30,7 +30,20 @@
     "failedTitle": "اجازت ناکام",
     "failedMessage": "ٹوکن موجود نہیں۔ براہ کرم ایپ سے یہ صفحہ دوبارہ کھولیں اور دوبارہ کوشش کریں۔"
   },
-  "feedback": { "title":"رائے", "heroTitle":"اپنی رائے بتائیں", "heroDesc":"انعامات، سرگرمیوں اور خصوصیات کے بارے میں اپنے خیالات شیئر کریں۔", "describe":"اپنی رائے بیان کریں", "placeholder":"اپنی رائے بیان کریں", "upload":"تصویر اپ لوڈ کریں (اختیاری)", "uploadTitle":"تصویر اپ لوڈ کریں", "optional":"(اختیاری)", "addImage":"تصویر شامل کریں", "imageHint":"زیادہ سے زیادہ 3 تصاویر · JPG / PNG · ہر ایک 10MB", "imageInvalid":"10MB تک صرف JPG یا PNG تصویر استعمال کریں۔", "contentRequired":"براہ کرم اپنی رائے درج کریں۔", "submitFailed":"رائے جمع نہیں ہو سکی۔", "submit":"رائے جمع کریں", "submitting":"جمع ہو رہا ہے...", "submittedTitle":"رائے جمع ہو گئی", "submittedDesc":"آپ کی رائے کا شکریہ!", "back":"Rewards Center پر واپس جائیں" },
+  "feedback": {
+    "title": "رائے",
+    "heroTitle": "اپنی رائے بتائیں",
+    "heroDesc": "انعامات، سرگرمیوں اور خصوصیات کے بارے میں اپنے خیالات شیئر کریں۔",
+    "describe": "اپنی رائے بیان کریں",
+    "placeholder": "اپنی رائے بیان کریں",
+    "contentRequired": "براہ کرم اپنی رائے درج کریں۔",
+    "submitFailed": "رائے جمع نہیں ہو سکی۔",
+    "submit": "رائے جمع کریں",
+    "submitting": "جمع ہو رہا ہے...",
+    "submittedTitle": "رائے جمع ہو گئی",
+    "submittedDesc": "آپ کی رائے کا شکریہ!",
+    "back": "Rewards Center پر واپس جائیں"
+  },
   "alert": {
     "notice": "اطلاع",
     "success": "کامیاب",
