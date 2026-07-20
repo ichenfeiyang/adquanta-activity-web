@@ -1764,7 +1764,12 @@ body {
   font-weight: 800;
 }
 
+.tc-video-progress-item:first-child {
+  flex-grow: 1.1;
+}
+
 .tc-video-progress-item-right {
+  flex-grow: 0.9;
   text-align: start;
 }
 
@@ -1773,6 +1778,16 @@ body {
   font-size: 9.5px;
   line-height: 1.15;
   font-weight: 500;
+}
+
+.tc-video-progress-item:first-child .tc-video-progress-label {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+html[lang="en"] .tc-video-progress-label {
+  white-space: nowrap;
 }
 
 .tc-video-progress-value {

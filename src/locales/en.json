@@ -85,7 +85,7 @@
     "luckySpinMaxCoins": "{maxCoin} Coins!",
     "spinChanceProgress": "{used} / {limit}",
     "coinLimitProgress": "{earned} / {total}",
-    "spinsLeftToday": "videos watched today",
+    "spinsLeftToday": "spins used today",
     "dailyCoinLimit": "daily coin limit",
     "watchAndSpin": "Watch & Spin",
     "watchVideoToSpin": "Watch Video to Spin",
