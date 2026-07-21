@@ -27,6 +27,7 @@ export function fingerprintActivityInfo(data) {
     redeemGap: data?.redeem_gap ?? null,
     redeemRewards: data?.redeem_rewards ?? null,
     recentRedemptions: data?.recent_redemptions ?? [],
+    coinRain: data?.coin_rain ?? null,
   });
 }
 

@@ -3,6 +3,7 @@ import {
   postActivityVideo,
   postCheckin,
   postCheckinChest,
+  postCoinRain,
   postNewUserBonus,
 } from "./activity-api.js";
 import { invalidateActivityInfoCache, loadActivityInfoWithSWR } from "./activity-page-cache.js";
@@ -22,6 +23,7 @@ import {
 import * as logger from "./activity-logger.js";
 import { normalizeCheckinChests } from "./checkin-chest.js";
 import { normalizeRecentRedemptions } from "./recent-redemptions.js";
+import { normalizeCoinRain } from "./coin-rain.js";
 
 export { normalizeCheckinChests } from "./checkin-chest.js";
 
@@ -92,6 +94,7 @@ export class ActivityCenterBusiness {
     this.redeemGap = null;
     this.redeemRewards = null;
     this.recentRedemptions = [];
+    this.coinRain = null;
 
     this._lastActivityInfoFingerprint = "";
 
@@ -105,6 +108,7 @@ export class ActivityCenterBusiness {
       onRedeemGapUpdate: config.onRedeemGapUpdate || (() => {}),
       onRedeemRewardsUpdate: config.onRedeemRewardsUpdate || (() => {}),
       onRecentRedemptionsUpdate: config.onRecentRedemptionsUpdate || (() => {}),
+      onCoinRainUpdate: config.onCoinRainUpdate || (() => {}),
       ...config,
     };
   }
@@ -169,6 +173,7 @@ export class ActivityCenterBusiness {
       redeemGap: d?.redeem_gap ?? null,
       redeemRewards: d?.redeem_rewards ?? null,
       recentRedemptions: d?.recent_redemptions ?? [],
+      coinRain: d?.coin_rain ?? null,
     });
   }
 
@@ -222,6 +227,10 @@ export class ActivityCenterBusiness {
     };
   }
 
+  normalizeCoinRain(value) {
+    return normalizeCoinRain(value);
+  }
+
   applyActivityInfoData(d) {
     const fingerprint = this.buildActivityInfoFingerprint(d);
     if (fingerprint === this._lastActivityInfoFingerprint) {
@@ -242,6 +251,7 @@ export class ActivityCenterBusiness {
       Object.prototype.hasOwnProperty.call(d || {}, "redeem_rewards"),
     );
     this.recentRedemptions = normalizeRecentRedemptions(d?.recent_redemptions);
+    this.coinRain = this.normalizeCoinRain(d?.coin_rain);
 
     try {
       if (d.user_info != null && d.user_info.user_id != null) {
@@ -299,6 +309,7 @@ export class ActivityCenterBusiness {
         redeemGap: this.redeemGap,
         redeemRewards: this.redeemRewards,
         recentRedemptions: this.recentRedemptions,
+        coinRain: this.coinRain,
       });
     } catch (error) {
       logger.error("[Activity API] Failed to apply activity info UI", error);
@@ -312,6 +323,7 @@ export class ActivityCenterBusiness {
         this.config.onRedeemGapUpdate?.(this.redeemGap);
         this.config.onRedeemRewardsUpdate?.(this.redeemRewards);
         this.config.onRecentRedemptionsUpdate?.(this.recentRedemptions);
+        this.config.onCoinRainUpdate?.(this.coinRain);
         this._lastActivityInfoFingerprint = fingerprint;
       }
     }
@@ -519,6 +531,27 @@ export class ActivityCenterBusiness {
       logger.error("New user bonus action failed", error);
       showToast(error?.message || claimFailedRetryMessage(), "error");
       return { ok: false };
+    }
+  }
+
+  async submitCoinRainAction(apiOptions = {}, action, payload = {}) {
+    try {
+      const res = await postCoinRain(apiOptions, { action, ...payload });
+      if (res?.code !== 200 || res?.data?.success === false) {
+        return { ok: false, message: res?.data?.message || res?.message || claimFailedMessage() };
+      }
+      this.coinRain = this.normalizeCoinRain(res.data);
+      this.config.onCoinRainUpdate?.(this.coinRain);
+      const totalCoin = Number(res?.data?.total_coin);
+      if ((action === "settle" || action === "boost") && Number.isFinite(totalCoin) && totalCoin >= 0) {
+        this.userAssets.goldCoins = totalCoin;
+        this.config.onAssetsUpdate(this.userAssets);
+      }
+      invalidateActivityInfoCache(apiOptions.token || "");
+      return { ok: true, ...res.data };
+    } catch (error) {
+      logger.error("Coin rain action failed", error);
+      return { ok: false, message: error?.message || claimFailedRetryMessage() };
     }
   }
 

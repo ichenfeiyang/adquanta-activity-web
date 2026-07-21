@@ -231,6 +231,19 @@ export async function postNewUserBonus(options = {}, body = {}) {
   });
 }
 
+/** Start, settle, abandon, or boost the daily coin rain session. */
+export async function postCoinRain(options = {}, body = {}) {
+  const payload = { action: body.action ?? "" };
+  if (body.session_id) payload.session_id = body.session_id;
+  if (Number.isFinite(body.clicked_count)) payload.clicked_count = body.clicked_count;
+  if (body.ad_event_id) payload.ad_event_id = body.ad_event_id;
+  return fetchApi("postCoinRain", `${BaseApiUrl}/api/v1/ops/activity/coin-rain`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...buildAuthHeaders(options) },
+    body: JSON.stringify(payload),
+  });
+}
+
 /** Submit text-only user feedback as JSON. */
 export async function postActivityFeedback(options = {}, body = {}) {
   return fetchApi("postActivityFeedback", `${BaseApiUrl}/api/v1/ops/activity/feedback`, {

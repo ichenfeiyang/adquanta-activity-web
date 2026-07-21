@@ -6,6 +6,7 @@ import { checkinUiMixin as checkinMixin } from "./activity-center-checkin-ui.js"
 import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
 import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
 import { checkinChestUiMixin as checkinChestMixin } from "./activity-center-checkin-chest-ui.js";
+import { coinRainUiMixin as coinRainMixin } from "./activity-center-coin-rain-ui.js";
 import { t } from "./i18n/activity-locale.js";
 
 const DEFAULT_REDEEM_REWARD_ITEMS = [
@@ -49,6 +50,38 @@ export class ActivityCenterUI {
       redeemRewardsList: "tc-redeem-rewards-list",
       recentRedemptionsSection: "tc-recent-redemptions-section",
       recentRedemptionsList: "tc-recent-redemptions-list",
+      coinRainSection: "tc-coin-rain-section",
+      coinRainEntry: "tc-coin-rain-entry",
+      coinRainEntryAction: "tc-coin-rain-entry-action",
+      coinRainDesc: "tc-coin-rain-desc",
+      coinRainProgress: "tc-coin-rain-progress",
+      coinRainOverlay: "tc-coin-rain-overlay",
+      coinRainLeave: "tc-coin-rain-leave",
+      coinRainTime: "tc-coin-rain-time",
+      coinRainCollected: "tc-coin-rain-collected",
+      coinRainCountdown: "tc-coin-rain-countdown",
+      coinRainCountdownValue: "tc-coin-rain-countdown-value",
+      coinRainCountdownMax: "tc-coin-rain-countdown-max",
+      coinRainStage: "tc-coin-rain-stage",
+      coinRainLeaveDialog: "tc-coin-rain-leave-dialog",
+      coinRainLeaveDesc: "tc-coin-rain-leave-desc",
+      coinRainLeaveClose: "tc-coin-rain-leave-close",
+      coinRainContinue: "tc-coin-rain-continue",
+      coinRainConfirmLeave: "tc-coin-rain-confirm-leave",
+      coinRainJoinedDialog: "tc-coin-rain-joined-dialog",
+      coinRainJoinedClose: "tc-coin-rain-joined-close",
+      coinRainJoinedOk: "tc-coin-rain-joined-ok",
+      coinRainResult: "tc-coin-rain-result",
+      coinRainResultClose: "tc-coin-rain-result-close",
+      coinRainResultHeroImg: "tc-coin-rain-result-hero-img",
+      coinRainResultTitle: "tc-coin-rain-result-title",
+      coinRainResultCopy: "tc-coin-rain-result-copy",
+      coinRainResultAmount: "tc-coin-rain-result-amount",
+      coinRainResultUnit: "tc-coin-rain-result-unit",
+      coinRainBoostOffer: "tc-coin-rain-boost-offer",
+      coinRainBoostOfferCopy: "tc-coin-rain-boost-offer-copy",
+      coinRainWatchAd: "tc-coin-rain-watch-ad",
+      coinRainClaim: "tc-coin-rain-claim",
       adProgressVideos: "ad-progress-videos",
       adProgressBarFill: "ad-progress-bar-fill",
       adEarnedText: "ad-earned-text",
@@ -109,6 +142,10 @@ export class ActivityCenterUI {
       onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
       onCheckinChestDismissClick: config.onCheckinChestDismissClick || (() => {}),
       onCheckinChestDayClick: config.onCheckinChestDayClick || (() => {}),
+      onCoinRainEntryClick: config.onCoinRainEntryClick || (() => {}),
+      onCoinRainSettle: config.onCoinRainSettle || (async () => ({ ok: false })),
+      onCoinRainAbandon: config.onCoinRainAbandon || (() => {}),
+      onCoinRainWatchAd: config.onCoinRainWatchAd || (() => {}),
       ...config,
     };
 
@@ -623,6 +660,7 @@ export class ActivityCenterUI {
    * 绑定事件
    */
   bindEvents() {
+    this.bindCoinRainEvents?.();
     // 看广告/领取按钮
     if (this.elements.btnWatchAd) {
       this.elements.btnWatchAd.addEventListener("click", () => {
@@ -748,4 +786,4 @@ export class ActivityCenterUI {
 
 }
 
-Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin, newUserBonusMixin, checkinChestMixin);
+Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin, newUserBonusMixin, checkinChestMixin, coinRainMixin);

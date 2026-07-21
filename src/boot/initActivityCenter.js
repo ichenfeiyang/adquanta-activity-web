@@ -15,7 +15,7 @@ import {
   initializationFailedMessage,
   videoCheckinAlreadyMessage,
 } from "../lib/activity-messages.js";
-import { ensureActivityLocaleFromSession } from "../lib/i18n/activity-locale.js";
+import { ensureActivityLocaleFromSession, t } from "../lib/i18n/activity-locale.js";
 import { reloadActivityPage } from "../lib/reload-activity-page.js";
 import { createAdCallbackTimeout } from "../lib/ad-callback-timeout.js";
 import { createActivitySdkEventHandler } from "../lib/activity-sdk-event-handlers.js";
@@ -74,6 +74,9 @@ export function initActivityCenter({ router, route }) {
   const newUserBonusClaimInFlight = { value: false };
   const checkinChestAdInFlight = { value: false };
   const checkinChestClaimInFlight = { value: false };
+  const coinRainAdInFlight = { value: false };
+  const coinRainStartInFlight = { value: false };
+  const coinRainReconcileInFlight = { value: false };
   const AD_CALLBACK_TIMEOUT_MS = 60000;
   let ui;
   let adapter;
@@ -81,6 +84,7 @@ export function initActivityCenter({ router, route }) {
   let interstitialAdTimeout;
   let newUserBonusAdTimeout;
   let checkinChestAdTimeout;
+  let coinRainAdTimeout;
   let deferCheckinChestDialog = false;
   let deferredCheckinChest = null;
 
@@ -142,6 +146,25 @@ export function initActivityCenter({ router, route }) {
     onRedeemGapUpdate: (gap) => ui.updateRedeemGap(gap),
     onRedeemRewardsUpdate: (rewards) => ui.updateRedeemRewards(rewards),
     onRecentRedemptionsUpdate: (items) => ui.updateRecentRedemptions(items),
+    onCoinRainUpdate: (status) => {
+      ui.updateCoinRain(status);
+      // Kill/refresh mid-game leaves server in `playing`; PRD burns the day with no reward.
+      // Skip while starting: submitCoinRainAction notifies update before local session exists.
+      if (
+        status?.state === "playing"
+        && status?.session_id
+        && !ui.hasActiveCoinRainSession()
+        && !coinRainStartInFlight.value
+        && !coinRainReconcileInFlight.value
+      ) {
+        coinRainReconcileInFlight.value = true;
+        void business
+          .submitCoinRainAction(apiOptions, "abandon", { session_id: status.session_id })
+          .finally(() => {
+            coinRainReconcileInFlight.value = false;
+          });
+      }
+    },
     onNewUserBonusUpdate: (bonus) => {
       if (shouldShowNewUserBonus(bonus)) {
         ui.showNewUserBonusDialog(bonus);
@@ -182,12 +205,14 @@ export function initActivityCenter({ router, route }) {
     newUserBonusClaimInFlight,
     checkinChestAdInFlight,
     checkinChestClaimInFlight,
+    coinRainAdInFlight,
     onCheckinVideoRewardClaimed: () => {
       ui.hideSigninDialog();
       revealDeferredCheckinChest();
     },
     getCheckinChest: () => ui._checkinChest,
     get checkinChestAdTimeout() { return checkinChestAdTimeout; },
+    get coinRainAdTimeout() { return coinRainAdTimeout; },
   });
 
   adapter = new ActivityCenterAdapter({
@@ -393,6 +418,67 @@ export function initActivityCenter({ router, route }) {
       if (!chest?.id || checkinChestAdInFlight.value || checkinChestClaimInFlight.value) return;
       updateCheckinChestDialog(chest, { force: true });
     },
+    onCoinRainEntryClick: async (status) => {
+      if (coinRainStartInFlight.value || ui.hasActiveCoinRainSession()) return;
+      if (status?.state === "boost_available") {
+        ui.showCoinRainBoostPrompt(status);
+        return;
+      }
+      if (status?.state === "playing" && status?.session_id && !ui.hasActiveCoinRainSession()) {
+        coinRainStartInFlight.value = true;
+        try {
+          await business.submitCoinRainAction(apiOptions, "abandon", { session_id: status.session_id });
+          adapter.trackEvent("coin_rain_abandon", { page_id: "activity-center", reason: "orphan_playing" });
+        } finally {
+          coinRainStartInFlight.value = false;
+        }
+        ui.showCoinRainAlreadyJoined();
+        return;
+      }
+      if (status?.state !== "available") {
+        ui.showCoinRainAlreadyJoined();
+        return;
+      }
+      coinRainStartInFlight.value = true;
+      try {
+        const result = await business.submitCoinRainAction(apiOptions, "start");
+        if (result?.ok && result?.state === "playing" && result?.session_id) {
+          adapter.trackEvent("coin_rain_start", { page_id: "activity-center" });
+          ui.startCoinRainSession(result);
+        } else if (result?.ok) {
+          // Idempotent start returned a finished/abandoned day session.
+          ui.showCoinRainAlreadyJoined();
+        } else {
+          showToast(result?.message || t("center.coinRainUnavailable"), "error");
+        }
+      } finally {
+        coinRainStartInFlight.value = false;
+      }
+    },
+    onCoinRainSettle: async ({ sessionId, clickedCount }) => {
+      const result = await business.submitCoinRainAction(apiOptions, "settle", { session_id: sessionId, clicked_count: clickedCount });
+      adapter.trackEvent("coin_rain_finish", { page_id: "activity-center", clicked_count: clickedCount, success: !!result?.ok, base_coin: Number(result?.base_coin ?? 0) });
+      return result;
+    },
+    onCoinRainAbandon: ({ sessionId }) => {
+      void business.submitCoinRainAction(apiOptions, "abandon", { session_id: sessionId });
+      adapter.trackEvent("coin_rain_abandon", { page_id: "activity-center" });
+    },
+    onCoinRainWatchAd: async (status) => {
+      if (!status?.session_id || coinRainAdInFlight.value) return;
+      try {
+        coinRainAdInFlight.value = true;
+        ui.setCoinRainAdLoading(true);
+        lastRewardAdTaskId = "task_coin_rain";
+        coinRainAdTimeout?.start();
+        await adapter.triggerRewardAd({ taskId: "task_coin_rain", reward: Number(status.base_coin ?? 0) });
+      } catch (error) {
+        coinRainAdTimeout?.clear();
+        coinRainAdInFlight.value = false;
+        ui.setCoinRainAdLoading(false);
+        showToast(normalizeAdMessage(error?.message, adNotAvailableMessage()), "error");
+      }
+    },
   });
 
   rewardAdTimeout = createAdCallbackTimeout({
@@ -441,8 +527,25 @@ export function initActivityCenter({ router, route }) {
     },
   });
 
+  coinRainAdTimeout = createAdCallbackTimeout({
+    ms: AD_CALLBACK_TIMEOUT_MS,
+    isActive: () => coinRainAdInFlight.value,
+    onTimeout: () => {
+      coinRainAdInFlight.value = false;
+      ui.setCoinRainAdLoading(false);
+      showToast(coinRainAdTimeout.message, "warning");
+    },
+  });
+
   window.onRewardedAdError = function (error) {
     logger.error("广告播放错误:", error);
+    if (coinRainAdInFlight.value) {
+      coinRainAdTimeout?.clear();
+      coinRainAdInFlight.value = false;
+      ui.setCoinRainAdLoading(false);
+      showToast(normalizeAdMessage(error?.message, adFailedMessage()), "error");
+      return;
+    }
     if (checkinChestAdInFlight.value) {
       checkinChestAdTimeout?.clear();
       checkinChestAdInFlight.value = false;
@@ -500,7 +603,9 @@ export function initActivityCenter({ router, route }) {
     interstitialAdTimeout?.clear();
     newUserBonusAdTimeout?.clear();
     checkinChestAdTimeout?.clear();
+    coinRainAdTimeout?.clear();
     ui.destroyRecentRedemptions();
+    ui.destroyCoinRain();
     window.onRewardedAdError = null;
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
   };

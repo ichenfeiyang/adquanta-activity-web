@@ -3,7 +3,7 @@
  */
 export function assetUrl(path) {
   const clean = String(path || "").replace(/^\/+/, "");
-  const base = import.meta.env.BASE_URL || "/";
+  const base = import.meta?.env?.BASE_URL || "/";
   if (base === "./") {
     return `./${clean}`;
   }

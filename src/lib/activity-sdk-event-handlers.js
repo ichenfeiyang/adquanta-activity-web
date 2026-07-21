@@ -35,6 +35,8 @@ async function handleRewardAdEvent(ctx, result) {
     checkinChestClaimInFlight,
     getCheckinChest,
     checkinChestAdTimeout,
+    coinRainAdInFlight,
+    coinRainAdTimeout,
   } = ctx;
 
   const success = result.success;
@@ -47,6 +49,26 @@ async function handleRewardAdEvent(ctx, result) {
     adDetail: result.adDetail,
     message,
   });
+
+  if (taskId === "task_coin_rain") {
+    coinRainAdTimeout?.clear();
+    coinRainAdInFlight.value = false;
+    if (!success) {
+      ui.setCoinRainAdLoading(false);
+      showToast(normalizeAdMessage(message, adNotCompletedMessage()), "warning");
+      return;
+    }
+    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? "";
+    const status = business.coinRain;
+    const boostResult = await business.submitCoinRainAction(apiOptions, "boost", { session_id: status?.session_id, ad_event_id: adEventId });
+    if (boostResult?.ok) ui.showCoinRainBoostSuccess(boostResult);
+    else {
+      ui.setCoinRainAdLoading(false);
+      showToast(boostResult?.message || adNotCompletedMessage(), "error");
+    }
+    adapter.trackEvent("coin_rain_ad_completed", { taskId, success: !!boostResult?.ok });
+    return;
+  }
 
   if (taskId === "task_new_user_bonus") {
     newUserBonusAdTimeout?.clear();

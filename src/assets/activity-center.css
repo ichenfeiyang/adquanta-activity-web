@@ -2301,6 +2301,302 @@ html[lang="en"] .tc-video-progress-label {
   overflow: hidden;
 }
 
+.tc-coin-rain-banner {
+  display: grid;
+  width: 100%;
+  min-height: 132px;
+  grid-template-columns: 118px minmax(0, 1fr) 108px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 8px;
+  border: 1px solid #fde0d0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(236, 91, 19, 0.04);
+  color: #050914;
+  text-align: left;
+  overflow: hidden;
+}
+
+.tc-coin-rain-banner.is-completed { filter: grayscale(0.7); opacity: 0.78; }
+.tc-coin-rain-visual {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.tc-coin-rain-visual img {
+  display: block;
+  width: 118px;
+  height: 124px;
+  object-fit: cover;
+  mix-blend-mode: multiply;
+}
+.tc-coin-rain-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.tc-coin-rain-title {
+  color: #050914;
+  font-size: 20px;
+  line-height: 1.1;
+  font-weight: 850;
+}
+.tc-coin-rain-description {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.32;
+}
+.tc-coin-rain-max-copy {
+  color: #7c3ddc;
+  font-weight: 800;
+}
+.tc-coin-rain-stat {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+}
+.tc-coin-rain-stat-icon {
+  display: flex;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff1b8;
+}
+.tc-coin-rain-stat-icon img { width: 25px; height: 25px; }
+.tc-coin-rain-stat-copy { display: flex; min-width: 0; flex-direction: column; }
+.tc-coin-rain-stat-copy strong { color: #050914; font-size: 17px; line-height: 1.05; font-weight: 850; white-space: nowrap; }
+.tc-coin-rain-stat-copy span { color: #475569; font-size: 10px; line-height: 1.15; white-space: nowrap; }
+.tc-coin-rain-entry-action {
+  display: inline-flex;
+  width: 74px;
+  min-height: 44px;
+  justify-self: center;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 1px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ff5b05 0%, #f24700 100%);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 430px) {
+  .tc-coin-rain-banner {
+    min-height: 124px;
+    grid-template-columns: 102px minmax(0, 1fr) 88px;
+    gap: 8px;
+    padding: 8px 10px 8px 6px;
+  }
+  .tc-coin-rain-visual img { width: 102px; height: 112px; }
+  .tc-coin-rain-title { font-size: 17px; }
+  .tc-coin-rain-description { font-size: 10.5px; }
+  .tc-coin-rain-stat { gap: 5px; margin-top: 4px; }
+  .tc-coin-rain-stat-icon { width: 27px; height: 27px; flex-basis: 27px; }
+  .tc-coin-rain-stat-icon img { width: 22px; height: 22px; }
+  .tc-coin-rain-stat-copy strong { font-size: 14px; }
+  .tc-coin-rain-stat-copy span { font-size: 8.5px; }
+  .tc-coin-rain-entry-action { width: 74px; min-height: 44px; padding: 1px; border-radius: 8px; font-size: 10px; }
+}
+
+@media (max-width: 370px) {
+  .tc-coin-rain-banner { grid-template-columns: 88px minmax(0, 1fr) 76px; gap: 6px; }
+  .tc-coin-rain-visual img { width: 88px; height: 102px; }
+  .tc-coin-rain-title { font-size: 15px; }
+  .tc-coin-rain-description { font-size: 9.5px; }
+  .tc-coin-rain-stat-copy span { white-space: normal; }
+  .tc-coin-rain-entry-action { width: 74px; min-height: 44px; font-size: 10px; }
+}
+
+.tc-coin-rain-overlay {
+  position: fixed;
+  z-index: 1300;
+  inset: 0;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(1px);
+  touch-action: none;
+}
+.tc-coin-rain-stage { position: absolute; inset: 0; overflow: hidden; }
+.tc-coin-rain-hud {
+  position: absolute;
+  z-index: 3;
+  top: max(58px, calc(env(safe-area-inset-top) + 38px));
+  left: 50%;
+  display: grid;
+  width: min(calc(100% - 56px), 390px);
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 8px;
+  background: rgba(24, 20, 20, .72);
+  color: #fff;
+  transform: translateX(-50%);
+}
+.tc-coin-rain-hud-time,
+.tc-coin-rain-hud-coins { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+.tc-coin-rain-hud-time strong { font-size: 13px; }
+.tc-coin-rain-hud-track { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.28); }
+.tc-coin-rain-hud-track i { display: block; width: 55%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#ff8d1c,#ffbc31); }
+.tc-coin-rain-hud-coins img { width: 21px; height: 21px; }
+.tc-coin-rain-leave {
+  position: absolute;
+  z-index: 5;
+  top: max(16px, env(safe-area-inset-top));
+  left: 14px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 27px;
+  font-weight: 300;
+}
+.tc-coin-rain-countdown { position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; color: #fff; text-align: center; }
+.tc-coin-rain-countdown-logo { position: relative; display: flex; min-width: 260px; flex-direction: column; align-items: center; padding: 16px 24px 13px; transform: rotate(-2deg); }
+.tc-coin-rain-countdown-logo::before,
+.tc-coin-rain-countdown-logo::after { content: ""; position: absolute; width: 48px; height: 48px; border-radius: 50%; background: url('/icons/coin-rain-gold-coin.svg') center/contain no-repeat; filter: drop-shadow(0 4px 5px rgba(0,0,0,.3)); }
+.tc-coin-rain-countdown-logo::before { left: 0; top: 10px; transform: rotate(-24deg); }
+.tc-coin-rain-countdown-logo::after { right: 0; bottom: 0; transform: rotate(24deg) scale(.8); }
+.tc-coin-rain-countdown-logo strong { position: relative; z-index: 1; color: #ffe17b; font-size: 37px; line-height: 1; font-weight: 950; letter-spacing: -1.5px; -webkit-text-stroke: 2px #9d4a06; text-shadow: 0 4px 0 #713101, 0 8px 14px rgba(0,0,0,.35); }
+.tc-coin-rain-countdown-logo span { position: relative; z-index: 2; margin-top: 5px; padding: 4px 17px; border-radius: 999px; background: linear-gradient(180deg,#ff8b16,#e85208); color: #fff4b5; font-size: 12px; line-height: 1; font-weight: 900; box-shadow: 0 3px 0 #9e3100; }
+.tc-coin-rain-countdown b { font-size: 96px; line-height: .9; color: #fff; font-weight: 950; text-shadow: 0 6px 0 rgba(0,0,0,.22); }
+.tc-coin-rain-coin { position: absolute; z-index: 2; top: -70px; display: block; width: var(--coin-size, 48px); height: var(--coin-size, 48px); padding: 0; border: 0; border-radius: 50%; background: transparent; filter: drop-shadow(0 5px 6px rgba(0,0,0,.28)); animation: tc-coin-rain-fall var(--fall-duration, 4s) linear forwards; }
+.tc-coin-rain-coin img { display: block; width: 100%; height: 100%; }
+.tc-coin-rain-coin:active { transform: scale(.86); }
+@keyframes tc-coin-rain-fall { to { transform: translateY(calc(100vh + 120px)) rotate(480deg); } }
+.tc-coin-rain-multiplier { position: absolute; z-index: 3; left: 50%; bottom: max(58px, calc(env(safe-area-inset-bottom) + 34px)); display: grid; width: 94px; height: 72px; place-items: center; color: #ff36a3; font-size: 43px; line-height: 1; font-weight: 950; text-shadow: 0 3px 0 #fff; transform: translateX(-50%) rotate(-7deg); clip-path: polygon(50% 0,61% 25%,86% 12%,75% 39%,100% 50%,73% 60%,86% 89%,60% 75%,50% 100%,39% 75%,12% 90%,25% 61%,0 50%,25% 39%,12% 12%,39% 25%); background: #d7ff4c; }
+.tc-coin-rain-overlay.is-countdown .tc-coin-rain-hud,
+.tc-coin-rain-overlay.is-countdown .tc-coin-rain-multiplier { display: none; }
+.tc-coin-rain-overlay.is-paused .tc-coin-rain-hud,
+.tc-coin-rain-overlay.is-paused .tc-coin-rain-multiplier { display: none; }
+.tc-coin-rain-overlay.is-paused .tc-coin-rain-coin { animation-play-state: paused; }
+
+.tc-coin-rain-leave-dialog { position: absolute; z-index: 10; inset: 0; align-items: center; justify-content: center; padding: 18px; background: rgba(0,0,0,.18); }
+.tc-coin-rain-leave-card { position: relative; width: min(78vw, 310px); padding: 26px 18px 16px; border-radius: 14px; background: #fff; color: #111827; text-align: center; box-shadow: 0 18px 55px rgba(0,0,0,.3); }
+.tc-coin-rain-leave-art { display: block; width: 116px; height: 76px; margin: -8px auto 2px; object-fit: cover; mix-blend-mode: multiply; }
+.tc-coin-rain-leave-card h2 { margin: 0 0 6px; font-size: 17px; line-height: 1.15; }
+.tc-coin-rain-leave-card p { margin: 0 0 15px; color: #6b7280; font-size: 11px; line-height: 1.35; }
+.tc-coin-rain-dialog-close { position: absolute; z-index: 3; top: 8px; right: 9px; width: 28px; height: 28px; border: 0; background: transparent; color: #6b7280; font-size: 23px; line-height: 1; }
+.tc-coin-rain-dialog-primary,
+.tc-coin-rain-dialog-secondary { width: 100%; min-height: 39px; border-radius: 7px; font-size: 13px; font-weight: 800; }
+.tc-coin-rain-dialog-primary { border: 0; background: linear-gradient(180deg,#ff6b25,#ed4d17); color: #fff; }
+.tc-coin-rain-dialog-secondary { margin-top: 8px; border: 1px solid #f0ddd4; background: #fff; color: #cf4f23; }
+.tc-coin-rain-joined-card { width: min(82vw, 330px); padding: 28px 20px 18px; }
+.tc-coin-rain-joined-card h2 { margin: 0 0 8px; font-size: 17px; line-height: 1.25; font-weight: 800; }
+.tc-coin-rain-joined-card p { margin: 0 0 18px; color: #6b7280; font-size: 13px; line-height: 1.4; }
+.tc-coin-rain-joined-card .tc-coin-rain-dialog-primary { min-height: 44px; border-radius: 10px; }
+
+.tc-modal-overlay { position: fixed; z-index: 1350; inset: 0; align-items: center; justify-content: center; padding: 18px; background: rgba(0,0,0,.64); backdrop-filter: blur(1px); }
+.tc-coin-rain-result-card { position: relative; width: min(82vw, 330px); padding: 18px 17px 14px; border-radius: 14px; background: #fff; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.32); overflow: hidden; }
+.tc-coin-rain-result-hero { position: relative; height: 94px; margin: -8px -4px 0; overflow: hidden; }
+.tc-coin-rain-result-hero::before { content: ""; position: absolute; inset: 8px 8px 0; background: radial-gradient(circle at 12% 35%,#7a3cdf 0 3px,transparent 4px),radial-gradient(circle at 88% 22%,#ff8b16 0 3px,transparent 4px),radial-gradient(circle at 78% 75%,#19a7d8 0 3px,transparent 4px),radial-gradient(circle at 24% 78%,#48aa45 0 3px,transparent 4px); }
+.tc-coin-rain-result-hero img { position: relative; z-index: 1; display: block; width: 188px; height: 112px; margin: 0 auto; object-fit: cover; mix-blend-mode: multiply; }
+.tc-coin-rain-result-card h2 { margin: 0 0 1px; color: #171717; font-size: 17px; line-height: 1.15; font-weight: 850; }
+.tc-coin-rain-result-amount { color: #ed5a1d; font-size: 41px; line-height: .95; font-weight: 950; letter-spacing: -1px; }
+.tc-coin-rain-result-unit { margin-top: 2px; color: #111827; font-size: 12px; line-height: 1; font-weight: 700; }
+.tc-coin-rain-result-copy { margin: 8px 0 14px; color: #6d554a; font-size: 12px; line-height: 1.4; }
+.tc-coin-rain-boost-offer { display: flex; align-items: center; gap: 9px; margin: 13px 0 10px; padding: 9px 11px; border: 1px solid #f2deb5; border-radius: 8px; background: #fff9df; text-align: left; }
+.tc-coin-rain-video-icon { display: grid; width: 31px; height: 27px; flex: 0 0 31px; place-items: center; border-radius: 4px; background: #f48b17; color: #fff; font-size: 13px; }
+.tc-coin-rain-boost-offer > span:last-child { display: flex; min-width: 0; flex-direction: column; }
+.tc-coin-rain-boost-offer small { color: #343434; font-size: 9px; line-height: 1.2; }
+.tc-coin-rain-boost-offer strong { color: #e85c19; font-size: 11px; line-height: 1.2; }
+.tc-coin-rain-result-card .tc-primary-btn--full { min-height: 40px; border-radius: 7px; font-size: 12px; box-shadow: none; }
+.tc-coin-rain-claim { width: 100%; min-height: 38px; margin-top: 8px; border: 1px solid #f0ddd4; border-radius: 7px; background: #fff; color: #d25b2b; font-size: 11px; font-weight: 700; }
+.tc-coin-rain-result.is-boost-success .tc-coin-rain-result-card { padding-bottom: 16px; }
+
+/* Already-claimed boost prompt: match design (pill buttons, $ coin art, gray Later) */
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-card {
+  width: min(86vw, 340px);
+  padding: 28px 22px 22px;
+  border-radius: 24px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  overflow: visible;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-dialog-close {
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  color: #6b7280;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-hero {
+  height: auto;
+  margin: 4px 0 6px;
+  overflow: visible;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-hero::before {
+  display: none;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-hero img {
+  width: min(78%, 240px);
+  height: auto;
+  max-height: 128px;
+  object-fit: contain;
+  mix-blend-mode: normal;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-card h2 {
+  margin: 10px 0 0;
+  color: #111827;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-copy {
+  margin: 10px 0 22px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-card .tc-primary-btn--full {
+  min-height: 48px;
+  border-radius: 999px;
+  background: #ff5a00;
+  background-image: none;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-result-card .tc-primary-btn--full:active {
+  background: #eb5200;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-claim {
+  min-height: 48px;
+  margin-top: 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+}
+.tc-coin-rain-result.is-boost-prompt .tc-coin-rain-claim:active {
+  background: #f9fafb;
+}
+
 .tc-recent-redemptions-title {
   margin: 0 0 10px;
   color: #151515;
