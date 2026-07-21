@@ -7,10 +7,6 @@ import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
 import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
 import { checkinChestUiMixin as checkinChestMixin } from "./activity-center-checkin-chest-ui.js";
 import { t } from "./i18n/activity-locale.js";
-import {
-  chunkRecentRedemptions,
-  nextRecentRedemptionBatchIndex,
-} from "./recent-redemptions.js";
 
 const DEFAULT_REDEEM_REWARD_ITEMS = [
   { type: "mobile_recharge", titleKey: "center.redeemRewardMobileRecharge", fallback: true },
@@ -133,9 +129,10 @@ export class ActivityCenterUI {
     this._lastSpinPoolKey = "";
     this._newUserBonus = null;
     this._checkinChest = null;
-    this.recentRedemptionBatches = [];
-    this.recentRedemptionBatchIndex = 0;
+    this.recentRedemptionItems = [];
+    this.recentRedemptionNextIndex = 0;
     this.recentRedemptionTimer = 0;
+    this._finishRecentRedemptionAnimation = null;
     this._recentVisibilityHandler = () => {
       if (document.hidden) this.stopRecentRedemptionRotation();
       else this.startRecentRedemptionRotation();
@@ -407,9 +404,10 @@ export class ActivityCenterUI {
     const list = this.elements.recentRedemptionsList;
     if (!section || !list) return;
     this.stopRecentRedemptionRotation();
-    this.recentRedemptionBatches = chunkRecentRedemptions(Array.isArray(items) ? items : [], 3);
-    this.recentRedemptionBatchIndex = 0;
-    if (!this.recentRedemptionBatches.length) {
+    this.finishRecentRedemptionAnimation();
+    this.recentRedemptionItems = Array.isArray(items) ? items : [];
+    this.recentRedemptionNextIndex = Math.min(3, this.recentRedemptionItems.length);
+    if (!this.recentRedemptionItems.length) {
       list.replaceChildren();
       section.style.display = "none";
       return;
@@ -422,39 +420,89 @@ export class ActivityCenterUI {
   renderRecentRedemptionBatch() {
     const list = this.elements.recentRedemptionsList;
     if (!list) return;
-    const batch = this.recentRedemptionBatches[this.recentRedemptionBatchIndex] || [];
-    const fragment = document.createDocumentFragment();
-    for (const item of batch) {
-      const row = document.createElement("div");
-      row.className = "tc-recent-redemption-item";
-
-      const user = document.createElement("span");
-      user.className = "tc-recent-redemption-user";
-      user.textContent = item.maskedUserId;
-
-      const reward = document.createElement("span");
-      reward.className = "tc-recent-redemption-reward";
-      const icon = document.createElement("span");
-      icon.className = `tc-recent-redemption-icon tc-recent-redemption-icon--${item.rewardType}`;
-      icon.appendChild(this.recentRedemptionIcon(item));
-      const name = document.createElement("span");
-      name.className = "tc-recent-redemption-name";
-      name.textContent = item.rewardName;
-      reward.append(icon, name);
-
-      const date = document.createElement("time");
-      date.className = "tc-recent-redemption-date";
-      date.dateTime = item.redeemedDate;
-      date.textContent = item.redeemedDate;
-
-      const success = document.createElement("span");
-      success.className = "tc-recent-redemption-success";
-      success.setAttribute("aria-label", t("common.completed"));
-      success.textContent = "✓";
-      row.append(user, reward, date, success);
-      fragment.appendChild(row);
+    const track = document.createElement("div");
+    track.className = "tc-recent-redemptions-track";
+    for (const item of this.recentRedemptionItems.slice(0, 3)) {
+      track.appendChild(this.createRecentRedemptionRow(item));
     }
-    list.replaceChildren(fragment);
+    list.replaceChildren(track);
+  }
+
+  createRecentRedemptionRow(item) {
+    const row = document.createElement("div");
+    row.className = "tc-recent-redemption-item";
+
+    const user = document.createElement("span");
+    user.className = "tc-recent-redemption-user";
+    user.textContent = item.maskedUserId;
+
+    const reward = document.createElement("span");
+    reward.className = "tc-recent-redemption-reward";
+    const icon = document.createElement("span");
+    icon.className = `tc-recent-redemption-icon tc-recent-redemption-icon--${item.rewardType}`;
+    icon.appendChild(this.recentRedemptionIcon(item));
+    const name = document.createElement("span");
+    name.className = "tc-recent-redemption-name";
+    name.textContent = item.rewardName;
+    reward.append(icon, name);
+
+    const date = document.createElement("time");
+    date.className = "tc-recent-redemption-date";
+    date.dateTime = item.redeemedDate;
+    date.textContent = item.redeemedDate;
+
+    const success = document.createElement("span");
+    success.className = "tc-recent-redemption-success";
+    success.setAttribute("aria-label", t("common.completed"));
+    success.textContent = "✓";
+    row.append(user, reward, date, success);
+    return row;
+  }
+
+  animateRecentRedemptionBatch() {
+    const list = this.elements.recentRedemptionsList;
+    if (!list || this._finishRecentRedemptionAnimation) return;
+    const track = list.firstElementChild;
+    const nextItem = this.recentRedemptionItems[this.recentRedemptionNextIndex];
+    if (!nextItem) return;
+    const nextRow = this.createRecentRedemptionRow(nextItem);
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (!track) {
+      this.renderRecentRedemptionBatch();
+      return;
+    }
+    if (reduceMotion) {
+      track.firstElementChild?.remove();
+      track.appendChild(nextRow);
+      this.recentRedemptionNextIndex = (this.recentRedemptionNextIndex + 1) % this.recentRedemptionItems.length;
+      return;
+    }
+
+    track.appendChild(nextRow);
+    this.recentRedemptionNextIndex = (this.recentRedemptionNextIndex + 1) % this.recentRedemptionItems.length;
+    let finished = false;
+    let animationFrame = 0;
+    let fallbackTimer = 0;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      track.removeEventListener("transitionend", finish);
+      track.classList.remove("tc-recent-redemptions-track--animating");
+      track.firstElementChild?.remove();
+      this._finishRecentRedemptionAnimation = null;
+    };
+    this._finishRecentRedemptionAnimation = finish;
+    track.addEventListener("transitionend", finish);
+    animationFrame = window.requestAnimationFrame(() => {
+      track.classList.add("tc-recent-redemptions-track--animating");
+      fallbackTimer = window.setTimeout(finish, 1100);
+    });
+  }
+
+  finishRecentRedemptionAnimation() {
+    this._finishRecentRedemptionAnimation?.();
   }
 
   recentRedemptionIcon(item) {
@@ -486,13 +534,9 @@ export class ActivityCenterUI {
   }
 
   startRecentRedemptionRotation() {
-    if (document.hidden || this.recentRedemptionTimer || this.recentRedemptionBatches.length <= 1) return;
+    if (document.hidden || this.recentRedemptionTimer || this.recentRedemptionItems.length <= 3) return;
     this.recentRedemptionTimer = window.setInterval(() => {
-      this.recentRedemptionBatchIndex = nextRecentRedemptionBatchIndex(
-        this.recentRedemptionBatchIndex,
-        this.recentRedemptionBatches.length,
-      );
-      this.renderRecentRedemptionBatch();
+      this.animateRecentRedemptionBatch();
     }, 3000);
   }
 
@@ -504,6 +548,7 @@ export class ActivityCenterUI {
 
   destroyRecentRedemptions() {
     this.stopRecentRedemptionRotation();
+    this.finishRecentRedemptionAnimation();
     document.removeEventListener("visibilitychange", this._recentVisibilityHandler);
   }
 
