@@ -308,5 +308,23 @@
     "avgTimeTitle": "Average Processing Time",
     "avgTimeDesc": "Typically under 2 minutes.",
     "returnToTasks": "Return to Tasks"
+  },
+  "novice": {
+    "welcome": {
+      "title": "Welcome to Rewards Center!",
+      "desc": "Learn how to earn Coins and get more rewards.",
+      "skip": "Skip",
+      "start": "OK"
+    },
+    "step1": {
+      "text": "Check in every day to earn Coins!",
+      "subtext": "Watch a video to double your check-in reward.",
+      "chestTip": "Lucky chests may appear on Day 3, Day 5 and Day 7!"
+    },
+    "complete": {
+      "title": "You're Ready!",
+      "desc": "Come back every day to earn Coins, track your progress, and redeem rewards like mobile data and gift cards.",
+      "ok": "OK"
+    }
   }
 }

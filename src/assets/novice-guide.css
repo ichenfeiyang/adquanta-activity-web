@@ -1,0 +1,221 @@
+/* =========================================================
+   Novice Guide – Overlay, Highlight & Finger Animation
+   ========================================================= */
+
+/* --- Welcome popup --- */
+.ng-welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.ng-welcome-card {
+  position: relative;
+  width: calc(100% - 60px);
+  max-width: 340px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+.ng-welcome-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  background: linear-gradient(135deg, #ffe6d9 0%, #ffd4bc 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.ng-welcome-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #050914;
+  margin: 0 0 8px;
+}
+
+.ng-welcome-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+
+.ng-welcome-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ng-btn-skip {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ng-btn-start {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #ff5c00;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* --- Step overlay (shared for all steps) --- */
+.ng-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.ng-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.ng-highlight {
+  position: absolute;
+  z-index: 10000;
+  border-radius: 16px;
+  pointer-events: none;
+  /* box-shadow creates the "cutout" dimming effect.
+     The shadow is painted outside the element, so the
+     element area stays bright while everything else dims. */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+.ng-finger {
+  position: absolute;
+  z-index: 10002;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.ng-finger-icon {
+  font-size: 48px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+  animation: ng-finger-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes ng-finger-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+.ng-text-box {
+  position: absolute;
+  z-index: 10003;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 360px;
+  background: rgba(30, 30, 30, 0.75);
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ng-text-main {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.ng-text-sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ng-text-extra {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 6px 0 0;
+  line-height: 1.35;
+}
+
+/* --- Complete popup --- */
+.ng-complete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.ng-complete-card {
+  position: relative;
+  width: calc(100% - 60px);
+  max-width: 340px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+.ng-complete-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  background: linear-gradient(135deg, #d4fce4 0%, #b4f5c6 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.ng-complete-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #050914;
+  margin: 0 0 8px;
+}
+
+.ng-complete-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+
+.ng-complete-ok {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #ff5c00;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}

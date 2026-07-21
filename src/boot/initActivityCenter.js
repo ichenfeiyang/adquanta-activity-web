@@ -26,6 +26,9 @@ import {
   readSoftClosedCheckinChestIds,
 } from "../lib/checkin-chest.js";
 import * as logger from "../lib/activity-logger.js";
+import { isNoviceGuideCompleted, markNoviceGuideCompleted } from "../lib/novice-guide/novice-guide-state.js";
+import { createNoviceGuide } from "../lib/novice-guide/create-novice-guide.js";
+import "../assets/novice-guide.css";
 
 function renderUnauthenticatedActivityCenterPreview() {
   const showAuthRequired = () => showToast(authFailedMessage(), "error");
@@ -352,7 +355,10 @@ export function initActivityCenter({ router, route }) {
         });
       }
     },
-    onSigninDialogDismiss: () => revealDeferredCheckinChest(),
+    onSigninDialogDismiss: () => {
+      if (noviceGuide?.handleSigninDismiss()) return;
+      revealDeferredCheckinChest();
+    },
     onNewUserBonusVideoClick: async (bonus) => {
       if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) return;
       try {
@@ -584,6 +590,21 @@ export function initActivityCenter({ router, route }) {
   ui.bindEvents();
   ui.renderInitialShell();
 
+  // ── 新手引导 ──
+  let noviceGuide = null;
+  let onBeforeUnloadGuide = null;
+  if (!isNoviceGuideCompleted()) {
+    noviceGuide = createNoviceGuide({
+      onStepAction: () => {},
+      onComplete: () => {},
+    });
+    noviceGuide.start();
+    onBeforeUnloadGuide = () => {
+      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted();
+    };
+    window.addEventListener('beforeunload', onBeforeUnloadGuide);
+  }
+
   const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
   if (cachedActivityInfo) {
     business.applyActivityInfoData(cachedActivityInfo);
@@ -608,6 +629,10 @@ export function initActivityCenter({ router, route }) {
     ui.destroyCoinRain();
     window.onRewardedAdError = null;
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
+    if (onBeforeUnloadGuide) {
+      window.removeEventListener('beforeunload', onBeforeUnloadGuide);
+    }
+    noviceGuide?.dispose();
   };
 }
 
