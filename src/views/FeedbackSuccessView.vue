@@ -1,7 +1,9 @@
 <script setup>
+import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import "../assets/feedback.css";
 import { useI18n } from "../composables/useI18n.js";
+import { FEEDBACK_PAGE_ID } from "../lib/activity-analytics.js";
 import { goToActivityCenter } from "../lib/activity-navigation.js";
 import { assetUrl } from "../lib/asset-url.js";
 
@@ -12,6 +14,13 @@ const { t } = useI18n();
 function back() {
   goToActivityCenter(router, String(route.query.activity_id || ""));
 }
+
+onMounted(() => {
+  window.ActivityBridgeHelper?.trackEvent?.("page_view", {
+    page_id: FEEDBACK_PAGE_ID,
+    element_id: "feedback_success",
+  });
+});
 </script>
 
 <template>

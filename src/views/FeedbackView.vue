@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import "../assets/feedback.css";
 import { postActivityFeedback } from "../lib/activity-api.js";
+import { FEEDBACK_PAGE_ID } from "../lib/activity-analytics.js";
 import { requireActivitySession } from "../lib/activity-session.js";
 import { goToActivityCenter, goToFeedbackSuccess } from "../lib/activity-navigation.js";
 import { getActivityLocale } from "../lib/i18n/activity-locale.js";
@@ -29,7 +30,7 @@ function newRequestId() {
 const clientRequestId = ref(newRequestId());
 
 function track(event, data = {}) {
-  window.ActivityBridgeHelper?.trackEvent?.(event, { page_id: "rewards_feedback", ...data });
+  window.ActivityBridgeHelper?.trackEvent?.(event, { page_id: FEEDBACK_PAGE_ID, ...data });
 }
 function back() {
   goToActivityCenter(router, String(route.query.activity_id || ""));
@@ -37,15 +38,19 @@ function back() {
 
 async function submit() {
   const value = content.value.trim();
+  if (!value) {
+    error.value = t("feedback.contentRequired");
+    track("rewards_feedback_submit_fail", {
+      element_id: "submit_feedback_button",
+      reason: "empty_content",
+    });
+    return;
+  }
+  if (!session || submitting.value) return;
   track("rewards_feedback_submit_click", {
     element_id: "submit_feedback_button",
     element_name: "点击反馈页面提交反馈按钮",
   });
-  if (!value) {
-    error.value = t("feedback.contentRequired");
-    return;
-  }
-  if (!session || submitting.value) return;
   submitting.value = true;
   error.value = "";
   try {
@@ -56,15 +61,22 @@ async function submit() {
     });
     if (result?.code !== 200) throw new Error(result?.message || t("feedback.submitFailed"));
     clientRequestId.value = newRequestId();
+    track("rewards_feedback_submit_success", {
+      element_id: "submit_feedback_button",
+    });
     goToFeedbackSuccess(router, session.activityId);
   } catch (e) {
     error.value = e?.message || t("feedback.submitFailed");
+    track("rewards_feedback_submit_fail", {
+      element_id: "submit_feedback_button",
+      reason: error.value,
+    });
   } finally {
     submitting.value = false;
   }
 }
 
-onMounted(() => track("page_view", { page_id: "rewards_feedback" }));
+onMounted(() => track("page_view"));
 </script>
 
 <template>

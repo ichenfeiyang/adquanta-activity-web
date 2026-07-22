@@ -1,4 +1,5 @@
 import { adNotCompletedMessage, dailyAdLimitMessage } from "./activity-messages.js";
+import { ACTIVITY_CENTER_PAGE_ID } from "./activity-analytics.js";
 import { showToast } from "./activity-alert-ui.js";
 import * as logger from "./activity-logger.js";
 
@@ -55,7 +56,15 @@ async function handleRewardAdEvent(ctx, result) {
     coinRainAdInFlight.value = false;
     if (!success) {
       ui.setCoinRainAdLoading(false);
-      showToast(normalizeAdMessage(message, adNotCompletedMessage()), "warning");
+      const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
+      showToast(displayMessage, "warning");
+      adapter.trackEvent("coin_rain_ad_failed", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: taskId,
+        reason: displayMessage,
+        ad_status_code: result.adStatusCode,
+        ad_error_code: result.adErrorCode,
+      });
       return;
     }
     const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? "";
@@ -66,7 +75,13 @@ async function handleRewardAdEvent(ctx, result) {
       ui.setCoinRainAdLoading(false);
       showToast(boostResult?.message || adNotCompletedMessage(), "error");
     }
-    adapter.trackEvent("coin_rain_ad_completed", { taskId, success: !!boostResult?.ok });
+    adapter.trackEvent("coin_rain_ad_completed", {
+      page_id: ACTIVITY_CENTER_PAGE_ID,
+      task_id: taskId,
+      success: !!boostResult?.ok,
+      base_coin: Number(boostResult?.base_coin ?? status?.base_coin ?? 0),
+      boost_coin: Number(boostResult?.boost_coin ?? 0),
+    });
     return;
   }
 
@@ -128,7 +143,12 @@ async function handleRewardAdEvent(ctx, result) {
       ui.setCheckinChestLoading(false);
       const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
       if (!success) showToast(displayMessage, "warning");
-      adapter.trackEvent("checkin_chest_ad_failed", { taskId, reason: displayMessage });
+      adapter.trackEvent("checkin_chest_ad_failed", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: taskId,
+        chest_id: chest?.id,
+        reason: !success ? displayMessage : "missing_chest",
+      });
       return;
     }
     if (checkinChestClaimInFlight.value) return;
@@ -140,12 +160,27 @@ async function handleRewardAdEvent(ctx, result) {
     if (claimResult?.ok) {
       ui.hideCheckinChestDialog();
       ui.showCheckinChestRewardDialog(claimResult.coin);
-      adapter.trackEvent("checkin_chest_reward_granted", { taskId, chestId: chest.id, coin: claimResult.coin });
+      adapter.trackEvent("checkin_chest_reward_granted", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: taskId,
+        chest_id: chest.id,
+        coin: claimResult.coin,
+      });
     } else if (claimResult?.queued) {
       ui.hideCheckinChestDialog();
-      adapter.trackEvent("checkin_chest_reward_queued", { taskId, chestId: chest.id });
+      adapter.trackEvent("checkin_chest_reward_queued", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: taskId,
+        chest_id: chest.id,
+      });
     } else {
       showToast(claimResult?.message || adNotCompletedMessage(), "error");
+      adapter.trackEvent("checkin_chest_claim_failed", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: taskId,
+        chest_id: chest.id,
+        reason: claimResult?.message || "claim_failed",
+      });
     }
     return;
   }
@@ -234,6 +269,11 @@ async function handleInterstitialAdEvent(ctx, result) {
           ui.markSigninVideoCompleted();
           onCheckinVideoRewardClaimed?.();
         }
+        adapter.trackEvent("checkin_video_completed", {
+          page_id: ACTIVITY_CENTER_PAGE_ID,
+          task_id: taskId,
+          success: !!claimResult?.ok,
+        });
       })
       .finally(() => {
         checkinVideoClaimInFlight.value = false;
@@ -242,7 +282,6 @@ async function handleInterstitialAdEvent(ctx, result) {
           ui.setSigninWatchLoading(false);
         }
       });
-    adapter.trackEvent("checkin_video_completed", { taskId, success: true });
     return;
   }
 
@@ -251,11 +290,12 @@ async function handleInterstitialAdEvent(ctx, result) {
   const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
   showToast(displayMessage, "warning");
   adapter.trackEvent("checkin_video_failed", {
-    taskId,
+    page_id: ACTIVITY_CENTER_PAGE_ID,
+    task_id: taskId,
     reason: displayMessage,
-    adStatusCode: result.adStatusCode,
-    adErrorCode: result.adErrorCode,
-    adDetail: result.adDetail,
+    ad_status_code: result.adStatusCode,
+    ad_error_code: result.adErrorCode,
+    ad_detail: result.adDetail,
   });
 }
 
