@@ -96,8 +96,9 @@ function recalc() {
   }
 
   // 单气泡模式：文案区单独 Teleport，用文档坐标定位
-  const textBoxHeight = 80;
-  const gap = 10;
+  const gap = 12;
+  const textBox = document.querySelector('.ng-text-box');
+  const textBoxHeight = textBox ? textBox.offsetHeight : 80;
   if (props.textPosition === 'below') {
     textBoxTop.value = docTop + rect.height + gap;
   } else {
@@ -306,13 +307,17 @@ onBeforeUnmount(() => {
   <!-- 单气泡模式（兼容旧步骤） -->
   <Teleport v-if="active && !bubbles" to="body">
     <div
-      class="ng-text-box"
+      class="ng-text-box ng-text-box--card"
       :style="{ top: textBoxTop + 'px' }"
       @click="onExit"
     >
-      <p class="ng-text-main">{{ mainText }}</p>
-      <p v-if="subText"  class="ng-text-sub">{{ subText }}</p>
+      <div class="ng-text-box-row">
+        <span class="ng-text-box-icon">🎬</span>
+        <span class="ng-text-main">{{ mainText }}</span>
+      </div>
+      <p v-if="subText" class="ng-text-sub">{{ subText }}</p>
       <p v-if="extraText" class="ng-text-extra">{{ extraText }}</p>
+      <div class="ng-text-box-arrow" />
     </div>
   </Teleport>
 </template>

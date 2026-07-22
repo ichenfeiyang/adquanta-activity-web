@@ -322,6 +322,10 @@
       "chestTip": "Lucky chests may appear on Day 3, Day 5 and Day 7!",
       "chestSubtext": "Keep checking in continuously to get a chance to win random Coin chests!"
     },
+    "step2": {
+      "text": "Watch videos to get spin chances!",
+      "subtext": "Spin up to 20 times every day and win Coins!"
+    },
     "complete": {
       "title": "You're Ready!",
       "desc": "Come back every day to earn Coins, track your progress, and redeem rewards like mobile data and gift cards.",

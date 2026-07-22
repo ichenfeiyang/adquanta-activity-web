@@ -49,3 +49,13 @@ export const CHECKIN_STEP = {
     },
   ],
 };
+
+/** Step 2 配置 */
+export const SPIN_STEP = {
+  step: GUIDE_STEPS.STEP_SPIN,
+  highlightSelector: '#tc-lucky-spin-section',
+  actionSelector: '#btn-watch-ad',
+  guideTextKey: 'novice.step2.text',
+  guideSubtextKey: 'novice.step2.subtext',
+  textPosition: 'above',
+};

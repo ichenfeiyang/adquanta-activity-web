@@ -359,6 +359,9 @@ export function initActivityCenter({ router, route }) {
       if (noviceGuide?.handleSigninDismiss()) return;
       revealDeferredCheckinChest();
     },
+    onSpinWheelDismiss: () => {
+      noviceGuide?.handleSpinDismiss();
+    },
     onNewUserBonusVideoClick: async (bonus) => {
       if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) return;
       try {

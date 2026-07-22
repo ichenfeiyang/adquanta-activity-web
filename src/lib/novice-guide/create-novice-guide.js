@@ -8,14 +8,15 @@
 import { createApp, reactive, h } from 'vue';
 import { t } from '../i18n/activity-locale.js';
 import { markNoviceGuideCompleted } from './novice-guide-state.js';
-import { GUIDE_STEPS, CHECKIN_STEP, getNextStep } from './novice-guide-flow.js';
+import { GUIDE_STEPS, CHECKIN_STEP, SPIN_STEP, getNextStep } from './novice-guide-flow.js';
 import NoviceGuideWelcome from '../../components/NoviceGuideWelcome.vue';
 import NoviceGuideOverlay from '../../components/NoviceGuideOverlay.vue';
 import NoviceGuideComplete from '../../components/NoviceGuideComplete.vue';
 
 function createStepConfig(stepKey) {
   if (stepKey === GUIDE_STEPS.STEP_CHECKIN) return CHECKIN_STEP;
-  return null; // Step 2~4 尚未实现
+  if (stepKey === GUIDE_STEPS.STEP_SPIN) return SPIN_STEP;
+  return null; // Step 3~4 尚未实现
 }
 
 /**
@@ -36,13 +37,28 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     overlayExtra:        '',
     overlayBubbles:      null,
     overlayBubblesContainerSelector: '',
+    overlayTextPosition: 'above',
   });
 
   let currentStep   = null;
   let isGuideActive = false;
+  let stepAdvanceTimer = null;
+  let stepActionCleanup = null;
+
+  function clearStepTimers() {
+    if (stepAdvanceTimer) {
+      clearTimeout(stepAdvanceTimer);
+      stepAdvanceTimer = null;
+    }
+    if (stepActionCleanup) {
+      stepActionCleanup();
+      stepActionCleanup = null;
+    }
+  }
 
   // ---------- 内部：启动指定步骤 ----------
   function enterStep(stepKey) {
+    clearStepTimers();
     const cfg = createStepConfig(stepKey);
     if (!cfg) {
       // 步骤未实现，直接标记完成
@@ -55,6 +71,16 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.overlayMain     = t(cfg.guideTextKey);
     state.overlaySub      = cfg.guideSubtextKey ? t(cfg.guideSubtextKey) : '';
     state.overlayExtra    = cfg.guideExtraKey   ? t(cfg.guideExtraKey)   : '';
+    state.overlayTextPosition = cfg.textPosition || 'above';
+
+    // 确保引导目标按钮可点击（初始化时按钮可能处于 disabled 状态）
+    if (cfg.actionSelector) {
+      const actionBtn = document.querySelector(cfg.actionSelector);
+      if (actionBtn) {
+        actionBtn.disabled = false;
+        actionBtn.removeAttribute('aria-disabled');
+      }
+    }
 
     // 多气泡模式：翻译每个气泡的文案
     if (cfg.bubbles) {
@@ -73,10 +99,33 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.showWelcome  = false;
     state.showOverlay  = true;
     state.showComplete = false;
+
+    // 用户点击目标按钮后：隐藏 overlay，延迟后推进到下一步
+    // TODO: 后续接入签到弹窗逻辑，弹窗关闭后再推进
+    if (cfg.actionSelector) {
+      const actionBtn = document.querySelector(cfg.actionSelector);
+      if (actionBtn) {
+        const onActionClick = () => {
+          if (!isGuideActive || currentStep !== stepKey) return;
+          state.showOverlay = false;
+          stepAdvanceTimer = setTimeout(() => {
+            if (!isGuideActive || currentStep !== stepKey) return;
+            const next = getNextStep(stepKey);
+            if (next) enterStep(next);
+            else finishGuide();
+          }, 2000);
+        };
+        actionBtn.addEventListener('click', onActionClick);
+        stepActionCleanup = () => {
+          actionBtn.removeEventListener('click', onActionClick);
+        };
+      }
+    }
   }
 
   // ---------- 内部：完成引导 ----------
   function finishGuide() {
+    clearStepTimers();
     currentStep   = null;
     isGuideActive = false;
     state.showWelcome  = false;
@@ -86,6 +135,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
 
   // ---------- 内部：彻底关闭并清理 ----------
   function finalize() {
+    clearStepTimers();
     isGuideActive = false;
     state.showWelcome  = false;
     state.showOverlay  = false;
@@ -121,7 +171,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
             extraText: state.overlayExtra,
             bubbles: state.overlayBubbles,
             bubblesContainerSelector: state.overlayBubblesContainerSelector,
-            textPosition: 'above',
+            textPosition: state.overlayTextPosition,
             onExit: handleExit,
           }),
           h(NoviceGuideComplete, {
@@ -164,13 +214,28 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
   // initActivityCenter.js 会在签到弹框关闭时调用此方法
   function handleSigninDismiss() {
     if (!isGuideActive || currentStep !== GUIDE_STEPS.STEP_CHECKIN) return false;
+    clearStepTimers();
     const next = getNextStep(currentStep);
     if (next) {
       enterStep(next);
     } else {
       finishGuide();
     }
-    return true; // 已消费，调用方无需执行原始逻辑
+    return true;
+  }
+
+  // ---------- 转盘弹框关闭回调 ----------
+  // initActivityCenter.js 会在转盘弹窗关闭时调用此方法
+  function handleSpinDismiss() {
+    if (!isGuideActive || currentStep !== GUIDE_STEPS.STEP_SPIN) return false;
+    clearStepTimers();
+    const next = getNextStep(currentStep);
+    if (next) {
+      enterStep(next);
+    } else {
+      finishGuide();
+    }
+    return true;
   }
 
   function isGuideRunning() {
@@ -180,6 +245,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
   return {
     start() { mount(); state.showWelcome = true; },
     handleSigninDismiss,
+    handleSpinDismiss,
     isGuideRunning,
     dispose,
   };

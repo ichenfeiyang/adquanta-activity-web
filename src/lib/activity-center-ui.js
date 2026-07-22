@@ -137,6 +137,7 @@ export class ActivityCenterUI {
       onSigninClick: config.onSigninClick || (() => {}),
       onSigninWatchVideoClick: config.onSigninWatchVideoClick || (() => {}),
       onSigninDialogDismiss: config.onSigninDialogDismiss || (() => {}),
+      onSpinWheelDismiss: config.onSpinWheelDismiss || (() => {}),
       onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
       onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
       onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
@@ -679,6 +680,7 @@ export class ActivityCenterUI {
         e.preventDefault();
         e.stopPropagation();
         this.hideSpinWheel();
+        this.config.onSpinWheelDismiss();
       });
     }
     if (this.elements.spinWheelSpinBtn) {
