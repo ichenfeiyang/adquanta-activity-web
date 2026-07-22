@@ -151,15 +151,6 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
               <span>{{ t('center.coinRainDescLead') }}</span>
               <span id="tc-coin-rain-desc" class="tc-coin-rain-max-copy">{{ t('center.coinRainDescMax', { count: 400 }) }}</span>
             </span>
-            <span class="tc-coin-rain-stat">
-              <span class="tc-coin-rain-stat-icon" aria-hidden="true">
-                <img :src="assetUrl('icons/gold_coin.svg')" alt="" width="28" height="28" loading="lazy" decoding="async">
-              </span>
-              <span class="tc-coin-rain-stat-copy">
-                <strong id="tc-coin-rain-progress">0 / 400</strong>
-                <span>{{ t('center.dailyCoinLimit') }}</span>
-              </span>
-            </span>
           </span>
           <span id="tc-coin-rain-entry-action" class="tc-coin-rain-entry-action">{{ t('center.coinRainPlay') }}</span>
         </button>
@@ -234,23 +225,34 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
     <button id="tc-coin-rain-leave" type="button" class="tc-coin-rain-leave" :aria-label="t('common.close')">×</button>
     <div class="tc-coin-rain-hud">
       <span class="tc-coin-rain-hud-time"><span aria-hidden="true">◷</span><strong id="tc-coin-rain-time">00:30</strong></span>
-      <span class="tc-coin-rain-hud-track"><i /></span>
+      <span class="tc-coin-rain-hud-track"><i id="tc-coin-rain-game-progress" /></span>
       <strong class="tc-coin-rain-hud-coins"><img :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="22" height="22"><span id="tc-coin-rain-collected">0</span></strong>
     </div>
     <div id="tc-coin-rain-countdown" class="tc-coin-rain-countdown">
       <div class="tc-coin-rain-countdown-logo">
-        <strong>COIN RAIN</strong>
-        <span id="tc-coin-rain-countdown-max">{{ t('center.coinRainUpTo', { count: 400 }) }}</span>
+        <i class="tc-coin-rain-countdown-glow" aria-hidden="true" />
+        <i class="tc-coin-rain-countdown-confetti" aria-hidden="true" />
+        <span class="tc-coin-rain-countdown-coins" aria-hidden="true">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--1" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="44" height="44">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--2" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="34" height="34">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--3" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="28" height="28">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--4" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="40" height="40">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--5" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="30" height="30">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--6" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="36" height="36">
+          <img class="tc-coin-rain-countdown-coin tc-coin-rain-countdown-coin--7" :src="assetUrl('icons/coin-rain-gold-coin.svg')" alt="" width="26" height="26">
+        </span>
+        <strong class="tc-coin-rain-countdown-title">COIN RAIN</strong>
+        <span id="tc-coin-rain-countdown-max" class="tc-coin-rain-countdown-badge">UP TO <em>400</em> COINS!</span>
       </div>
-      <b id="tc-coin-rain-countdown-value">3</b>
+      <b id="tc-coin-rain-countdown-value" class="tc-coin-rain-countdown-value">3</b>
     </div>
     <div id="tc-coin-rain-stage" class="tc-coin-rain-stage" />
-    <div class="tc-coin-rain-multiplier" aria-hidden="true">×2</div>
+    <div id="tc-coin-rain-multiplier" class="tc-coin-rain-multiplier" aria-hidden="true"><span id="tc-coin-rain-multiplier-value">x0</span></div>
 
     <div id="tc-coin-rain-leave-dialog" class="tc-coin-rain-leave-dialog" style="display:none;">
       <div class="tc-coin-rain-leave-card">
         <button id="tc-coin-rain-leave-close" type="button" class="tc-coin-rain-dialog-close" :aria-label="t('common.close')">×</button>
-        <img :src="assetUrl('images/coin-rain-reward-art.png')" alt="" class="tc-coin-rain-leave-art" width="128" height="82">
+        <img :src="assetUrl('images/coin-rain-leave-art.png')" alt="" class="tc-coin-rain-leave-art" width="174" height="104">
         <h2>{{ t('center.coinRainLeaveTitle') }}</h2>
         <p id="tc-coin-rain-leave-desc">{{ t('center.coinRainLeaveDesc') }}</p>
         <button id="tc-coin-rain-continue" type="button" class="tc-coin-rain-dialog-primary">{{ t('center.coinRainContinue') }}</button>
@@ -260,8 +262,15 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
   </div>
 
   <div id="tc-coin-rain-joined-dialog" class="tc-modal-overlay" style="display:none;">
-    <div class="tc-coin-rain-leave-card tc-coin-rain-joined-card">
+    <div class="tc-coin-rain-joined-card">
       <button id="tc-coin-rain-joined-close" type="button" class="tc-coin-rain-dialog-close" :aria-label="t('common.close')">×</button>
+      <img
+        :src="assetUrl('images/coin-rain-leave-art.png')"
+        alt=""
+        class="tc-coin-rain-joined-art"
+        width="168"
+        height="100"
+      >
       <h2 id="tc-coin-rain-joined-title">{{ t('center.coinRainAlreadyJoinedTitle') }}</h2>
       <p id="tc-coin-rain-joined-desc">{{ t('center.coinRainAlreadyJoinedDesc') }}</p>
       <button id="tc-coin-rain-joined-ok" type="button" class="tc-coin-rain-dialog-primary">{{ t('center.coinRainOk') }}</button>

@@ -76,7 +76,6 @@ export function initActivityCenter({ router, route }) {
   const checkinChestClaimInFlight = { value: false };
   const coinRainAdInFlight = { value: false };
   const coinRainStartInFlight = { value: false };
-  const coinRainReconcileInFlight = { value: false };
   const AD_CALLBACK_TIMEOUT_MS = 60000;
   let ui;
   let adapter;
@@ -148,22 +147,6 @@ export function initActivityCenter({ router, route }) {
     onRecentRedemptionsUpdate: (items) => ui.updateRecentRedemptions(items),
     onCoinRainUpdate: (status) => {
       ui.updateCoinRain(status);
-      // Kill/refresh mid-game leaves server in `playing`; PRD burns the day with no reward.
-      // Skip while starting: submitCoinRainAction notifies update before local session exists.
-      if (
-        status?.state === "playing"
-        && status?.session_id
-        && !ui.hasActiveCoinRainSession()
-        && !coinRainStartInFlight.value
-        && !coinRainReconcileInFlight.value
-      ) {
-        coinRainReconcileInFlight.value = true;
-        void business
-          .submitCoinRainAction(apiOptions, "abandon", { session_id: status.session_id })
-          .finally(() => {
-            coinRainReconcileInFlight.value = false;
-          });
-      }
     },
     onNewUserBonusUpdate: (bonus) => {
       if (shouldShowNewUserBonus(bonus)) {
@@ -419,19 +402,29 @@ export function initActivityCenter({ router, route }) {
       updateCheckinChestDialog(chest, { force: true });
     },
     onCoinRainEntryClick: async (status) => {
-      if (coinRainStartInFlight.value || ui.hasActiveCoinRainSession()) return;
+      if (coinRainStartInFlight.value) return;
+      if (ui.hasPendingCoinRainSettlement()) {
+        ui.retryCoinRainSettlement();
+        return;
+      }
+      if (ui.hasActiveCoinRainSession()) return;
       if (status?.state === "boost_available") {
         ui.showCoinRainBoostPrompt(status);
         return;
       }
       if (status?.state === "playing" && status?.session_id && !ui.hasActiveCoinRainSession()) {
-        coinRainStartInFlight.value = true;
-        try {
-          await business.submitCoinRainAction(apiOptions, "abandon", { session_id: status.session_id });
-          adapter.trackEvent("coin_rain_abandon", { page_id: "activity-center", reason: "orphan_playing" });
-        } finally {
-          coinRainStartInFlight.value = false;
-        }
+        adapter.trackEvent("coin_rain_resume", { page_id: "activity-center" });
+        ui.startCoinRainSession(status, { resume: true });
+        return;
+      }
+      if (status?.state === "settle_pending" && status?.session_id) {
+        // Only a locally preserved session may settle here. Never recreate the
+        // game after its deadline, otherwise its click count would be zero.
+        if (ui.restoreCoinRainSettlement(status)) ui.retryCoinRainSettlement();
+        else showToast(t("center.coinRainSettleFailed"), "error");
+        return;
+      }
+      if (status?.state === "completed") {
         ui.showCoinRainAlreadyJoined();
         return;
       }
@@ -446,7 +439,6 @@ export function initActivityCenter({ router, route }) {
           adapter.trackEvent("coin_rain_start", { page_id: "activity-center" });
           ui.startCoinRainSession(result);
         } else if (result?.ok) {
-          // Idempotent start returned a finished/abandoned day session.
           ui.showCoinRainAlreadyJoined();
         } else {
           showToast(result?.message || t("center.coinRainUnavailable"), "error");
@@ -456,13 +448,27 @@ export function initActivityCenter({ router, route }) {
       }
     },
     onCoinRainSettle: async ({ sessionId, clickedCount }) => {
-      const result = await business.submitCoinRainAction(apiOptions, "settle", { session_id: sessionId, clicked_count: clickedCount });
+      let result = await business.submitCoinRainAction(apiOptions, "settle", { session_id: sessionId, clicked_count: clickedCount });
+      if (!result?.ok) {
+        const refreshed = await business.loadActivityInfo(apiOptions, { force: true });
+        const status = business.coinRain;
+        // Treat any terminal settle state as success, including legitimate 0-coin
+        // finishes. Requiring coin > 0 falsely retried settled zero-click sessions.
+        if (
+          refreshed?.ok
+          && status
+          && (status.state === "boost_available" || status.state === "completed")
+        ) {
+          result = { ok: true, reconciled: true, ...status };
+        }
+      }
       adapter.trackEvent("coin_rain_finish", { page_id: "activity-center", clicked_count: clickedCount, success: !!result?.ok, base_coin: Number(result?.base_coin ?? 0) });
       return result;
     },
-    onCoinRainAbandon: ({ sessionId }) => {
-      void business.submitCoinRainAction(apiOptions, "abandon", { session_id: sessionId });
-      adapter.trackEvent("coin_rain_abandon", { page_id: "activity-center" });
+    onCoinRainAbandon: async ({ sessionId }) => {
+      const result = await business.submitCoinRainAction(apiOptions, "abandon", { session_id: sessionId });
+      adapter.trackEvent("coin_rain_abandon", { page_id: "activity-center", success: !!result?.ok });
+      return result;
     },
     onCoinRainWatchAd: async (status) => {
       if (!status?.session_id || coinRainAdInFlight.value) return;

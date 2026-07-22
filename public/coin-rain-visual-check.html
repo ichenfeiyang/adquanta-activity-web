@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coin Rain Visual Check</title>
+  <link rel="stylesheet" href="/src/assets/activity-center.css">
+  <style>
+    html, body { margin: 0; min-height: 100%; background: linear-gradient(#f7f7f8,#e7e9ed); font-family: Arial,sans-serif; }
+    .mock-card { height: 160px; margin: 100px 20px 20px; border-radius: 18px; background: #fff; box-shadow: 0 4px 22px #ccd0d8; }
+    .tc-coin-rain-overlay { display: block !important; }
+    .tc-coin-rain-coin { animation-play-state: paused; }
+    .coin-a { left: 16%; transform: translateY(300px); --coin-size: 66px; --trail-height: 185px; --trail-opacity: .86; --coin-spin-duration: 1s; --spark-delay: -.2s; }
+    .coin-b { left: 56%; transform: translateY(165px); --coin-size: 82px; --trail-height: 205px; --trail-opacity: .9; --coin-spin-duration: .8s; --spark-delay: -.5s; }
+    .coin-c { left: 76%; transform: translateY(470px); --coin-size: 54px; --trail-height: 145px; --trail-opacity: .72; --coin-spin-duration: 1.2s; --spark-delay: -.7s; }
+  </style>
+</head>
+<body>
+  <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+  <div class="tc-coin-rain-overlay">
+    <div class="tc-coin-rain-hud">
+      <span class="tc-coin-rain-hud-time"><strong>00:18</strong></span>
+      <span class="tc-coin-rain-hud-track"><i style="width:60%"></i></span>
+      <strong class="tc-coin-rain-hud-coins"><img src="/icons/coin-rain-gold-coin.svg" alt=""><span>12</span></strong>
+    </div>
+    <div class="tc-coin-rain-stage">
+      <button class="tc-coin-rain-coin coin-a"><img src="/icons/coin-rain-gold-coin.svg" alt=""></button>
+      <button class="tc-coin-rain-coin coin-b"><img src="/icons/coin-rain-gold-coin.svg" alt=""></button>
+      <button class="tc-coin-rain-coin coin-c"><img src="/icons/coin-rain-gold-coin.svg" alt=""></button>
+    </div>
+    <div class="tc-coin-rain-multiplier"><span>x12</span></div>
+  </div>
+</body>
+</html>
