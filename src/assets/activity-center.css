@@ -1617,6 +1617,31 @@ body {
   color: #050914;
 }
 
+/* Check-in info bar (inside card, below button) */
+.tc-checkin-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+}
+
+.tc-checkin-info-icon {
+  color: #ff6b00;
+  font-size: 13px;
+  font-weight: 700;
+  font-style: normal;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tc-checkin-info-text {
+  font-size: 12px;
+  color: #b45a2b;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
 .tc-checkin-card .tc-pill {
   min-width: 92px;
   padding: 6px 11px;

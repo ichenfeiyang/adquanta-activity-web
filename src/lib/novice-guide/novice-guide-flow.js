@@ -30,7 +30,22 @@ export const CHECKIN_STEP = {
   step: GUIDE_STEPS.STEP_CHECKIN,
   highlightSelector: '#tc-daily-checkin-section',
   actionSelector: '#signin-timer-btn',
+  // 单气泡模式文案（向后兼容）
   guideTextKey: 'novice.step1.text',
   guideSubtextKey: 'novice.step1.subtext',
   guideExtraKey: 'novice.step1.chestTip',
+  // 多气泡模式：两个独立白色指引气泡
+  bubblesContainerSelector: '#tc-daily-checkin-section',
+  bubbles: [
+    {
+      mainTextKey: 'novice.step1.text',
+      subTextKey: 'novice.step1.subtext',
+      highlightSelector: '#signin-timer-btn',
+    },
+    {
+      mainTextKey: 'novice.step1.chestTip',
+      subTextKey: 'novice.step1.chestSubtext',
+      highlightSelector: '#tc-checkin-days-container [data-day="7"]',
+    },
+  ],
 };

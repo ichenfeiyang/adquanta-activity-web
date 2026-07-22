@@ -82,6 +82,10 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
             <img :src="assetUrl('icons/gold-coin-white.svg')" class="tc-icon-calendar" alt="" width="20" height="20" loading="lazy" decoding="async">
             <span>{{ t('center.checkinNow') }}</span>
           </button>
+          <div class="tc-checkin-info-bar">
+            <span class="tc-checkin-info-icon" aria-hidden="true">ⓘ</span>
+            <span class="tc-checkin-info-text">Lucky chests may appear on Day 3, Day 5 and Day 7!</span>
+          </div>
         </div>
       </section>
 

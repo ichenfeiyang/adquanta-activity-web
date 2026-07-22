@@ -319,7 +319,8 @@
     "step1": {
       "text": "Check in every day to earn Coins!",
       "subtext": "Watch a video to double your check-in reward.",
-      "chestTip": "Lucky chests may appear on Day 3, Day 5 and Day 7!"
+      "chestTip": "Lucky chests may appear on Day 3, Day 5 and Day 7!",
+      "chestSubtext": "Keep checking in continuously to get a chance to win random Coin chests!"
     },
     "complete": {
       "title": "You're Ready!",

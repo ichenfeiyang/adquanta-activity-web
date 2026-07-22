@@ -34,6 +34,8 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     overlayMain:         '',
     overlaySub:          '',
     overlayExtra:        '',
+    overlayBubbles:      null,
+    overlayBubblesContainerSelector: '',
   });
 
   let currentStep   = null;
@@ -53,6 +55,21 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.overlayMain     = t(cfg.guideTextKey);
     state.overlaySub      = cfg.guideSubtextKey ? t(cfg.guideSubtextKey) : '';
     state.overlayExtra    = cfg.guideExtraKey   ? t(cfg.guideExtraKey)   : '';
+
+    // 多气泡模式：翻译每个气泡的文案
+    if (cfg.bubbles) {
+      state.overlayBubbles = cfg.bubbles.map(b => ({
+        mainText: t(b.mainTextKey),
+        subText:  b.subTextKey ? t(b.subTextKey) : '',
+        highlightSelector: b.highlightSelector,
+        offset: b.offset || 0,
+      }));
+      state.overlayBubblesContainerSelector = cfg.bubblesContainerSelector || '';
+    } else {
+      state.overlayBubbles = null;
+      state.overlayBubblesContainerSelector = '';
+    }
+
     state.showWelcome  = false;
     state.showOverlay  = true;
     state.showComplete = false;
@@ -102,6 +119,8 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
             mainText: state.overlayMain,
             subText: state.overlaySub,
             extraText: state.overlayExtra,
+            bubbles: state.overlayBubbles,
+            bubblesContainerSelector: state.overlayBubblesContainerSelector,
             textPosition: 'above',
             onExit: handleExit,
           }),
