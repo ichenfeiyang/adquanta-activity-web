@@ -85,6 +85,63 @@ function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isChestDay, h
 }
 
 export const checkinUiMixin = {
+  showCheckinPrompt(detail, prompt) {
+    if (!detail || !Array.isArray(detail.days) || !this.elements.checkinPromptModal) return;
+    const days = detail.days.slice(0, 7);
+    const current = days.find((day) => day.current === true) || days.find((day) => day.received !== true) || days[0];
+    const coin = Number(current?.coin || 0);
+    this._checkinPrompt = { detail, prompt };
+
+    if (this.elements.checkinPromptTitle) {
+      this.elements.checkinPromptTitle.textContent = t("center.checkinPromptTitle", { coin });
+    }
+    const daysContainer = this.elements.checkinPromptDays;
+    if (daysContainer) {
+      daysContainer.replaceChildren();
+      const chestDays = new Set(normalizeCheckinChestEligibleDays(detail.chest_eligible_days));
+      const pendingChestDays = new Set(
+        (Array.isArray(detail.chests) ? detail.chests : [])
+          .filter((chest) => chest?.status === "pending")
+          .map((chest) => Number(chest.continuous_day)),
+      );
+      days.forEach((day) => {
+        const item = document.createElement("div");
+        const isCurrent = day.day === current?.day;
+        const hasChest = !day.received && (chestDays.has(Number(day.day)) || pendingChestDays.has(Number(day.day)));
+        item.className = `checkin-prompt-day${day.received ? " is-done" : ""}${isCurrent ? " is-current" : ""}${hasChest ? " is-chest" : ""}`;
+        const label = document.createElement("span");
+        label.className = "checkin-prompt-day-label";
+        label.textContent = t("common.day", { day: day.day });
+        const reward = document.createElement("strong");
+        reward.className = "checkin-prompt-day-reward";
+        reward.textContent = day.received ? "✓" : `+${Number(day.coin || 0)}`;
+        const unit = document.createElement("span");
+        unit.className = "checkin-prompt-day-unit";
+        unit.textContent = t("common.coins");
+        item.append(label);
+        if (hasChest) {
+          const chestIcon = document.createElement("img");
+          chestIcon.src = assetUrl("icons/card_giftcard.svg");
+          chestIcon.alt = "";
+          chestIcon.className = "checkin-prompt-chest-icon";
+          item.appendChild(chestIcon);
+        }
+        item.appendChild(reward);
+        // Always render this slot so completed days keep the same reward layout
+        // as pending days. Its content is visually hidden for completed days.
+        item.appendChild(unit);
+        daysContainer.appendChild(item);
+      });
+    }
+    this.elements.checkinPromptModal.style.display = "flex";
+  },
+
+  hideCheckinPrompt() {
+    if (this.elements.checkinPromptModal) {
+      this.elements.checkinPromptModal.style.display = "none";
+    }
+  },
+
   updateCheckinVideoTip(totalCoin = 20) {
     if (this.elements.checkinVideoTip) {
       this.elements.checkinVideoTip.textContent = t("center.checkinVideoTip", { totalCoin });

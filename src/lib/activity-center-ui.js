@@ -101,6 +101,11 @@ export class ActivityCenterUI {
       signinDialogWatchBtnLabel: "signinDialogWatchBtnLabel",
       signinDialogWatchBtn: "signinDialogWatchBtn",
       signinDialogClaimBaseOnly: "signinDialogClaimBaseOnly",
+      checkinPromptModal: "checkinPromptModal",
+      checkinPromptClose: "checkinPromptClose",
+      checkinPromptTitle: "checkinPromptTitle",
+      checkinPromptDays: "checkinPromptDays",
+      checkinPromptClaim: "checkinPromptClaim",
       checkinVideoTip: "tc-checkin-video-tip",
       newUserBonusModal: "newUserBonusModal",
       newUserBonusTitle: "newUserBonusTitle",
@@ -139,6 +144,8 @@ export class ActivityCenterUI {
       onSigninClick: config.onSigninClick || (() => {}),
       onSigninWatchVideoClick: config.onSigninWatchVideoClick || (() => {}),
       onSigninDialogDismiss: config.onSigninDialogDismiss || (() => {}),
+      onCheckinPromptClaim: config.onCheckinPromptClaim || (() => {}),
+      onCheckinPromptClose: config.onCheckinPromptClose || (() => {}),
       onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
       onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
       onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
@@ -724,6 +731,17 @@ export class ActivityCenterUI {
       this.elements.signinDialogClaimBaseOnly.addEventListener("click", () => {
         this.hideSigninDialog();
         this.config.onSigninDialogDismiss();
+      });
+    }
+
+    if (this.elements.checkinPromptClaim) {
+      this.elements.checkinPromptClaim.addEventListener("click", () => {
+        this.config.onCheckinPromptClaim(this._checkinPrompt);
+      });
+    }
+    if (this.elements.checkinPromptClose) {
+      this.elements.checkinPromptClose.addEventListener("click", () => {
+        this.config.onCheckinPromptClose(this._checkinPrompt);
       });
     }
 

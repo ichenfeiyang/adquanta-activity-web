@@ -84,6 +84,8 @@
     "flowTipDesc": "Use gold coins to redeem local mobile recharge and other rewards.",
     "dailyCheckin": "Daily Check-in",
     "checkinNow": "Claim Today’s Reward",
+    "checkinPromptTitle": "Claim {coin} Coins Today",
+    "checkinPromptSubtitle": "Checked in for {count} consecutive days",
     "checkinVideoTip": "After claiming, watch a video to double to {totalCoin} coins.",
     "superPrizeDay": "Day 7: Super Prize Day",
     "rewardsTitle": "Rewards",

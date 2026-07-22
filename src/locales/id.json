@@ -84,6 +84,8 @@
     "flowTipDesc": "Gunakan koin emas untuk menukar pulsa lokal dan hadiah lainnya.",
     "dailyCheckin": "Check-in Harian",
     "checkinNow": "Klaim Koin Hari Ini",
+    "checkinPromptTitle": "Klaim {coin} Koin Hari Ini",
+    "checkinPromptSubtitle": "Check-in selama {count} hari berturut-turut",
     "checkinVideoTip": "Setelah klaim, tonton video untuk menggandakan menjadi {totalCoin} koin.",
     "superPrizeDay": "Hari ke-7: Hari Hadiah Super",
     "rewardsTitle": "Hadiah",

@@ -9,7 +9,7 @@ import { buildGaClientIdHeader } from "./ga-client-id.js";
 import { syncGoldCoinsFromActivityInfo } from "./ga-user-properties.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
-export const BaseApiUrl = String(import.meta.env.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
+export const BaseApiUrl = String(import.meta.env?.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
 
 function buildAuthHeaders(options = {}) {
   const token = options.token ?? "";

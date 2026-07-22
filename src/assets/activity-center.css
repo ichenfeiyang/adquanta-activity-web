@@ -311,6 +311,233 @@ body {
 }
 
 /* 签到成功弹框（原型：活动中心-签到成功弹框） */
+.checkin-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.66);
+  backdrop-filter: blur(3px);
+}
+
+.checkin-prompt-card {
+  position: relative;
+  /* Match the 414px activity-center canvas instead of expanding on desktop WebViews. */
+  width: min(calc(100vw - 32px), 390px);
+  overflow: hidden;
+  border: 2px solid rgba(255, 224, 159, 0.9);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 22px 64px rgba(15, 23, 42, 0.34);
+}
+
+.checkin-prompt-hero {
+  position: relative;
+  padding: 36px 30px 30px;
+  overflow: hidden;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(120deg, #ffad3f 0%, #ff6d22 52%, #fb4d18 100%);
+}
+
+.checkin-prompt-hero::before {
+  content: "";
+  position: absolute;
+  inset: auto -12% -72px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 215, 119, 0.28);
+}
+
+.checkin-prompt-title,
+.checkin-prompt-subtitle {
+  position: relative;
+  margin: 0;
+}
+
+.checkin-prompt-title {
+  overflow: hidden;
+  font-size: clamp(18px, 6vw, 25px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 3px 0 rgba(180, 54, 8, 0.3);
+}
+
+.checkin-prompt-subtitle {
+  margin-top: 10px;
+  font-size: clamp(13px, 4vw, 16px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.checkin-prompt-close {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 32px;
+  cursor: pointer;
+}
+
+.checkin-prompt-spark {
+  position: absolute;
+  z-index: 1;
+  color: #fff7c9;
+  font-size: 26px;
+}
+
+.checkin-prompt-spark--left { left: 24px; bottom: 20px; }
+.checkin-prompt-spark--right { right: 58px; top: 34px; font-size: 18px; }
+
+.checkin-prompt-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  padding: 14px 8px 6px;
+}
+
+.checkin-prompt-day {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 102px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 2px;
+  border: 1px solid #f1e7dc;
+  border-radius: 12px;
+  color: #172033;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.checkin-prompt-day.is-current {
+  border: 2px solid #ffc45a;
+  background: linear-gradient(180deg, #fffefb, #fff4dd);
+  box-shadow: 0 3px 10px rgba(250, 141, 32, 0.22);
+}
+
+.checkin-prompt-day.is-done {
+  color: #fff;
+  border-color: #ff7926;
+  background: #ff7926;
+}
+
+/* A chest day is recognisable before it is reached, without adding a fourth
+   content row and shifting the reward text below the other days. */
+.checkin-prompt-day.is-chest {
+  border-color: #ffc45a;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255, 194, 73, 0.25), transparent 58%),
+    linear-gradient(180deg, #fffdf7 0%, #fff5dc 100%);
+}
+
+.checkin-prompt-day-label {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 12px;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkin-prompt-day-reward {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 26px;
+  align-items: center;
+  /* The dialog is capped at mobile width even in a desktop WebView, so do not
+     scale reward text from the outer viewport. */
+  font-size: clamp(17px, 5vw, 22px);
+  line-height: 1;
+  white-space: nowrap;
+  color: #f25b18;
+}
+
+.checkin-prompt-day.is-done .checkin-prompt-day-reward { color: #fff; }
+
+.checkin-prompt-chest-icon {
+  position: absolute;
+  z-index: 0;
+  top: 30px;
+  left: 50%;
+  display: block;
+  width: 42px;
+  height: 42px;
+  opacity: 0.22;
+  pointer-events: none;
+  transform: translateX(-50%);
+  object-fit: contain;
+}
+
+.checkin-prompt-day-unit {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 11px;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #70798a;
+}
+
+.checkin-prompt-day.is-done .checkin-prompt-day-unit { color: rgba(255, 255, 255, 0.9); }
+.checkin-prompt-day.is-done .checkin-prompt-day-unit { visibility: hidden; }
+
+.checkin-prompt-claim {
+  display: flex;
+  width: calc(100% - 32px);
+  min-height: 56px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 16px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ff7926, #f74b08);
+  box-shadow: 0 8px 18px rgba(230, 73, 8, 0.28);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.checkin-prompt-claim:active { transform: scale(0.985); }
+
+@media (max-width: 420px) {
+  .checkin-prompt-hero { padding: 32px 28px 26px; }
+  .checkin-prompt-days { gap: 3px; padding-inline: 7px; }
+  .checkin-prompt-day { min-height: 94px; border-radius: 9px; }
+  .checkin-prompt-day-label { font-size: 9px; }
+  .checkin-prompt-day-unit { font-size: 8px; }
+}
+
 .signin-dialog-overlay {
   position: fixed;
   inset: 0;

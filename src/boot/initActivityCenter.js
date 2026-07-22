@@ -25,6 +25,8 @@ import {
   markCheckinChestSoftClosed,
   readSoftClosedCheckinChestIds,
 } from "../lib/checkin-chest.js";
+import { dismissCheckinPrompt, shouldShowCheckinPrompt } from "../lib/checkin-prompt.js";
+import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import * as logger from "../lib/activity-logger.js";
 
 function renderUnauthenticatedActivityCenterPreview() {
@@ -86,9 +88,19 @@ export function initActivityCenter({ router, route }) {
   let coinRainAdTimeout;
   let deferCheckinChestDialog = false;
   let deferredCheckinChest = null;
+  let latestCheckinPrompt = null;
+  let latestCheckinPromptDetail = null;
+  let checkinPromptShownForDate = "";
+  let newUserBonusVisible = false;
+  const checkinChestDroppedIds = new Set();
+  const checkinChestImpressedIds = new Set();
 
   function isCheckinChestSoftClosed(chestId) {
     return readSoftClosedCheckinChestIds().has(Number(chestId));
+  }
+
+  function trackActivityEvent(eventType, eventData = {}) {
+    return adapter?.trackEvent(eventType, { page_id: ACTIVITY_CENTER_PAGE_ID, ...eventData });
   }
 
   function updateCheckinChestDialog(chest, { force = false } = {}) {
@@ -105,7 +117,15 @@ export function initActivityCenter({ router, route }) {
       return;
     }
     if (force) clearCheckinChestSoftClosed(chestId);
+    if (Number.isSafeInteger(chestId) && chestId > 0 && !checkinChestDroppedIds.has(chestId)) {
+      checkinChestDroppedIds.add(chestId);
+      trackActivityEvent("checkin_chest_dropped", { task_id: "task_checkin_chest", chest_id: chestId });
+    }
     ui.showCheckinChestDialog(deferredCheckinChest);
+    if (Number.isSafeInteger(chestId) && chestId > 0 && !checkinChestImpressedIds.has(chestId)) {
+      checkinChestImpressedIds.add(chestId);
+      trackActivityEvent("checkin_chest_impression", { task_id: "task_checkin_chest", chest_id: chestId });
+    }
   }
 
   function beginCheckinChestDeferral() {
@@ -126,6 +146,66 @@ export function initActivityCenter({ router, route }) {
 
   function shouldShowNewUserBonus(bonus) {
     return bonus?.eligible === true && bonus?.show === true && bonus?.status === "pending";
+  }
+
+  function updateCheckinPromptDialog(prompt, detail, { fromCache = false } = {}) {
+    latestCheckinPrompt = prompt;
+    latestCheckinPromptDetail = detail;
+    const chestBlocksPrompt = !!deferredCheckinChest?.id
+      && !isCheckinChestSoftClosed(deferredCheckinChest.id);
+    if (fromCache || newUserBonusVisible || chestBlocksPrompt || !shouldShowCheckinPrompt(prompt)) {
+      ui.hideCheckinPrompt();
+      return;
+    }
+    const serverDate = String(prompt?.server_date || "");
+    if (checkinPromptShownForDate === serverDate) return;
+    checkinPromptShownForDate = serverDate;
+    ui.showCheckinPrompt(detail, prompt);
+    trackActivityEvent("checkin_prompt_impression", { server_date: serverDate });
+  }
+
+  async function claimTodayCheckin(source = "card") {
+    resetCheckinAdState();
+
+    const today = business.getTodayCheckinDay();
+    const received = !!today?.received;
+    const videoReceived = !!today?.video_received;
+
+    if (!received) {
+      beginCheckinChestDeferral();
+      const result = await business.doCheckin(apiOptions);
+      if (result.ok) {
+        ui.showSigninDialog(result);
+        trackActivityEvent("checkin_success", { source });
+        return true;
+      }
+      trackActivityEvent("checkin_fail", { source, reason: result?.message || "checkin_failed" });
+      revealDeferredCheckinChest();
+      return false;
+    }
+
+    if (received && !videoReceived) {
+      beginCheckinChestDeferral();
+      const coin = Number(today?.coin ?? 0);
+      const video_coin = Number(today?.video_coin ?? 0);
+      const multiplier = coin > 0 ? Math.floor(video_coin / coin) : 0;
+      ui.showSigninDialog({
+        coinFromCheckin: coin,
+        video_coin,
+        multiplier,
+        alreadyChecked: true,
+      });
+      return true;
+    }
+
+    const pendingChest = business.checkinChests?.[0];
+    if (pendingChest?.id) {
+      updateCheckinChestDialog(pendingChest, { force: true });
+      return false;
+    }
+
+    showToast(alreadyCheckedInMessage(), "info");
+    return false;
   }
 
   function normalizeAdMessage(message, fallback = adFailedMessage()) {
@@ -149,14 +229,20 @@ export function initActivityCenter({ router, route }) {
       ui.updateCoinRain(status);
     },
     onNewUserBonusUpdate: (bonus) => {
-      if (shouldShowNewUserBonus(bonus)) {
+      newUserBonusVisible = shouldShowNewUserBonus(bonus);
+      if (newUserBonusVisible) {
+        ui.hideCheckinPrompt();
         ui.showNewUserBonusDialog(bonus);
       } else {
         ui.hideNewUserBonusDialog();
+        updateCheckinPromptDialog(latestCheckinPrompt, latestCheckinPromptDetail);
       }
     },
     onCheckinChestUpdate: (chest) => {
       updateCheckinChestDialog(chest);
+    },
+    onCheckinPromptUpdate: (prompt, detail, metadata) => {
+      updateCheckinPromptDialog(prompt, detail, metadata);
     },
   });
 
@@ -267,42 +353,22 @@ export function initActivityCenter({ router, route }) {
         tab: category === "gift_cards" ? "gift" : "topup",
       });
     },
-    onSigninClick: async () => {
-      resetCheckinAdState();
-
-      const today = business.getTodayCheckinDay();
-      const received = !!today?.received;
-      const videoReceived = !!today?.video_received;
-
-      if (!received) {
-        beginCheckinChestDeferral();
-        const result = await business.doCheckin(apiOptions);
-        if (result.ok) ui.showSigninDialog(result);
-        else revealDeferredCheckinChest();
-        return;
+    onSigninClick: () => claimTodayCheckin("card"),
+    onCheckinPromptClaim: async ({ prompt } = {}) => {
+      const serverDate = String(prompt?.server_date || "");
+      ui.hideCheckinPrompt();
+      trackActivityEvent("checkin_prompt_claim_click", { server_date: serverDate });
+      const success = await claimTodayCheckin("prompt");
+      if (!success && shouldShowCheckinPrompt(prompt)) {
+        checkinPromptShownForDate = "";
+        updateCheckinPromptDialog(prompt, latestCheckinPromptDetail);
       }
-
-      if (received && !videoReceived) {
-        beginCheckinChestDeferral();
-        const coin = Number(today?.coin ?? 0);
-        const video_coin = Number(today?.video_coin ?? 0);
-        const multiplier = coin > 0 ? Math.floor(video_coin / coin) : 0;
-        ui.showSigninDialog({
-          coinFromCheckin: coin,
-          video_coin,
-          multiplier,
-          alreadyChecked: true,
-        });
-        return;
-      }
-
-      const pendingChest = business.checkinChests?.[0];
-      if (pendingChest?.id) {
-        updateCheckinChestDialog(pendingChest, { force: true });
-        return;
-      }
-
-      showToast(alreadyCheckedInMessage(), "info");
+    },
+    onCheckinPromptClose: ({ prompt } = {}) => {
+      const serverDate = String(prompt?.server_date || "");
+      dismissCheckinPrompt(serverDate);
+      ui.hideCheckinPrompt();
+      trackActivityEvent("checkin_prompt_close", { server_date: serverDate });
     },
     onSigninWatchVideoClick: async () => {
       if (ui.isSigninVideoCompleted()) {
@@ -383,18 +449,35 @@ export function initActivityCenter({ router, route }) {
         ui.setCheckinChestLoading(true);
         lastRewardAdTaskId = "task_checkin_chest";
         checkinChestAdTimeout?.start();
-        adapter.trackEvent("checkin_chest_watch_video_click", { taskId: "task_checkin_chest", chestId: chest.id });
+        // H5 owns this click event; Native should not emit the same name to avoid double counting.
+        adapter.trackEvent("checkin_chest_watch_video_click", {
+          page_id: ACTIVITY_CENTER_PAGE_ID,
+          task_id: "task_checkin_chest",
+          chest_id: chest.id,
+        });
         await adapter.triggerRewardAd({ taskId: "task_checkin_chest", reward: 0 });
       } catch (error) {
         checkinChestAdTimeout?.clear();
         checkinChestAdInFlight.value = false;
         ui.setCheckinChestLoading(false);
         showToast(normalizeAdMessage(error?.message, adNotAvailableMessage()), "error");
+        trackActivityEvent("checkin_chest_ad_failed", {
+          task_id: "task_checkin_chest",
+          chest_id: chest?.id,
+          reason: normalizeAdMessage(error?.message, adNotAvailableMessage()),
+        });
       }
     },
     onCheckinChestDismissClick: async (chest) => {
       // Soft-close only: keep pending, suppress auto-popup across refresh, allow reopen from day node.
-      if (chest?.id) markCheckinChestSoftClosed(chest.id);
+      if (chest?.id) {
+        markCheckinChestSoftClosed(chest.id);
+        checkinChestImpressedIds.delete(Number(chest.id));
+        trackActivityEvent("checkin_chest_dismiss", {
+          task_id: "task_checkin_chest",
+          chest_id: chest.id,
+        });
+      }
       ui.hideCheckinChestDialog();
     },
     onCheckinChestDayClick: (chest) => {
@@ -413,7 +496,7 @@ export function initActivityCenter({ router, route }) {
         return;
       }
       if (status?.state === "playing" && status?.session_id && !ui.hasActiveCoinRainSession()) {
-        adapter.trackEvent("coin_rain_resume", { page_id: "activity-center" });
+        trackActivityEvent("coin_rain_resume");
         ui.startCoinRainSession(status, { resume: true });
         return;
       }
@@ -436,7 +519,7 @@ export function initActivityCenter({ router, route }) {
       try {
         const result = await business.submitCoinRainAction(apiOptions, "start");
         if (result?.ok && result?.state === "playing" && result?.session_id) {
-          adapter.trackEvent("coin_rain_start", { page_id: "activity-center" });
+          trackActivityEvent("coin_rain_start");
           ui.startCoinRainSession(result);
         } else if (result?.ok) {
           ui.showCoinRainAlreadyJoined();
@@ -449,6 +532,7 @@ export function initActivityCenter({ router, route }) {
     },
     onCoinRainSettle: async ({ sessionId, clickedCount }) => {
       let result = await business.submitCoinRainAction(apiOptions, "settle", { session_id: sessionId, clicked_count: clickedCount });
+      let reconciled = false;
       if (!result?.ok) {
         const refreshed = await business.loadActivityInfo(apiOptions, { force: true });
         const status = business.coinRain;
@@ -459,15 +543,21 @@ export function initActivityCenter({ router, route }) {
           && status
           && (status.state === "boost_available" || status.state === "completed")
         ) {
+          reconciled = true;
           result = { ok: true, reconciled: true, ...status };
         }
       }
-      adapter.trackEvent("coin_rain_finish", { page_id: "activity-center", clicked_count: clickedCount, success: !!result?.ok, base_coin: Number(result?.base_coin ?? 0) });
+      trackActivityEvent("coin_rain_finish", {
+        clicked_count: clickedCount,
+        success: !!result?.ok,
+        base_coin: Number(result?.base_coin ?? 0),
+        reconciled,
+      });
       return result;
     },
     onCoinRainAbandon: async ({ sessionId }) => {
       const result = await business.submitCoinRainAction(apiOptions, "abandon", { session_id: sessionId });
-      adapter.trackEvent("coin_rain_abandon", { page_id: "activity-center", success: !!result?.ok });
+      trackActivityEvent("coin_rain_abandon", { success: !!result?.ok });
       return result;
     },
     onCoinRainWatchAd: async (status) => {
@@ -477,12 +567,19 @@ export function initActivityCenter({ router, route }) {
         ui.setCoinRainAdLoading(true);
         lastRewardAdTaskId = "task_coin_rain";
         coinRainAdTimeout?.start();
+        trackActivityEvent("coin_rain_boost_click", {
+          task_id: "task_coin_rain",
+          session_id: status.session_id,
+          base_coin: Number(status.base_coin ?? 0),
+        });
         await adapter.triggerRewardAd({ taskId: "task_coin_rain", reward: Number(status.base_coin ?? 0) });
       } catch (error) {
         coinRainAdTimeout?.clear();
         coinRainAdInFlight.value = false;
         ui.setCoinRainAdLoading(false);
-        showToast(normalizeAdMessage(error?.message, adNotAvailableMessage()), "error");
+        const reason = normalizeAdMessage(error?.message, adNotAvailableMessage());
+        showToast(reason, "error");
+        trackActivityEvent("coin_rain_ad_failed", { task_id: "task_coin_rain", reason });
       }
     },
   });
@@ -529,7 +626,7 @@ export function initActivityCenter({ router, route }) {
       checkinChestAdInFlight.value = false;
       ui.setCheckinChestLoading(false);
       showToast(checkinChestAdTimeout.message, "warning");
-      adapter.trackEvent("checkin_chest_ad_failed", { taskId: "task_checkin_chest", reason: "timeout" });
+      adapter.trackEvent("checkin_chest_ad_failed", { page_id: ACTIVITY_CENTER_PAGE_ID, task_id: "task_checkin_chest", reason: "timeout" });
     },
   });
 
@@ -540,6 +637,7 @@ export function initActivityCenter({ router, route }) {
       coinRainAdInFlight.value = false;
       ui.setCoinRainAdLoading(false);
       showToast(coinRainAdTimeout.message, "warning");
+      trackActivityEvent("coin_rain_ad_failed", { task_id: "task_coin_rain", reason: "timeout" });
     },
   });
 
@@ -549,7 +647,9 @@ export function initActivityCenter({ router, route }) {
       coinRainAdTimeout?.clear();
       coinRainAdInFlight.value = false;
       ui.setCoinRainAdLoading(false);
-      showToast(normalizeAdMessage(error?.message, adFailedMessage()), "error");
+      const message = normalizeAdMessage(error?.message, adFailedMessage());
+      showToast(message, "error");
+      trackActivityEvent("coin_rain_ad_failed", { task_id: "task_coin_rain", reason: message });
       return;
     }
     if (checkinChestAdInFlight.value) {
@@ -559,8 +659,9 @@ export function initActivityCenter({ router, route }) {
       const message = normalizeAdMessage(error?.message, adFailedMessage());
       showToast(message, "error");
       adapter.trackEvent("checkin_chest_ad_failed", {
-        taskId: "task_checkin_chest",
-        error: error?.message || String(error),
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: "task_checkin_chest",
+        reason: message,
       });
       return;
     }
@@ -592,10 +693,12 @@ export function initActivityCenter({ router, route }) {
 
   const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
   if (cachedActivityInfo) {
-    business.applyActivityInfoData(cachedActivityInfo);
+    business.applyActivityInfoData(cachedActivityInfo, { fromCache: true });
   }
 
-  void business.loadActivityInfo(apiOptions);
+  // The prompt must use a fresh server decision so a cached pre-midnight state
+  // cannot incorrectly surface (or hide) today's check-in reminder.
+  void business.loadActivityInfo(apiOptions, { force: true });
 
   scheduleGoldCoinsExchangePrefetch();
 

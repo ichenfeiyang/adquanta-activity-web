@@ -84,6 +84,8 @@
     "flowTipDesc": "گولڈ سکوں سے مقامی موبائل ریچارج اور دیگر انعامات ریڈیم کریں۔",
     "dailyCheckin": "روزانہ چیک اِن",
     "checkinNow": "آج کے سکے حاصل کریں",
+    "checkinPromptTitle": "آج {coin} کوائنز کلیم کریں",
+    "checkinPromptSubtitle": "{count} دن مسلسل چیک اِن کیا",
     "checkinVideoTip": "کلیم کرنے کے بعد، {totalCoin} سکوں تک دگنا کرنے کے لیے ویڈیو دیکھیں۔",
     "superPrizeDay": "دن 7: سپر انعام کا دن",
     "rewardsTitle": "انعامات",

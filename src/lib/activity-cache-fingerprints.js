@@ -28,6 +28,7 @@ export function fingerprintActivityInfo(data) {
     redeemRewards: data?.redeem_rewards ?? null,
     recentRedemptions: data?.recent_redemptions ?? [],
     coinRain: data?.coin_rain ?? null,
+    checkinPrompt: data?.checkin_prompt ?? null,
   });
 }
 

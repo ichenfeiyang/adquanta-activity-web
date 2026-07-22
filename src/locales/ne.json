@@ -84,6 +84,8 @@
     "flowTipDesc": "स्थानीय मोबाइल रिचार्ज र अन्य पुरस्कार रिडिम गर्न गोल्ड सिक्का प्रयोग गर्नुहोस्।",
     "dailyCheckin": "दैनिक चेक-इन",
     "checkinNow": "आजका सिक्का लिनुहोस्",
+    "checkinPromptTitle": "आज {coin} सिक्का दाबी गर्नुहोस्",
+    "checkinPromptSubtitle": "{count} दिन लगातार चेक-इन् गर्नुभयो",
     "checkinVideoTip": "दाबी गरेपछि, {totalCoin} सिक्कासम्म दोब्बर गर्न भिडियो हेर्नुहोस्।",
     "superPrizeDay": "दिन ७: सुपर पुरस्कार दिन",
     "rewardsTitle": "पुरस्कार",

@@ -104,6 +104,7 @@ export class ActivityCenterBusiness {
       onTaskUpdate: config.onTaskUpdate || (() => {}),
       onCheckinUpdate: config.onCheckinUpdate || (() => {}),
       onCheckinChestUpdate: config.onCheckinChestUpdate || (() => {}),
+      onCheckinPromptUpdate: config.onCheckinPromptUpdate || (() => {}),
       onFeatureVisibilityUpdate: config.onFeatureVisibilityUpdate || (() => {}),
       onRedeemGapUpdate: config.onRedeemGapUpdate || (() => {}),
       onRedeemRewardsUpdate: config.onRedeemRewardsUpdate || (() => {}),
@@ -231,9 +232,14 @@ export class ActivityCenterBusiness {
     return normalizeCoinRain(value);
   }
 
-  applyActivityInfoData(d) {
+  applyActivityInfoData(d, { fromCache = false } = {}) {
     const fingerprint = this.buildActivityInfoFingerprint(d);
     if (fingerprint === this._lastActivityInfoFingerprint) {
+      // Cached content is intentionally not allowed to trigger the prompt, but
+      // the fresh response still needs to do so even when task data is unchanged.
+      if (!fromCache) {
+        this.config.onCheckinPromptUpdate?.(d?.checkin_prompt, this.checkinDetail, { fromCache: false });
+      }
       return;
     }
 
@@ -324,6 +330,7 @@ export class ActivityCenterBusiness {
         this.config.onRedeemRewardsUpdate?.(this.redeemRewards);
         this.config.onRecentRedemptionsUpdate?.(this.recentRedemptions);
         this.config.onCoinRainUpdate?.(this.coinRain);
+        this.config.onCheckinPromptUpdate?.(d?.checkin_prompt, this.checkinDetail, { fromCache });
         this._lastActivityInfoFingerprint = fingerprint;
       }
     }
@@ -348,7 +355,7 @@ export class ActivityCenterBusiness {
       const result = await loadActivityInfoWithSWR(token, {
         force,
         fetcher: () => getActivityInfo(apiOptions),
-        onData: (data) => this.applyActivityInfoData(data),
+        onData: (data, metadata) => this.applyActivityInfoData(data, metadata),
       });
 
       if (result.ok && result.data) {
@@ -375,7 +382,7 @@ export class ActivityCenterBusiness {
       const res = await postCheckin(apiOptions, { type: "base" });
       if (res.code !== 200) {
         showToast(res.message || checkinFailedMessage(), "error");
-        return { ok: false };
+        return { ok: false, message: res.message || checkinFailedMessage() };
       }
       const coinFromCheckin = res.data?.coin ?? res.coin ?? 0;
       const chest = normalizeCheckinChests(res.data?.chest ? [res.data.chest] : [])[0] || null;
@@ -391,7 +398,7 @@ export class ActivityCenterBusiness {
     } catch (error) {
       logger.error("Do checkin failed", error);
       showToast(error?.message || checkinFailedRetryMessage(), "error");
-      return { ok: false };
+      return { ok: false, message: error?.message || checkinFailedRetryMessage() };
     }
   }
 

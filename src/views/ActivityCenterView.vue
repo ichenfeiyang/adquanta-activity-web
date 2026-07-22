@@ -6,14 +6,17 @@ import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useI18n } from "../composables/useI18n.js";
 import { useRoute, useRouter } from "vue-router";
 import { goToFeedback } from "../lib/activity-navigation.js";
+import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import ActivityLanguageSwitcher from "../components/ActivityLanguageSwitcher.vue";
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 function openFeedback() {
-  window.ActivityBridgeHelper?.trackEvent?.('rewards_feedback_entry_click', {
-    page_id: '/activity-center', element_id: 'feedback_entry', element_name: '点击活动中心首页反馈按钮',
+  window.ActivityBridgeHelper?.trackEvent?.("rewards_feedback_entry_click", {
+    page_id: ACTIVITY_CENTER_PAGE_ID,
+    element_id: "feedback_entry",
+    element_name: "点击活动中心首页反馈按钮",
   });
   goToFeedback(router, String(route.query.activity_id || ""));
 }
@@ -397,6 +400,22 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
         <p class="checkin-chest-result-amount"><strong id="checkinChestRewardCoins">+0</strong> <span>{{ t('common.coins') }}</span></p>
       </div>
       <button id="checkinChestRewardClaimBtn" type="button" class="checkin-chest-result-claim">{{ t('center.checkinChestClaim') }}</button>
+    </div>
+  </div>
+
+  <div id="checkinPromptModal" class="checkin-prompt-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="checkinPromptTitle">
+    <div class="checkin-prompt-card">
+      <button id="checkinPromptClose" type="button" class="checkin-prompt-close" :aria-label="t('common.close')">×</button>
+      <div class="checkin-prompt-hero">
+        <span class="checkin-prompt-spark checkin-prompt-spark--left" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--right" aria-hidden="true">✦</span>
+        <h2 id="checkinPromptTitle" class="checkin-prompt-title">{{ t('center.checkinNow') }}</h2>
+      </div>
+      <div id="checkinPromptDays" class="checkin-prompt-days" />
+      <button id="checkinPromptClaim" type="button" class="checkin-prompt-claim">
+        <img :src="assetUrl('icons/gold-coin-white.svg')" alt="" width="24" height="24">
+        <span>{{ t('center.checkinNow') }}</span>
+      </button>
     </div>
   </div>
 
