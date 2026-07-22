@@ -189,11 +189,26 @@
 
 /* --- Single-bubble card mode (Step 2+) --- */
 .ng-text-box--card {
+  position: absolute;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: 14px;
+  padding: 18px 16px 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   text-align: left;
+}
+
+/* Step 标签胶囊徽章 */
+.ng-step-badge {
+  display: inline-block;
+  background: #ff5c00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
 }
 
 .ng-text-box--card .ng-text-box-row {
@@ -205,6 +220,20 @@
 .ng-text-box--card .ng-text-box-icon {
   font-size: 18px;
   line-height: 1.3;
+  flex-shrink: 0;
+}
+
+/* 橙色圆形图标背景（Step 4 🪙） */
+.ng-text-box--orange-icon .ng-text-box-icon {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #fff0e0 0%, #ffe0c0 100%);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  box-shadow: 0 0 10px rgba(255, 92, 0, 0.18);
   flex-shrink: 0;
 }
 
@@ -223,6 +252,13 @@
   line-height: 1.4;
 }
 
+/* 气泡副标题（Step 4 专用，带顶部分隔线） */
+.ng-text-sub--card {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
 /* 底部小三角箭头指向高亮区域 */
 .ng-text-box-arrow {
   position: absolute;
@@ -234,6 +270,39 @@
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 8px solid #ffffff;
+}
+
+/* 顶部小三角箭头（气泡在高亮区域下方时） */
+.ng-text-box-arrow--up {
+  position: absolute;
+  top: -8px;
+  left: 65%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #ffffff;
+}
+
+/* --- Balance card glow (Step 4) --- */
+.tc-balance-card--glow {
+  box-shadow:
+    0 0 0 2px rgba(255, 92, 0, 0.45),
+    0 0 18px 4px rgba(255, 140, 50, 0.30),
+    0 0 36px 8px rgba(255, 92, 0, 0.12);
+  position: relative;
+  z-index: 10001;
+  border-radius: 16px;
+  transition: box-shadow 0.3s ease;
+}
+
+/* --- Step 4 finger pointers --- */
+.ng-finger--step4 {
+  position: fixed;
+  z-index: 10004;
+  pointer-events: none;
+  transform: translate(-50%, 0);
 }
 
 /* --- Dual-bubble white tooltips (used for multi-element steps) --- */

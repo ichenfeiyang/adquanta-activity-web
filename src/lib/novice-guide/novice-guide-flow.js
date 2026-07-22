@@ -57,5 +57,23 @@ export const SPIN_STEP = {
   actionSelector: '#btn-watch-ad',
   guideTextKey: 'novice.step2.text',
   guideSubtextKey: 'novice.step2.subtext',
+  guideIcon: '🎬',
   textPosition: 'above',
+};
+
+/** Step 4 配置 */
+export const BALANCE_STEP = {
+  step: GUIDE_STEPS.STEP_BALANCE,
+  highlightSelector: '#tc-checkin-section',
+  guideTextKey: 'novice.step4.text',
+  guideSubtextKey: 'novice.step4.subtext',
+  guideStepLabelKey: 'novice.step4.stepLabel',
+  guideIcon: '🪙',
+  guideIconStyle: 'orange',   // 橙色圆形背景
+  textPosition: 'below',
+  // Step 4 手指指向元素
+  fingerTargets: [
+    { selector: '#goldCoins', offsetX: 0, offsetY: -30 },
+    { selector: '#redeemGapHint', offsetX: 0, offsetY: -25 },
+  ],
 };

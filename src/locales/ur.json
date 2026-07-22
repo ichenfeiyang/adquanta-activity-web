@@ -326,6 +326,11 @@
       "text": "Watch videos to get spin chances!",
       "subtext": "Spin up to 20 times every day and win Coins!"
     },
+    "step4": {
+      "text": "Check your Coins and track your progress toward rewards.",
+      "subtext": "See how many Coins you have and how many more you need to redeem rewards.",
+      "stepLabel": "Step 4 of 4"
+    },
     "complete": {
       "title": "You're Ready!",
       "desc": "Come back every day to earn Coins, track your progress, and redeem rewards like mobile data and gift cards.",

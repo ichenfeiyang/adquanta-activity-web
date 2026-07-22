@@ -8,7 +8,7 @@
 import { createApp, reactive, h } from 'vue';
 import { t } from '../i18n/activity-locale.js';
 import { markNoviceGuideCompleted } from './novice-guide-state.js';
-import { GUIDE_STEPS, CHECKIN_STEP, SPIN_STEP, getNextStep } from './novice-guide-flow.js';
+import { GUIDE_STEPS, CHECKIN_STEP, SPIN_STEP, BALANCE_STEP, getNextStep } from './novice-guide-flow.js';
 import NoviceGuideWelcome from '../../components/NoviceGuideWelcome.vue';
 import NoviceGuideOverlay from '../../components/NoviceGuideOverlay.vue';
 import NoviceGuideComplete from '../../components/NoviceGuideComplete.vue';
@@ -16,7 +16,8 @@ import NoviceGuideComplete from '../../components/NoviceGuideComplete.vue';
 function createStepConfig(stepKey) {
   if (stepKey === GUIDE_STEPS.STEP_CHECKIN) return CHECKIN_STEP;
   if (stepKey === GUIDE_STEPS.STEP_SPIN) return SPIN_STEP;
-  return null; // Step 3~4 尚未实现
+  if (stepKey === GUIDE_STEPS.STEP_BALANCE) return BALANCE_STEP;
+  return null; // Step 3 尚未实现
 }
 
 /**
@@ -38,6 +39,10 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     overlayBubbles:      null,
     overlayBubblesContainerSelector: '',
     overlayTextPosition: 'above',
+    overlayIcon: '🎬',
+    overlayIconStyle: '',
+    overlayStepLabel: '',
+    overlayFingerTargets: null,
   });
 
   let currentStep   = null;
@@ -72,6 +77,17 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.overlaySub      = cfg.guideSubtextKey ? t(cfg.guideSubtextKey) : '';
     state.overlayExtra    = cfg.guideExtraKey   ? t(cfg.guideExtraKey)   : '';
     state.overlayTextPosition = cfg.textPosition || 'above';
+    state.overlayIcon = cfg.guideIcon || '🎬';
+    state.overlayIconStyle = cfg.guideIconStyle || '';
+    state.overlayStepLabel = cfg.guideStepLabelKey ? t(cfg.guideStepLabelKey) : '';
+    state.overlayFingerTargets = cfg.fingerTargets || null;
+
+    // Step 4 特殊处理：给余额卡片添加外发光
+    removeCardGlow();
+    if (stepKey === GUIDE_STEPS.STEP_BALANCE) {
+      const balanceCard = document.querySelector('.tc-balance-card');
+      if (balanceCard) balanceCard.classList.add('tc-balance-card--glow');
+    }
 
     // 确保引导目标按钮可点击（初始化时按钮可能处于 disabled 状态）
     if (cfg.actionSelector) {
@@ -100,8 +116,9 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.showOverlay  = true;
     state.showComplete = false;
 
-    // 用户点击目标按钮后：隐藏 overlay，延迟后推进到下一步
-    // TODO: 后续接入签到弹窗逻辑，弹窗关闭后再推进
+    // 用户点击目标按钮后：隐藏 overlay，并设置2秒 fallback 计时器
+    // 如果 dismiss 回调（handleSigninDismiss/handleSpinDismiss）先触发，会清除该计时器
+    // 如果 API 失败导致弹框不出现，2秒后由计时器兜底推进
     if (cfg.actionSelector) {
       const actionBtn = document.querySelector(cfg.actionSelector);
       if (actionBtn) {
@@ -110,7 +127,10 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
           state.showOverlay = false;
           stepAdvanceTimer = setTimeout(() => {
             if (!isGuideActive || currentStep !== stepKey) return;
-            const next = getNextStep(stepKey);
+            let next = getNextStep(stepKey);
+            while (next && !createStepConfig(next)) {
+              next = getNextStep(next);
+            }
             if (next) enterStep(next);
             else finishGuide();
           }, 2000);
@@ -136,6 +156,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
   // ---------- 内部：彻底关闭并清理 ----------
   function finalize() {
     clearStepTimers();
+    removeCardGlow();
     isGuideActive = false;
     state.showWelcome  = false;
     state.showOverlay  = false;
@@ -172,7 +193,11 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
             bubbles: state.overlayBubbles,
             bubblesContainerSelector: state.overlayBubblesContainerSelector,
             textPosition: state.overlayTextPosition,
-            onExit: handleExit,
+            icon: state.overlayIcon,
+            iconStyle: state.overlayIconStyle,
+            stepLabel: state.overlayStepLabel,
+            fingerTargets: state.overlayFingerTargets,
+            onExit: handleOverlayExit,
           }),
           h(NoviceGuideComplete, {
             visible: state.showComplete,
@@ -210,12 +235,24 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     finalize();
   }
 
+  function handleOverlayExit() {
+    if (currentStep === GUIDE_STEPS.STEP_BALANCE) {
+      handleBalanceDismiss();
+    } else {
+      handleExit();
+    }
+  }
+
   // ---------- 签到弹框关闭回调 ----------
   // initActivityCenter.js 会在签到弹框关闭时调用此方法
   function handleSigninDismiss() {
     if (!isGuideActive || currentStep !== GUIDE_STEPS.STEP_CHECKIN) return false;
     clearStepTimers();
-    const next = getNextStep(currentStep);
+    // 跳过未实现的步骤，寻找下一个有效步骤
+    let next = getNextStep(currentStep);
+    while (next && !createStepConfig(next)) {
+      next = getNextStep(next);
+    }
     if (next) {
       enterStep(next);
     } else {
@@ -229,13 +266,34 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
   function handleSpinDismiss() {
     if (!isGuideActive || currentStep !== GUIDE_STEPS.STEP_SPIN) return false;
     clearStepTimers();
-    const next = getNextStep(currentStep);
+    // 跳过未实现的步骤（如 coinrain），寻找下一个有效步骤
+    let next = getNextStep(currentStep);
+    while (next && !createStepConfig(next)) {
+      next = getNextStep(next);
+    }
     if (next) {
       enterStep(next);
     } else {
       finishGuide();
     }
     return true;
+  }
+
+  // ---------- 余额引导关闭回调 ----------
+  // Step 4 用户点击蒙层退出时由 NoviceGuideOverlay 触发
+  function handleBalanceDismiss() {
+    if (!isGuideActive || currentStep !== GUIDE_STEPS.STEP_BALANCE) return false;
+    clearStepTimers();
+    removeCardGlow();
+    state.showOverlay = false;
+    finishGuide();
+    return true;
+  }
+
+  // ---------- 移除余额卡片外发光 ----------
+  function removeCardGlow() {
+    const balanceCard = document.querySelector('.tc-balance-card');
+    if (balanceCard) balanceCard.classList.remove('tc-balance-card--glow');
   }
 
   function isGuideRunning() {
@@ -246,6 +304,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     start() { mount(); state.showWelcome = true; },
     handleSigninDismiss,
     handleSpinDismiss,
+    handleBalanceDismiss,
     isGuideRunning,
     dispose,
   };

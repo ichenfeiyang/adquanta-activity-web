@@ -23,6 +23,10 @@ const props = defineProps({
   subText:          { type: String, default: '' },
   extraText:        { type: String, default: '' },
   textPosition:     { type: String, default: 'above' },
+  icon:             { type: String, default: '🎬' },
+  iconStyle:        { type: String, default: '' },
+  stepLabel:        { type: String, default: '' },
+  fingerTargets:    { type: Array, default: null },
   bubbles:          { type: Array, default: null },
   bubblesContainerSelector: { type: String, default: '' },
 });
@@ -38,6 +42,7 @@ const bubbleRightStyle = ref({});
 const arrowSvgLeft = ref(0);
 const arrowSvgPath = ref('');
 const arrowEndpoint = ref({ x: 0, y: 0 });
+const fingerTargetsPos = ref([]);
 
 // 箭头三角：基于 Q 曲线终点切线方向计算
 const arrowHeadPoints = computed(() => {
@@ -178,6 +183,22 @@ function recalc() {
       arrowEndpoint.value = { x: endX, y: endY };
     }
   }
+
+  // ── Step 4 手指指向元素 ──
+  if (props.fingerTargets && props.fingerTargets.length) {
+    const scrollY = window.scrollY || 0;
+    fingerTargetsPos.value = props.fingerTargets.map(t => {
+      const el = document.querySelector(t.selector);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: r.left + r.width / 2 + (t.offsetX || 0),
+        y: r.top + (t.offsetY || 0),
+      };
+    }).filter(Boolean);
+  } else {
+    fingerTargetsPos.value = [];
+  }
 }
 
 function onExit(e) {
@@ -235,7 +256,11 @@ onBeforeUnmount(() => {
 <template>
   <!-- overlay 容器：position:fixed（视口坐标系），pointer-events:none 不阻断滚动 -->
   <Teleport to="body">
-    <div v-if="active" class="ng-overlay">
+    <div
+      v-if="active"
+      class="ng-overlay"
+      @click="!actionSelector && onExit($event)"
+    >
       <div
         class="ng-highlight"
         :style="{
@@ -304,20 +329,36 @@ onBeforeUnmount(() => {
     </div>
   </Teleport>
 
-  <!-- 单气泡模式（兼容旧步骤） -->
+  <!-- Step 4 手指指向余额区域 -->
+  <Teleport v-if="active && fingerTargetsPos.length" to="body">
+    <div
+      v-for="(pos, i) in fingerTargetsPos"
+      :key="'ft-' + i"
+      class="ng-finger ng-finger--step4"
+      :style="{ left: pos.x + 'px', top: pos.y + 'px' }"
+    >
+      <div class="ng-finger-ripple" />
+      <div class="ng-finger-icon">👆</div>
+    </div>
+  </Teleport>
+
+  <!-- 单气泡模式 -->
   <Teleport v-if="active && !bubbles" to="body">
     <div
       class="ng-text-box ng-text-box--card"
+      :class="{ 'ng-text-box--orange-icon': iconStyle === 'orange' }"
       :style="{ top: textBoxTop + 'px' }"
       @click="onExit"
     >
+      <!-- Step 标签徽章 -->
+      <span v-if="stepLabel" class="ng-step-badge">{{ stepLabel }}</span>
       <div class="ng-text-box-row">
-        <span class="ng-text-box-icon">🎬</span>
+        <span class="ng-text-box-icon">{{ icon }}</span>
         <span class="ng-text-main">{{ mainText }}</span>
       </div>
-      <p v-if="subText" class="ng-text-sub">{{ subText }}</p>
+      <p v-if="subText" class="ng-text-sub ng-text-sub--card">{{ subText }}</p>
       <p v-if="extraText" class="ng-text-extra">{{ extraText }}</p>
-      <div class="ng-text-box-arrow" />
+      <div :class="textPosition === 'below' ? 'ng-text-box-arrow--up' : 'ng-text-box-arrow'" />
     </div>
   </Teleport>
 </template>
