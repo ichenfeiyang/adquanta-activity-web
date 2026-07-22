@@ -244,8 +244,9 @@ export const spinUiMixin = {
     this.saveSpinAvailableState();
   },
 
-  setAdTaskDescription(rouletteCoins) {
-    const maxCoin = LUCKY_SPIN_PROMO_MAX_COIN;
+  setAdTaskDescription(_rouletteCoins, dailyMaxCoins) {
+    const configuredMax = Number(dailyMaxCoins);
+    const maxCoin = Number.isSafeInteger(configuredMax) && configuredMax > 0 ? configuredMax : LUCKY_SPIN_PROMO_MAX_COIN;
     if (this.elements.adMaxCoin) {
       this.elements.adMaxCoin.textContent = t("center.luckySpinMaxCoins", { maxCoin });
     }

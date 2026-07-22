@@ -612,7 +612,7 @@ export class ActivityCenterUI {
     this.syncTurntableFromTask(task);
     this.syncSpinAvailableFromTask(task);
 
-    this.setAdTaskDescription(r?.roulette_coins);
+    this.setAdTaskDescription(r?.roulette_coins, r?.daily_max_coins ?? r?.total_coins);
     this.syncAdTaskProgressFromTask(task);
     this.resetWatchSpinButton();
     if (this.elements.btnSpinEntry) {

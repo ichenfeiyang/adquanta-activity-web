@@ -200,7 +200,7 @@ export async function postCheckinChest(options = {}, body = {}) {
  * POST /api/v1/ops/activity/video
  * @param {Object} options - { baseUrl? }
  * @param {{ video_id?: string }} body - 当前后端可不传，默认空字符串
- * @returns {Promise<{ code: number, data?: { success: boolean, coin: number, total_coin: number, message: string, today_watched: number, remain_count: number, roulette?: { total_coins: number, earned_coins: number, remaining_coins: number, next_coin: number, roulette_coins?: number[] } }, message?: string }>}
+ * @returns {Promise<{ code: number, data?: { success: boolean, coin: number, total_coin: number, message: string, today_watched: number, remain_count: number, roulette?: { daily_max_coins?: number, total_coins?: number, earned_coins: number, remaining_coins: number, next_coin: number, roulette_coins?: number[] } }, message?: string }>}
  * @description data.coin 为本次看广告/转盘获得的金币数，前端转盘动画应对齐该值。
  */
 export async function postActivityVideo(options = {}, body = {}) {
