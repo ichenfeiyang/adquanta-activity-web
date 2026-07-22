@@ -8,7 +8,7 @@
 import { createApp, reactive, h } from 'vue';
 import { t } from '../i18n/activity-locale.js';
 import { markNoviceGuideCompleted } from './novice-guide-state.js';
-import { GUIDE_STEPS, CHECKIN_STEP, SPIN_STEP, BALANCE_STEP, getNextStep } from './novice-guide-flow.js';
+import { GUIDE_STEPS, CHECKIN_STEP, SPIN_STEP, COINRAIN_STEP, BALANCE_STEP, getNextStep } from './novice-guide-flow.js';
 import NoviceGuideWelcome from '../../components/NoviceGuideWelcome.vue';
 import NoviceGuideOverlay from '../../components/NoviceGuideOverlay.vue';
 import NoviceGuideComplete from '../../components/NoviceGuideComplete.vue';
@@ -16,8 +16,9 @@ import NoviceGuideComplete from '../../components/NoviceGuideComplete.vue';
 function createStepConfig(stepKey) {
   if (stepKey === GUIDE_STEPS.STEP_CHECKIN) return CHECKIN_STEP;
   if (stepKey === GUIDE_STEPS.STEP_SPIN) return SPIN_STEP;
+  if (stepKey === GUIDE_STEPS.STEP_COINRAIN) return COINRAIN_STEP;
   if (stepKey === GUIDE_STEPS.STEP_BALANCE) return BALANCE_STEP;
-  return null; // Step 3 尚未实现
+  return null;
 }
 
 /**

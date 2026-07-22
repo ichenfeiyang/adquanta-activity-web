@@ -61,6 +61,17 @@ export const SPIN_STEP = {
   textPosition: 'above',
 };
 
+/** Step 3 配置 — Daily Coin Rain */
+export const COINRAIN_STEP = {
+  step: GUIDE_STEPS.STEP_COINRAIN,
+  highlightSelector: '#tc-coin-rain-section',
+  actionSelector: '#tc-coin-rain-entry',
+  guideTextKey: 'novice.step3.text',
+  guideSubtextKey: 'novice.step3.subtext',
+  guideIcon: '💰',
+  textPosition: 'above',
+};
+
 /** Step 4 配置 */
 export const BALANCE_STEP = {
   step: GUIDE_STEPS.STEP_BALANCE,
@@ -74,6 +85,5 @@ export const BALANCE_STEP = {
   // Step 4 手指指向元素
   fingerTargets: [
     { selector: '#goldCoins', offsetX: 0, offsetY: -30 },
-    { selector: '#redeemGapHint', offsetX: 0, offsetY: -25 },
   ],
 };
