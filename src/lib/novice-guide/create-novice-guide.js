@@ -27,7 +27,7 @@ function createStepConfig(stepKey) {
  * @param {Function} opts.onComplete    - 引导全部完成时回调
  * @returns {{ start: Function, handleSigninDismiss: Function, dispose: Function }}
  */
-export function createNoviceGuide({ onStepAction, onComplete }) {
+export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip }) {
   const state = reactive({
     showWelcome:    false,
     showOverlay:    false,
@@ -265,10 +265,12 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
 
   // ---------- 事件处理 ----------
   function handleSkip() {
+    if (onSkip) onSkip();
     finalize();
   }
 
   function handleStart() {
+    if (onStart) onStart();
     isGuideActive = true;
     state.showWelcome = false;
     enterStep(GUIDE_STEPS.STEP_CHECKIN);

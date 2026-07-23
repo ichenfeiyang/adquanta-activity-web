@@ -623,6 +623,20 @@ export function initActivityCenter({ router, route }) {
     noviceGuide = createNoviceGuide({
       onStepAction: () => {},
       onComplete: () => {},
+      onStart: () => {
+        adapter.trackEvent('rewards_onboarding_start_click', {
+          page_id: '/activity-center',
+          element_id: 'OK_button',
+          element_name: '点击开始引导',
+        });
+      },
+      onSkip: () => {
+        adapter.trackEvent('rewards_onboarding_skip_click', {
+          page_id: '/activity-center',
+          element_id: 'Skip_button',
+          element_name: '点击跳过引导',
+        });
+      },
     });
     onBeforeUnloadGuide = () => {
       if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted();
