@@ -29,6 +29,10 @@ const props = defineProps({
   fingerTargets:    { type: Array, default: null },
   bubbles:          { type: Array, default: null },
   bubblesContainerSelector: { type: String, default: '' },
+  headerBadge:      { type: String, default: '' },
+  arrowX:           { type: Number, default: null },
+  highlightGlow:    { type: Boolean, default: false },
+  cardGlow:         { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['exit']);
@@ -42,6 +46,32 @@ const bubbleRightStyle = ref({});
 const arrowSvgLeft = ref(0);
 const arrowSvgPath = ref('');
 const fingerTargetsPos = ref([]);
+const curvePath = ref('');
+
+function computeCurvePath() {
+  if (!props.actionSelector || props.textPosition !== 'above') {
+    curvePath.value = '';
+    return;
+  }
+  nextTick(() => {
+    const textBox = document.querySelector('.ng-text-box');
+    const btn = document.querySelector(props.actionSelector);
+    if (!textBox || !btn) { curvePath.value = ''; return; }
+    const boxRect = textBox.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    // 起点：气泡右侧外壁，标题平齐高度（中上部）
+    const startX = boxRect.width;
+    const startY = boxRect.height * 0.35;
+    // 终点：按钮正上方偏右空地（发光区域内）
+    const btnCenterX = btnRect.left + btnRect.width / 2;
+    const endX = btnCenterX + btnRect.width * 0.3 - boxRect.left;
+    const endY = btnRect.top - 12 - boxRect.top;
+    // 二次贝塞尔：先向右凸出，再向下弯入
+    const midX = Math.max(startX, endX) + 18;
+    const midY = startY + (endY - startY) * 0.55;
+    curvePath.value = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
+  });
+}
 
 function recalc() {
   const el = document.querySelector(props.selector);
@@ -207,16 +237,17 @@ function removeListeners() {
 
 watch(() => props.active, (v) => {
   if (v) {
-    nextTick(recalc);
+    nextTick(() => { recalc(); computeCurvePath(); });
     addListeners();
   } else {
     removeListeners();
+    curvePath.value = '';
   }
 });
 
 onMounted(() => {
   if (props.active) {
-    nextTick(recalc);
+    nextTick(() => { recalc(); computeCurvePath(); });
     addListeners();
   }
 });
@@ -236,6 +267,7 @@ onBeforeUnmount(() => {
     >
       <div
         class="ng-highlight"
+        :class="{ 'ng-highlight--glow': highlightGlow }"
         :style="{
           top:    highlightRect.top    + 'px',
           left:   highlightRect.left   + 'px',
@@ -327,19 +359,58 @@ onBeforeUnmount(() => {
   <Teleport v-if="active && !bubbles" to="body">
     <div
       class="ng-text-box ng-text-box--card"
-      :class="{ 'ng-text-box--orange-icon': iconStyle === 'orange' }"
+      :class="{
+        'ng-text-box--orange-icon': iconStyle === 'orange',
+        'ng-text-box--glow': cardGlow,
+      }"
       :style="{ top: textBoxTop + 'px' }"
       @click="onExit"
     >
       <!-- Step 标签徽章 -->
       <span v-if="stepLabel" class="ng-step-badge">{{ stepLabel }}</span>
+      <!-- 头部徽标行：sparkle + Step X of Y 胶囊（替代 icon+title 模式） -->
+      <div v-if="headerBadge" class="ng-header-badge-row">
+        <span class="ng-header-badge-icon">{{ icon }}</span>
+        <span class="ng-header-badge-pill">{{ headerBadge }}</span>
+      </div>
       <div class="ng-text-box-row">
-        <span class="ng-text-box-icon">{{ icon }}</span>
+        <span v-if="!headerBadge" class="ng-text-box-icon">{{ icon }}</span>
         <span class="ng-text-main">{{ mainText }}</span>
       </div>
       <p v-if="subText" class="ng-text-sub ng-text-sub--card">{{ subText }}</p>
       <p v-if="extraText" class="ng-text-extra">{{ extraText }}</p>
-      <div :class="textPosition === 'below' ? 'ng-text-box-arrow--up' : 'ng-text-box-arrow'" />
+      <div
+        :class="textPosition === 'below' ? 'ng-text-box-arrow--up' : 'ng-text-box-arrow'"
+        :style="arrowX != null ? { left: (arrowX * 100) + '%', transform: 'translateX(-50%)' } : undefined"
+      />
+      <!-- 气泡右侧弧形虚线箭头（绝对定位，锚定气泡右上角） -->
+      <svg
+        v-if="curvePath"
+        class="ng-bubble-curve-svg"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <marker
+            id="ng-arrowhead-curve"
+            markerWidth="8"
+            markerHeight="6"
+            refX="7"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 8 3, 0 6" fill="#ec5b13" />
+          </marker>
+        </defs>
+        <path
+          :d="curvePath"
+          fill="none"
+          stroke="#ec5b13"
+          stroke-width="2"
+          stroke-dasharray="5 4"
+          stroke-linecap="round"
+          marker-end="url(#ng-arrowhead-curve)"
+        />
+      </svg>
     </div>
   </Teleport>
 </template>

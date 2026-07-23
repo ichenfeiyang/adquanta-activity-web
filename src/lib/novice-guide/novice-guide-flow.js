@@ -55,9 +55,13 @@ export const SPIN_STEP = {
   step: GUIDE_STEPS.STEP_SPIN,
   highlightSelector: '#tc-lucky-spin-section',
   actionSelector: '#btn-watch-ad',
+  cardGlowSelector: '#tc-lucky-spin-section .tc-card',
   guideTextKey: 'novice.step2.text',
   guideSubtextKey: 'novice.step2.subtext',
-  guideIcon: '🎬',
+  guideIcon: '✨',
+  headerBadge: 'Step 2 of 3',
+  arrowPosition: 'dynamic',
+  highlightGlow: true,
   textPosition: 'above',
 };
 

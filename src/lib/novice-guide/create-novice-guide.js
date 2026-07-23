@@ -44,6 +44,11 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     overlayIconStyle: '',
     overlayStepLabel: '',
     overlayFingerTargets: null,
+    overlayHeaderBadge: '',
+    overlayArrowX: null,
+    overlayHighlightGlow: false,
+    overlayCardGlow: false,
+    overlayCurvePath: '',
   });
 
   let currentStep   = null;
@@ -82,12 +87,35 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.overlayIconStyle = cfg.guideIconStyle || '';
     state.overlayStepLabel = cfg.guideStepLabelKey ? t(cfg.guideStepLabelKey) : '';
     state.overlayFingerTargets = cfg.fingerTargets || null;
+    state.overlayHeaderBadge = cfg.headerBadge || '';
+    state.overlayHighlightGlow = !!cfg.highlightGlow;
+    state.overlayCardGlow = !!cfg.cardGlowSelector;
+    state.overlayCurvePath = '';
+
+    // 动态箭头位置：根据 actionSelector 按钮中心计算相对于气泡的偏移
+    state.overlayArrowX = null;
+    if (cfg.arrowPosition === 'dynamic' && cfg.actionSelector) {
+      const actionBtn = document.querySelector(cfg.actionSelector);
+      if (actionBtn) {
+        const btnRect = actionBtn.getBoundingClientRect();
+        const highlightEl = document.querySelector(cfg.highlightSelector);
+        if (highlightEl) {
+          const hlRect = highlightEl.getBoundingClientRect();
+          state.overlayArrowX = ((btnRect.left + btnRect.width / 2) - hlRect.left) / hlRect.width;
+        }
+      }
+    }
 
     // Step 4 特殊处理：给余额卡片添加外发光
     removeCardGlow();
     if (stepKey === GUIDE_STEPS.STEP_BALANCE) {
       const balanceCard = document.querySelector('.tc-balance-card');
       if (balanceCard) balanceCard.classList.add('tc-balance-card--glow');
+    }
+    // Step 2 特殊处理：给转盘卡片添加外发光
+    if (cfg.cardGlowSelector) {
+      const spinCard = document.querySelector(cfg.cardGlowSelector);
+      if (spinCard) spinCard.classList.add('tc-card--glow');
     }
 
     // 确保引导目标按钮可点击（初始化时按钮可能处于 disabled 状态）
@@ -188,6 +216,10 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
             iconStyle: state.overlayIconStyle,
             stepLabel: state.overlayStepLabel,
             fingerTargets: state.overlayFingerTargets,
+            headerBadge: state.overlayHeaderBadge,
+            arrowX: state.overlayArrowX,
+            highlightGlow: state.overlayHighlightGlow,
+            cardGlow: state.overlayCardGlow,
             onExit: handleOverlayExit,
           }),
           h(NoviceGuideComplete, {
@@ -299,6 +331,8 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
   function removeCardGlow() {
     const balanceCard = document.querySelector('.tc-balance-card');
     if (balanceCard) balanceCard.classList.remove('tc-balance-card--glow');
+    const spinCard = document.querySelector('.tc-lucky-spin-section .tc-card');
+    if (spinCard) spinCard.classList.remove('tc-card--glow');
   }
 
   function isGuideRunning() {
