@@ -450,14 +450,14 @@ body {
 
 .checkin-prompt-day {
   position: relative;
-  display: flex;
+  display: grid;
   min-width: 0;
   min-height: 120px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 12px 2px 9px;
+  grid-template-rows: 16px 16px 38px 12px;
+  align-content: center;
+  justify-items: center;
+  row-gap: 3px;
+  padding: 6px 2px;
   border: 1px solid #eee7de;
   border-radius: 12px;
   color: #172033;
@@ -485,16 +485,23 @@ body {
 }
 
 .checkin-prompt-day-label {
-  position: relative;
-  z-index: 1;
   display: block;
-  height: 15px;
+  min-width: 0;
   overflow: hidden;
   max-width: 100%;
   font-size: 10px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.checkin-prompt-day-chest-slot {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
 }
 
 .checkin-prompt-day-reward {
@@ -512,6 +519,7 @@ body {
   font-size: 20px;
   letter-spacing: -0.065em;
   line-height: 1;
+  align-self: center;
   white-space: nowrap;
   color: #f25b18;
 }
@@ -519,13 +527,10 @@ body {
 .checkin-prompt-day.is-done .checkin-prompt-day-reward { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: #fff; color: #ff6519; font-size: 34px; line-height: 1; }
 
 .checkin-prompt-chest-icon {
-  position: absolute;
-  z-index: 2;
-  top: 8px;
-  right: 5px;
   display: block;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
   opacity: 1;
   pointer-events: none;
   mix-blend-mode: multiply;
@@ -581,6 +586,7 @@ body {
   .checkin-prompt-day-reward { font-size: 19px; }
   .checkin-prompt-day-label { font-size: 9px; }
   .checkin-prompt-day-unit { font-size: 8px; }
+  .checkin-prompt-chest-icon { width: 14px; height: 14px; flex-basis: 14px; }
 }
 
 .signin-dialog-overlay {

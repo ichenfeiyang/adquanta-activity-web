@@ -24,7 +24,6 @@ test("reveals a deferred chest only after the check-in video reward is settled",
       adapter: { trackEvent: () => {} },
       apiOptions: {},
       getLastInterstitialAdTaskId: () => "task_checkin",
-      interstitialAdTimeout: { clear: () => calls.push("clear-timeout") },
       normalizeAdMessage: (message) => message,
       checkinVideoClaimInFlight: { value: false },
       checkinWatchAdInFlight: { value: false },
@@ -34,7 +33,7 @@ test("reveals a deferred chest only after the check-in video reward is settled",
     await handler({ eventType: "interstitial", taskId: "task_checkin", success: true, video_id: "video-1" });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    assert.deepEqual(calls, ["clear-timeout", "claim", "mark-completed", "reveal-chest"]);
+    assert.deepEqual(calls, ["claim", "mark-completed", "reveal-chest"]);
   } finally {
     globalThis.window = originalWindow;
   }
@@ -57,9 +56,6 @@ test("shows the chest reward result dialog after the chest ad is settled", async
       adapter: { trackEvent: () => {} },
       apiOptions: {},
       getLastRewardAdTaskId: () => "task_checkin_chest",
-      rewardAdTimeout: { clear: () => {} },
-      newUserBonusAdTimeout: { clear: () => {} },
-      checkinChestAdTimeout: { clear: () => calls.push("clear-timeout") },
       normalizeAdMessage: (message) => message,
       showDailyAdLimitToast: () => {},
       checkinChestAdInFlight: { value: true },
@@ -69,7 +65,37 @@ test("shows the chest reward result dialog after the chest ad is settled", async
 
     await handler({ eventType: "reward", taskId: "task_checkin_chest", success: true, ad_event_id: "ad-1" });
 
-    assert.deepEqual(calls, ["clear-timeout", "loading:false", "hide-chest", "show-reward:15"]);
+    assert.deepEqual(calls, ["loading:false", "hide-chest", "show-reward:15"]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
+test("keeps a chest locked when its reward claim is queued for retry", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
+  const settlingIds = new Set();
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: { submitCheckinChestAction: async () => ({ ok: false, queued: true }) },
+      ui: {
+        setCheckinChestLoading: () => {},
+        hideCheckinChestDialog: () => {},
+      },
+      adapter: { trackEvent: () => {} },
+      apiOptions: {},
+      getLastRewardAdTaskId: () => "task_checkin_chest",
+      normalizeAdMessage: (message) => message,
+      showDailyAdLimitToast: () => {},
+      checkinChestAdInFlight: { value: true },
+      checkinChestClaimInFlight: { value: false },
+      checkinChestSettlingIds: settlingIds,
+      getCheckinChest: () => ({ id: 9 }),
+    });
+
+    await handler({ eventType: "reward", taskId: "task_checkin_chest", success: true, ad_event_id: "ad-1" });
+
+    assert.deepEqual([...settlingIds], [9]);
   } finally {
     globalThis.window = originalWindow;
   }

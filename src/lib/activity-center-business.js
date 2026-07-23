@@ -468,10 +468,15 @@ export class ActivityCenterBusiness {
       const res = await postCheckinChest(apiOptions, { chest_id: chestId, action, ad_event_id: adEventId });
       const ok = res?.code === 200 && res?.data?.success !== false;
       if (!ok) return { ok: false, message: res?.data?.message || res?.message || claimFailedMessage() };
+      const totalCoin = Number(res?.data?.total_coin);
+      if (Number.isFinite(totalCoin)) {
+        this.userAssets.goldCoins = Math.max(0, totalCoin);
+        this.config.onAssetsUpdate(this.userAssets);
+      }
       this.checkinChests = this.checkinChests.filter((chest) => chest.id !== Number(chestId));
       this.config.onCheckinChestUpdate(this.checkinChests[0] || null);
       await this.loadActivityInfo(apiOptions, { force: true });
-      return { ok: true, coin: Number(res?.data?.coin ?? 0) || 0, totalCoin: Number(res?.data?.total_coin ?? 0) || 0 };
+      return { ok: true, coin: Number(res?.data?.coin ?? 0) || 0, totalCoin: Number.isFinite(totalCoin) ? totalCoin : 0 };
     } catch (error) {
       if (action === "claim") this.queueCheckinChestAction(action, chestId, adEventId);
       logger.warn("Check-in chest action queued for retry", { action, chestId, message: error?.message });

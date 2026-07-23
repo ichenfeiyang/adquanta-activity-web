@@ -1,14 +1,14 @@
 {
   "pages": {
     "activityCenter": "انعامات کا مرکز",
-    "goldCoinsExchange": "سکے ریڈیم کریں",
+    "goldCoinsExchange": "انعامات ریڈیم کریں",
     "topupStatus": "ٹاپ اپ کی حیثیت",
     "feedback": "رائے",
     "feedbackSubmitted": "رائے جمع ہو گئی",
     "default": "صفحہ"
   },
   "common": {
-    "goldCoins": "گولڈ کوائنز",
+    "goldCoins": "سکے",
     "coins": "سکے",
     "close": "بند کریں",
     "back": "واپس",
@@ -58,7 +58,7 @@
   "center": {
     "myBalance": "میرا بیلنس",
     "redeem": "ریڈیم",
-    "redeemGapNeed": "{target} تک پہنچنے کے لیے مزید {count} سکے باقی",
+    "redeemGapNeed": "مزید {count} سکے حاصل کریں اور انعامات ریڈیم کریں!",
     "redeemGapReady": "آپ اب انعامات ریڈیم کر سکتے ہیں",
     "redeemRewardsTitle": "انعامات ریڈیم کریں",
     "recentRedemptionsTitle": "انعام حاصل کرنے والے صارفین",
@@ -78,10 +78,10 @@
     "flowStepRedeemTitle": "انعامات ریڈیم",
     "flowStepRedeemDesc": "مختلف آئٹمز کے لیے سکے تبدیل کریں۔",
     "flowStepTasks": "ٹاسک\nمکمل کریں",
-    "flowStepCoins": "گولڈ\nسکے حاصل کریں",
+    "flowStepCoins": "سکے\nحاصل کریں",
     "flowStepCredit": "کریڈٹ\nریڈیم کریں",
     "flowTipBadge": "تجویز",
-    "flowTipDesc": "گولڈ سکوں سے مقامی موبائل ریچارج اور دیگر انعامات ریڈیم کریں۔",
+    "flowTipDesc": "سکوں سے مقامی موبائل ریچارج اور دیگر انعامات ریڈیم کریں۔",
     "dailyCheckin": "روزانہ چیک اِن",
     "checkinNow": "آج کے سکے حاصل کریں",
     "checkinPromptTitle": "آج {coin} کوائنز کلیم کریں",
@@ -173,6 +173,7 @@
     "checkinChestCongratulations": "مبارک ہو!",
     "checkinChestYouGot": "آپ کو ملے",
     "checkinChestClaim": "حاصل کریں",
+    "checkinChestProcessing": "آپ کا انعام پروسیس ہو رہا ہے۔ براہ کرم تھوڑی دیر بعد دوبارہ دیکھیں۔",
     "coinRainLeaveBeforeStartDesc": "اگر اب چھوڑیں تو آپ آج دوبارہ کوائن رین میں شامل نہیں ہو سکیں گے۔",
     "coinRainAlreadyJoinedTitle": "آج آپ پہلے ہی کوائن رین میں شامل ہو چکے ہیں۔",
     "coinRainAlreadyJoinedDesc": "مزید کوائنز کے لیے کل واپس آئیں۔",
@@ -200,7 +201,7 @@
     "videoCompletedReward": "ویڈیو مکمل! سکے دے دیے گئے۔"
   },
   "redeem": {
-    "pageTitle": "والٹ اور ریڈیم",
+    "pageTitle": "انعامات ریڈیم کریں",
     "totalBalance": "کل بیلنس",
     "localCurrencyHint": "≈ {amount} مقامی کرنسی",
     "tabListLabel": "ریڈیم کی قسم",
@@ -272,7 +273,7 @@
     "confirmPrefix": "استعمال کریں ",
     "confirmInfix": " سکے ریڈیم کرنے کے لیے ",
     "confirmSuffix": "؟",
-    "confirmTopupFallback": "{name} ٹاپ اپ ریڈیم کرنے کے لیے {coins} گولڈ سکے استعمال کریں؟",
+    "confirmTopupFallback": "{name} ٹاپ اپ ریڈیم کرنے کے لیے {coins} سکے استعمال کریں؟",
     "coinsUnit": "{count} سکے",
     "loadingOptions": "ریچارج کے اختیارات لوڈ ہو رہے ہیں...",
     "notEnoughCoins": "ریڈیم کے لیے کافی سکے نہیں",
@@ -281,6 +282,7 @@
     "invalidPhone": "غلط فون نمبر",
     "redeemFailed": "ریڈیم ناکام، براہ کرم دوبارہ کوشش کریں",
     "submitFailed": "جمع کرانا ناکام، براہ کرم دوبارہ کوشش کریں",
+    "submissionPending": "آپ کا آرڈر ابھی زیرِ عمل ہو سکتا ہے۔ براہ کرم بعد میں ریڈیم کی تاریخ دیکھیں۔",
     "missingDistributorRef": "distributor_ref موجود نہیں",
     "summarySelected": "{countryCode} {mobile} کے لیے {operator} ({label}) {action} کرنے کے لیے {coins} سکے استعمال کریں"
   },

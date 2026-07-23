@@ -16,6 +16,7 @@ import * as logger from "./activity-logger.js";
  *   newUserBonusClaimInFlight: { value: boolean },
  *   checkinChestAdInFlight: { value: boolean },
  *   checkinChestClaimInFlight: { value: boolean },
+ *   checkinChestSettlingIds?: Set<number>,
  *   onCheckinVideoRewardClaimed: () => void,
  * }} ctx
  */
@@ -26,22 +27,20 @@ async function handleRewardAdEvent(ctx, result) {
     adapter,
     apiOptions,
     getLastRewardAdTaskId,
-    rewardAdTimeout,
     normalizeAdMessage,
     showDailyAdLimitToast,
     newUserBonusAdInFlight,
     newUserBonusClaimInFlight,
     checkinChestAdInFlight,
     checkinChestClaimInFlight,
+    checkinChestSettlingIds = new Set(),
     getCheckinChest,
-    checkinChestAdTimeout,
     coinRainAdInFlight,
-    coinRainAdTimeout,
   } = ctx;
 
   const success = result.success;
   const message = result.message || "";
-  const taskId = result.taskId || result.task_id || getLastRewardAdTaskId();
+  const taskId = result.taskId || result.task_id || getLastRewardAdTaskId?.();
 
   logger.log("[活动事件完成] reward_ad taskId=" + taskId + ", success=" + success, {
     adStatusCode: result.adStatusCode,
@@ -51,12 +50,10 @@ async function handleRewardAdEvent(ctx, result) {
   });
 
   if (taskId === "task_coin_rain") {
-    coinRainAdTimeout?.clear();
     coinRainAdInFlight.value = false;
     if (!success) {
       ui.setCoinRainAdLoading(false);
       const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
-      showToast(displayMessage, "warning");
       adapter.trackEvent("coin_rain_ad_failed", {
         page_id: ACTIVITY_CENTER_PAGE_ID,
         task_id: taskId,
@@ -118,7 +115,8 @@ async function handleRewardAdEvent(ctx, result) {
     }
 
     const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
-    showToast(displayMessage, "warning");
+    // The native SDK already presents an actionable error dialog for rewarded
+    // ad availability failures. Do not show a second H5 toast for the same event.
     adapter.trackEvent("new_user_bonus_video_failed", {
       taskId,
       reason: displayMessage,
@@ -130,13 +128,11 @@ async function handleRewardAdEvent(ctx, result) {
   }
 
   if (taskId === "task_checkin_chest") {
-    checkinChestAdTimeout?.clear();
     checkinChestAdInFlight.value = false;
     const chest = getCheckinChest?.();
     if (!success || !chest?.id) {
       ui.setCheckinChestLoading(false);
       const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
-      if (!success) showToast(displayMessage, "warning");
       adapter.trackEvent("checkin_chest_ad_failed", {
         page_id: ACTIVITY_CENTER_PAGE_ID,
         task_id: taskId,
@@ -147,11 +143,13 @@ async function handleRewardAdEvent(ctx, result) {
     }
     if (checkinChestClaimInFlight.value) return;
     checkinChestClaimInFlight.value = true;
+    checkinChestSettlingIds.add(Number(chest.id));
     const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? "";
     const claimResult = await business.submitCheckinChestAction(apiOptions, "claim", chest.id, adEventId);
     checkinChestClaimInFlight.value = false;
     ui.setCheckinChestLoading(false);
     if (claimResult?.ok) {
+      checkinChestSettlingIds.delete(Number(chest.id));
       ui.hideCheckinChestDialog();
       ui.showCheckinChestRewardDialog(claimResult.coin);
       adapter.trackEvent("checkin_chest_reward_granted", {
@@ -168,6 +166,7 @@ async function handleRewardAdEvent(ctx, result) {
         chest_id: chest.id,
       });
     } else {
+      checkinChestSettlingIds.delete(Number(chest.id));
       showToast(claimResult?.message || adNotCompletedMessage(), "error");
       adapter.trackEvent("checkin_chest_claim_failed", {
         page_id: ACTIVITY_CENTER_PAGE_ID,
@@ -178,8 +177,6 @@ async function handleRewardAdEvent(ctx, result) {
     }
     return;
   }
-
-  rewardAdTimeout?.clear();
 
   if (taskId !== "task_watch_ad") return;
 
@@ -209,7 +206,7 @@ async function handleRewardAdEvent(ctx, result) {
   }
 
   const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
-  ui.handleRewardAdFailedForSpin(displayMessage);
+  ui.handleRewardAdFailedForSpin(displayMessage, { showFailureToast: false });
   adapter.trackEvent("ad_watch_failed", {
     taskId: "task_watch_ad",
     reason: displayMessage,
@@ -229,18 +226,15 @@ async function handleInterstitialAdEvent(ctx, result) {
     adapter,
     apiOptions,
     getLastInterstitialAdTaskId,
-    interstitialAdTimeout,
     normalizeAdMessage,
     checkinVideoClaimInFlight,
     checkinWatchAdInFlight,
     onCheckinVideoRewardClaimed,
   } = ctx;
 
-  interstitialAdTimeout?.clear();
-
   const success = result.success;
   const message = result.message || "";
-  const taskId = result.taskId || result.task_id || getLastInterstitialAdTaskId();
+  const taskId = result.taskId || result.task_id || getLastInterstitialAdTaskId?.();
 
   logger.log("[活动事件完成] interstitial_ad taskId=" + taskId + ", success=" + success, {
     adStatusCode: result.adStatusCode,
@@ -282,7 +276,6 @@ async function handleInterstitialAdEvent(ctx, result) {
   checkinWatchAdInFlight.value = false;
   ui.setSigninWatchLoading(false);
   const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
-  showToast(displayMessage, "warning");
   adapter.trackEvent("checkin_video_failed", {
     page_id: ACTIVITY_CENTER_PAGE_ID,
     task_id: taskId,
@@ -309,12 +302,12 @@ export function createActivitySdkEventHandler(ctx) {
     const RewardAd = window.ActivityBridgeHelper?.EventType?.REWARD_AD;
     const InterstitialAd = window.ActivityBridgeHelper?.EventType?.INTERSTITIAL_AD;
 
-    if (eventType === RewardAd) {
+    if (eventType === RewardAd || eventType === "reward_ad") {
       await handleRewardAdEvent(ctx, result);
       return;
     }
 
-    if (eventType === InterstitialAd) {
+    if (eventType === InterstitialAd || eventType === "interstitial_ad") {
       await handleInterstitialAdEvent(ctx, result);
     }
   };

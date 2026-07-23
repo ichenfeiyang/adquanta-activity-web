@@ -42,6 +42,22 @@ test("leave dialog pauses rendering without extending the server deadline", () =
   assert.equal(ui._coinRainSession.endAt, endAtBeforeResume);
 });
 
+test("abandoning during the local countdown does not call the server", async () => {
+  let cancelled = 0;
+  let abandoned = 0;
+  const ui = {
+    ...coinRainUiMixin,
+    config: { onCoinRainAbandon: async () => { abandoned += 1; } },
+    _coinRainSession: { preparing: true, settling: false, settlementPending: false },
+    cancelCoinRainPreparation() { cancelled += 1; },
+  };
+
+  await ui.abandonCoinRainImmediately();
+
+  assert.equal(cancelled, 1);
+  assert.equal(abandoned, 0);
+});
+
 test("paused game timer still settles when the deadline elapses", () => {
   const previousWindow = globalThis.window;
   let intervalCb = null;

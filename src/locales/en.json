@@ -1,14 +1,14 @@
 {
   "pages": {
     "activityCenter": "Rewards Center",
-    "goldCoinsExchange": "Redeem Coins",
+    "goldCoinsExchange": "Redeem Rewards",
     "topupStatus": "Top-up Status",
     "feedback": "Feedback",
     "feedbackSubmitted": "Feedback Submitted",
     "default": "Page"
   },
   "common": {
-    "goldCoins": "Gold Coins",
+    "goldCoins": "Coins",
     "coins": "Coins",
     "close": "Close",
     "back": "Back",
@@ -58,7 +58,7 @@
   "center": {
     "myBalance": "My Balance",
     "redeem": "Redeem",
-    "redeemGapNeed": "{count} coins to go to reach {target}",
+    "redeemGapNeed": "Earn {count} more coins to redeem rewards!",
     "redeemGapReady": "You can redeem rewards now",
     "redeemRewardsTitle": "Redeem Rewards",
     "recentRedemptionsTitle": "Users Who Claimed Rewards",
@@ -78,10 +78,10 @@
     "flowStepRedeemTitle": "Redeem Rewards",
     "flowStepRedeemDesc": "Exchange coins for various items.",
     "flowStepTasks": "Complete\ntasks",
-    "flowStepCoins": "Earn\ngold coins",
+    "flowStepCoins": "Earn\ncoins",
     "flowStepCredit": "Redeem\ncredit",
     "flowTipBadge": "Tip",
-    "flowTipDesc": "Use gold coins to redeem local mobile recharge and other rewards.",
+    "flowTipDesc": "Use coins to redeem local mobile recharge and other rewards.",
     "dailyCheckin": "Daily Check-in",
     "checkinNow": "Claim Today’s Reward",
     "checkinPromptTitle": "Claim {coin} Coins Today",
@@ -173,6 +173,7 @@
     "checkinChestCongratulations": "Congratulations!",
     "checkinChestYouGot": "You got",
     "checkinChestClaim": "Claim",
+    "checkinChestProcessing": "Your reward is being processed. Please check back shortly.",
     "coinRainLeaveBeforeStartDesc": "If you leave now, you cannot join Coin Rain again today.",
     "coinRainAlreadyJoinedTitle": "You've already joined today's Coin Rain.",
     "coinRainAlreadyJoinedDesc": "Come back tomorrow for more coins.",
@@ -200,7 +201,7 @@
     "videoCompletedReward": "Video completed! Coins rewarded."
   },
   "redeem": {
-    "pageTitle": "Wallet & Redemption",
+    "pageTitle": "Redeem Rewards",
     "totalBalance": "Total Balance",
     "localCurrencyHint": "≈ {amount} Local Currency",
     "tabListLabel": "Redemption type",
@@ -272,7 +273,7 @@
     "confirmPrefix": "Use ",
     "confirmInfix": " coins to redeem ",
     "confirmSuffix": "?",
-    "confirmTopupFallback": "Use {coins} Gold Coins to redeem {name} top-up?",
+    "confirmTopupFallback": "Use {coins} Coins to redeem {name} top-up?",
     "coinsUnit": "{count} coins",
     "loadingOptions": "Loading recharge options...",
     "notEnoughCoins": "Not enough coins to redeem",
@@ -281,6 +282,7 @@
     "invalidPhone": "Invalid phone number",
     "redeemFailed": "Redemption failed, please try again",
     "submitFailed": "Submit failed, please try again",
+    "submissionPending": "Your order may still be processing. Please check Redemption History later.",
     "missingDistributorRef": "Missing distributor_ref",
     "summarySelected": "Use {coins} coins to {action} {label} ({operator}) for {countryCode} {mobile}"
   },

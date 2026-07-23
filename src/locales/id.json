@@ -1,14 +1,14 @@
 {
   "pages": {
     "activityCenter": "Pusat Hadiah",
-    "goldCoinsExchange": "Tukar Koin",
+    "goldCoinsExchange": "Tukar Hadiah",
     "topupStatus": "Status Isi Ulang",
     "feedback": "Masukan",
     "feedbackSubmitted": "Masukan Terkirim",
     "default": "Halaman"
   },
   "common": {
-    "goldCoins": "Koin Emas",
+    "goldCoins": "Koin",
     "coins": "Koin",
     "close": "Tutup",
     "back": "Kembali",
@@ -58,7 +58,7 @@
   "center": {
     "myBalance": "Saldo Saya",
     "redeem": "Tukar",
-    "redeemGapNeed": "{count} koin lagi untuk mencapai {target}",
+    "redeemGapNeed": "Dapatkan {count} koin lagi untuk menukar hadiah!",
     "redeemGapReady": "Anda bisa menukar hadiah sekarang",
     "redeemRewardsTitle": "Tukar Hadiah",
     "recentRedemptionsTitle": "Pengguna yang Berhasil Menukar Hadiah",
@@ -78,10 +78,10 @@
     "flowStepRedeemTitle": "Tukar Hadiah",
     "flowStepRedeemDesc": "Tukar koin dengan berbagai item.",
     "flowStepTasks": "Selesaikan\ntugas",
-    "flowStepCoins": "Dapatkan\nkoin emas",
+    "flowStepCoins": "Dapatkan\nkoin",
     "flowStepCredit": "Tukar\npulsa",
     "flowTipBadge": "Tips",
-    "flowTipDesc": "Gunakan koin emas untuk menukar pulsa lokal dan hadiah lainnya.",
+    "flowTipDesc": "Gunakan koin untuk menukar pulsa lokal dan hadiah lainnya.",
     "dailyCheckin": "Check-in Harian",
     "checkinNow": "Klaim Koin Hari Ini",
     "checkinPromptTitle": "Klaim {coin} Koin Hari Ini",
@@ -173,6 +173,7 @@
     "checkinChestCongratulations": "Selamat!",
     "checkinChestYouGot": "Anda mendapat",
     "checkinChestClaim": "Klaim",
+    "checkinChestProcessing": "Hadiah sedang diproses. Silakan cek kembali sebentar lagi.",
     "coinRainLeaveBeforeStartDesc": "Jika keluar sekarang, Anda tidak dapat mengikuti Hujan Koin lagi hari ini.",
     "coinRainAlreadyJoinedTitle": "Anda sudah ikut Hujan Koin hari ini.",
     "coinRainAlreadyJoinedDesc": "Kembali lagi besok untuk koin lainnya.",
@@ -200,7 +201,7 @@
     "videoCompletedReward": "Video selesai! Koin telah diberikan."
   },
   "redeem": {
-    "pageTitle": "Dompet & Penukaran",
+    "pageTitle": "Tukar Hadiah",
     "totalBalance": "Saldo Total",
     "localCurrencyHint": "≈ {amount} Mata Uang Lokal",
     "tabListLabel": "Jenis penukaran",
@@ -272,7 +273,7 @@
     "confirmPrefix": "Gunakan ",
     "confirmInfix": " koin untuk menukar ",
     "confirmSuffix": "?",
-    "confirmTopupFallback": "Gunakan {coins} Koin Emas untuk menukar isi ulang {name}?",
+    "confirmTopupFallback": "Gunakan {coins} Koin untuk menukar isi ulang {name}?",
     "coinsUnit": "{count} koin",
     "loadingOptions": "Memuat opsi isi ulang...",
     "notEnoughCoins": "Koin tidak cukup untuk ditukar",
@@ -281,6 +282,7 @@
     "invalidPhone": "Nomor telepon tidak valid",
     "redeemFailed": "Penukaran gagal, silakan coba lagi",
     "submitFailed": "Pengiriman gagal, silakan coba lagi",
+    "submissionPending": "Pesanan Anda mungkin masih diproses. Silakan periksa Riwayat Penukaran nanti.",
     "missingDistributorRef": "distributor_ref tidak ditemukan",
     "summarySelected": "Gunakan {coins} koin untuk {action} {label} ({operator}) untuk {countryCode} {mobile}"
   },

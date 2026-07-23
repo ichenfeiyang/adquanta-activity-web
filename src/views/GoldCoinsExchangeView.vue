@@ -263,9 +263,13 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
 
   <div v-if="privacyPolicyOpen" class="redeem-privacy-modal" role="dialog" aria-modal="true" :aria-label="t('redeem.privacyPolicyTitle')" @click.self="privacyPolicyOpen = false">
     <section class="redeem-privacy-modal-card">
-      <button type="button" class="redeem-privacy-modal-close" :aria-label="t('common.close')" @click="privacyPolicyOpen = false">×</button>
-      <h2>{{ t('redeem.privacyPolicyTitle') }}</h2>
-      <p class="redeem-privacy-modal-content">{{ t('redeem.privacyPolicyContent') }}</p>
+      <header class="redeem-privacy-modal-header">
+        <h2>{{ t('redeem.privacyPolicyTitle') }}</h2>
+        <button type="button" class="redeem-privacy-modal-close" :aria-label="t('common.close')" @click="privacyPolicyOpen = false">×</button>
+      </header>
+      <div class="redeem-privacy-modal-scroll" tabindex="0">
+        <p class="redeem-privacy-modal-content">{{ t('redeem.privacyPolicyContent') }}</p>
+      </div>
     </section>
   </div>
 </template>

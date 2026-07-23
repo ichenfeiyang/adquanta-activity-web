@@ -320,10 +320,15 @@ export const spinUiMixin = {
     this.updateSpinWheelSubtitle();
   },
 
-  handleRewardAdFailedForSpin(message = adFailedMessage()) {
+  handleRewardAdFailedForSpin(message = adFailedMessage(), { showFailureToast = true } = {}) {
     this._waitingAdForSpin = false;
     this.enterSpinWatchAgainMode();
-    showToast(message, "warning");
+    if (showFailureToast) showToast(message, "warning");
+  },
+
+  cancelPendingSpinAd() {
+    this._waitingAdForSpin = false;
+    this.enterSpinWatchAgainMode();
   },
 
   handleSpinWheelBottomClick() {
@@ -331,7 +336,10 @@ export const spinUiMixin = {
     if (btn?.disabled) return;
 
     if (this._turntableNeedsWatch) {
-      if (this._waitingAdForSpin) return;
+      if (this._waitingAdForSpin) {
+        showToast(t("common.processing"), "info");
+        return;
+      }
       if (this.config.isDailyAdLimitReached?.()) {
         const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
         this.handleRewardAdFailedForSpin(message);
@@ -339,7 +347,6 @@ export const spinUiMixin = {
         return;
       }
       this._waitingAdForSpin = true;
-      this.setSpinWheelBottomButton({ disabled: true });
       this.config.onWatchAdClick();
       return;
     }
@@ -400,7 +407,7 @@ export const spinUiMixin = {
       // Safety fallback: no spin chances locally, go back to watch mode.
       this._turntableNeedsWatch = true;
       this._waitingAdForSpin = true;
-      this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: true });
+      this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: false });
       this.config.onWatchAdClick();
       return;
     }

@@ -142,23 +142,28 @@ export const checkinUiMixin = {
         const isCurrent = day.day === current?.day;
         const hasChest = !day.received && (chestDays.has(Number(day.day)) || pendingChestDays.has(Number(day.day)));
         item.className = `checkin-prompt-day${day.received ? " is-done" : ""}${isCurrent ? " is-current" : ""}${hasChest ? " is-chest" : ""}`;
+        const chestSlot = document.createElement("div");
+        chestSlot.className = "checkin-prompt-day-chest-slot";
         const label = document.createElement("span");
         label.className = "checkin-prompt-day-label";
         label.textContent = t("common.day", { day: day.day });
+        if (hasChest) {
+          const chestIcon = document.createElement("img");
+          chestIcon.src = assetUrl("images/checkin-prompt-lucky-chest.png");
+          chestIcon.alt = "";
+          chestIcon.className = "checkin-prompt-chest-icon";
+          chestSlot.appendChild(chestIcon);
+        }
         const reward = document.createElement("strong");
         reward.className = "checkin-prompt-day-reward";
         reward.textContent = day.received ? "✓" : `+${Number(day.coin || 0)}`;
         const unit = document.createElement("span");
         unit.className = "checkin-prompt-day-unit";
         unit.textContent = t("common.coins");
-        item.append(label);
-        if (hasChest) {
-          const chestIcon = document.createElement("img");
-          chestIcon.src = assetUrl("images/checkin-prompt-lucky-chest.png");
-          chestIcon.alt = "";
-          chestIcon.className = "checkin-prompt-chest-icon";
-          item.appendChild(chestIcon);
-        }
+        // Every card keeps this slot so chest badges sit above the day label
+        // without shifting labels or rewards in the other cards.
+        item.appendChild(chestSlot);
+        item.appendChild(label);
         item.appendChild(reward);
         // Always render this slot so completed days keep the same reward layout
         // as pending days. Its content is visually hidden for completed days.
@@ -399,12 +404,7 @@ export const checkinUiMixin = {
       this.updateSigninDialogVideoButtonState();
       return;
     }
-    this.elements.signinDialogWatchBtn.disabled = !!loading;
-    if (loading) {
-      this.elements.signinDialogWatchBtn.classList.add("tc-signin-watch-loading");
-    } else {
-      this.elements.signinDialogWatchBtn.classList.remove("tc-signin-watch-loading");
-    }
+    this.elements.signinDialogWatchBtn.setAttribute("aria-busy", String(!!loading));
   },
 
 };

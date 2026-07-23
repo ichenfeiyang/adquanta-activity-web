@@ -10,6 +10,7 @@ import { syncGoldCoinsFromActivityInfo } from "./ga-user-properties.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env?.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
+export const CHARGE_REDEEM_TIMEOUT_MS = 15_000;
 
 function buildAuthHeaders(options = {}) {
   const token = options.token ?? "";
@@ -302,6 +303,7 @@ export async function postChargeRedeem(options = {}, body = {}) {
       send_value: body.send_value ?? "",
       phone_number: body.phone_number ?? "",
     }),
+    timeoutMs: CHARGE_REDEEM_TIMEOUT_MS,
   });
 }
 

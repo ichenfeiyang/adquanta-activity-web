@@ -35,7 +35,7 @@ export const checkinChestUiMixin = {
 
   setCheckinChestLoading(loading) {
     for (const element of [this.elements.checkinChestWatchBtn, this.elements.checkinChestDismissBtn]) {
-      if (element) element.disabled = !!loading;
+      if (element) element.setAttribute("aria-busy", String(!!loading));
     }
   },
 };

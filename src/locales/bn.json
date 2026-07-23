@@ -1,14 +1,14 @@
 {
   "pages": {
     "activityCenter": "রিওয়ার্ডস সেন্টার",
-    "goldCoinsExchange": "কয়েন রিডিম করুন",
+    "goldCoinsExchange": "পুরস্কার রিডিম করুন",
     "topupStatus": "টপ-আপ স্ট্যাটাস",
     "feedback": "মতামত",
     "feedbackSubmitted": "মতামত জমা হয়েছে",
     "default": "পৃষ্ঠা"
   },
   "common": {
-    "goldCoins": "গোল্ড কয়েন",
+    "goldCoins": "কয়েন",
     "coins": "কয়েন",
     "close": "বন্ধ",
     "back": "পিছনে",
@@ -58,7 +58,7 @@
   "center": {
     "myBalance": "আমার ব্যালেন্স",
     "redeem": "রিডিম",
-    "redeemGapNeed": "{target}-এ পৌঁছাতে আরও {count} কয়েন বাকি",
+    "redeemGapNeed": "পুরস্কার রিডিম করতে আরও {count} কয়েন অর্জন করুন!",
     "redeemGapReady": "আপনি এখন পুরস্কার রিডিম করতে পারেন",
     "redeemRewardsTitle": "পুরস্কার রিডিম করুন",
     "recentRedemptionsTitle": "যেসব ব্যবহারকারী পুরস্কার নিয়েছেন",
@@ -78,10 +78,10 @@
     "flowStepRedeemTitle": "পুরস্কার রিডিম",
     "flowStepRedeemDesc": "বিভিন্ন আইটেমের জন্য কয়েন বদলান।",
     "flowStepTasks": "কাজ\nসম্পন্ন করুন",
-    "flowStepCoins": "গোল্ড\nকয়েন অর্জন",
+    "flowStepCoins": "কয়েন\nঅর্জন",
     "flowStepCredit": "ক্রেডিট\nরিডিম",
     "flowTipBadge": "টিপ",
-    "flowTipDesc": "স্থানীয় মোবাইল রিচার্জ ও অন্যান্য পুরস্কার রিডিম করতে গোল্ড কয়েন ব্যবহার করুন।",
+    "flowTipDesc": "স্থানীয় মোবাইল রিচার্জ ও অন্যান্য পুরস্কার রিডিম করতে কয়েন ব্যবহার করুন।",
     "dailyCheckin": "দৈনিক চেক-ইন",
     "checkinNow": "আজকের কয়েন নিন",
     "checkinPromptTitle": "আজ {coin} কয়েন সংগ্রহ করুন",
@@ -173,6 +173,7 @@
     "checkinChestCongratulations": "অভিনন্দন!",
     "checkinChestYouGot": "আপনি পেয়েছেন",
     "checkinChestClaim": "ক্লেইম করুন",
+    "checkinChestProcessing": "আপনার পুরস্কার প্রক্রিয়াধীন। অনুগ্রহ করে একটু পরে আবার দেখুন।",
     "coinRainLeaveBeforeStartDesc": "এখন বের হলে আজ আর কয়েন রেইনে অংশ নিতে পারবেন না।",
     "coinRainAlreadyJoinedTitle": "আজ আপনি ইতিমধ্যে কয়েন রেইনে অংশ নিয়েছেন।",
     "coinRainAlreadyJoinedDesc": "আরও কয়েনের জন্য আগামীকাল ফিরে আসুন।",
@@ -200,7 +201,7 @@
     "videoCompletedReward": "ভিডিও সম্পন্ন! কয়েন পুরস্কৃত।"
   },
   "redeem": {
-    "pageTitle": "ওয়ালেট ও রিডেম্পশন",
+    "pageTitle": "পুরস্কার রিডিম করুন",
     "totalBalance": "মোট ব্যালেন্স",
     "localCurrencyHint": "≈ {amount} স্থানীয় মুদ্রা",
     "tabListLabel": "রিডেম্পশনের ধরন",
@@ -272,7 +273,7 @@
     "confirmPrefix": "ব্যবহার করুন ",
     "confirmInfix": " কয়েন রিডিম করতে ",
     "confirmSuffix": "?",
-    "confirmTopupFallback": "{name} টপ-আপ রিডিম করতে {coins} গোল্ড কয়েন ব্যবহার করবেন?",
+    "confirmTopupFallback": "{name} টপ-আপ রিডিম করতে {coins} কয়েন ব্যবহার করবেন?",
     "coinsUnit": "{count} কয়েন",
     "loadingOptions": "রিচার্জ অপশন লোড হচ্ছে...",
     "notEnoughCoins": "রিডিমের জন্য পর্যাপ্ত কয়েন নেই",
@@ -281,6 +282,7 @@
     "invalidPhone": "অবৈধ ফোন নম্বর",
     "redeemFailed": "রিডেম্পশন ব্যর্থ, অনুগ্রহ করে আবার চেষ্টা করুন",
     "submitFailed": "জমা দেওয়া ব্যর্থ, অনুগ্রহ করে আবার চেষ্টা করুন",
+    "submissionPending": "আপনার অর্ডার এখনও প্রক্রিয়াধীন থাকতে পারে। পরে রিডেম্পশন ইতিহাস দেখুন।",
     "missingDistributorRef": "distributor_ref নেই",
     "summarySelected": "{countryCode} {mobile}-এর জন্য {operator} ({label}) {action} করতে {coins} কয়েন ব্যবহার করুন"
   },

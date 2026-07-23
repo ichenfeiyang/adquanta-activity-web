@@ -37,6 +37,10 @@ import {
 } from "./redeem-country.js";
 import { shouldApplyLookupResult } from "./redeem-request-guard.js";
 
+function isChargeRedeemTimeoutError(error) {
+  return error?.name === "AbortError";
+}
+
 function formatRedeemCountryLabel(country) {
   const fallback = country?.name || country?.iso || "";
   if (!country?.nameKey) return fallback;
@@ -77,6 +81,7 @@ export class GoldCoinsExchange {
     this.config = {
       router: config.router || null,
       onExchangeFailed: config.onExchangeFailed || (() => {}),
+      onExchangePending: config.onExchangePending || config.onExchangeFailed || (() => {}),
       apiOptions: config.apiOptions || {},
       initialTab: config.initialTab || "",
     };
@@ -100,6 +105,9 @@ export class GoldCoinsExchange {
 
     // Redeem request lock (prevent multi-click / multi-request)
     this.exchangeLoading = false;
+    // A timed-out request may already have reached the server. Keep this page
+    // non-submittable until it is reopened to prevent a duplicate order.
+    this.exchangeSubmissionUncertain = false;
     this.lastSubmitAt = 0;
     this.submitDebounceMs = 800;
 
@@ -711,10 +719,12 @@ export class GoldCoinsExchange {
     const hasSelectedProduct = Boolean(this.state.selectedCharge?.charges_id);
     const canAfford = goldCoins > 0 && this.userGoldCoins >= goldCoins;
 
-    if (this.exchangeLoading) {
+    if (this.exchangeLoading || this.exchangeSubmissionUncertain) {
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
-      this.$.redeemSummary.textContent = t("common.processing");
+      this.$.redeemSummary.textContent = this.exchangeSubmissionUncertain
+        ? t("redeem.submissionPending")
+        : t("common.processing");
       return;
     }
 
@@ -941,11 +951,12 @@ export class GoldCoinsExchange {
 
       invalidateChargeRecordsCache(this.config.apiOptions?.token || "");
 
-      // Refresh wallet coin after redeem submit:
-      // poll every 3 seconds, max 4 times, stop once coin decreases.
-      await this.pollWalletAfterRedeem(this.userGoldCoins);
+      // The order reference is already durable at this point. Do not hold the
+      // user on this page while waiting for a wallet refresh: a provider may
+      // legitimately leave the order pending for a while.
+      void this.pollWalletAfterRedeem(this.userGoldCoins);
 
-      // Submit succeeded and order created: jump to detail page.
+      // Submit succeeded and order created: immediately jump to detail page.
       this.openTopupStatusPage({
         distributor_ref: distributorRef,
         status: String(res?.data?.status || "pending").toLowerCase(),
@@ -956,6 +967,16 @@ export class GoldCoinsExchange {
       });
       return;
     } catch (error) {
+      if (isChargeRedeemTimeoutError(error)) {
+        this.exchangeSubmissionUncertain = true;
+        logger.warn("Redeem top-up request timed out; order state is uncertain");
+        this.config.onExchangePending(t("redeem.submissionPending"));
+        void Promise.all([
+          this.loadActivityInfo({ force: true }),
+          this.loadRecords({ force: true }),
+        ]);
+        return;
+      }
       logger.error("Redeem top-up failed", error);
       this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {

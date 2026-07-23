@@ -149,7 +149,7 @@ export const coinRainUiMixin = {
     this._coinRainCountdownTimer = this._coinRainSpawnTimer = this._coinRainGameTimer = 0;
   },
 
-  startCoinRainSession(result, { resume = false } = {}) {
+  startCoinRainSession(result, { resume = false, skipCountdown = false } = {}) {
     if (!result?.session_id || !this.elements.coinRainOverlay) return;
     const baseMaxCoin = Number(result.base_max_coin);
     const displayMaxCoin = Number(result.display_max_coin ?? this._coinRainStatus?.display_max_coin);
@@ -200,7 +200,7 @@ export const coinRainUiMixin = {
       };
       document.addEventListener("visibilitychange", this._coinRainVisibilityHandler);
     }
-    if (resume) {
+    if (resume || skipCountdown) {
       this.elements.coinRainCountdown.style.display = "none";
       this.runCoinRain();
       return;
@@ -220,6 +220,81 @@ export const coinRainUiMixin = {
       this.elements.coinRainCountdown.style.display = "none";
       this.runCoinRain();
     }, 1000);
+  },
+
+  startCoinRainPreparation(status, onReady) {
+    if (this._coinRainSession || !this.elements.coinRainOverlay) return false;
+    const baseMaxCoin = Number(status?.base_max_coin);
+    const displayMaxCoin = Number(status?.display_max_coin);
+    if (!Number.isSafeInteger(baseMaxCoin) || baseMaxCoin <= 0 || !Number.isSafeInteger(displayMaxCoin) || displayMaxCoin < baseMaxCoin) {
+      showToast(t("center.coinRainUnavailable"), "error");
+      return false;
+    }
+    this._coinRainSession = {
+      sessionId: "",
+      baseMaxCoin,
+      displayMaxCoin,
+      duration: Math.max(10, Number(status?.duration_seconds ?? 30) || 30),
+      clicked: 0,
+      running: false,
+      preparing: true,
+      starting: false,
+      paused: false,
+      settling: false,
+      settlementPending: false,
+      pauseStartedAt: 0,
+      endAt: 0,
+      deadlineAt: 0,
+    };
+    this.elements.coinRainCollected.textContent = "0";
+    this.updateCoinRainMultiplier(0);
+    this.elements.coinRainTime.textContent = `00:${String(this._coinRainSession.duration).padStart(2, "0")}`;
+    this.updateCoinRainGameProgress(this._coinRainSession.duration * 1000, this._coinRainSession.duration * 1000);
+    this.updateCoinRainCountdownMax(displayMaxCoin);
+    this.elements.coinRainStage?.replaceChildren();
+    this.elements.coinRainCountdown.style.display = "flex";
+    this.elements.coinRainOverlay.classList.add("is-countdown");
+    this.elements.coinRainOverlay.classList.remove("is-paused");
+    this.hideCoinRainLeaveDialog(false);
+    this.elements.coinRainOverlay.style.display = "block";
+    if (typeof document !== "undefined" && document.body) document.body.style.overflow = "hidden";
+
+    let count = 3;
+    this.setCoinRainCountdownValue(count);
+    this.clearCoinRainLocalTimers();
+    this._coinRainCountdownTimer = window.setInterval(() => {
+      const session = this._coinRainSession;
+      if (!session || !session.preparing || session.paused) return;
+      count -= 1;
+      if (count > 0) {
+        this.setCoinRainCountdownValue(count);
+        return;
+      }
+      clearTimer(this._coinRainCountdownTimer);
+      this._coinRainCountdownTimer = 0;
+      session.starting = true;
+      this.elements.coinRainCountdown.style.display = "none";
+      void onReady?.();
+    }, 1000);
+    return true;
+  },
+
+  isCoinRainPreparationActive() {
+    return this._coinRainSession?.preparing === true;
+  },
+
+  cancelCoinRainPreparation() {
+    const session = this._coinRainSession;
+    if (!session?.preparing) return;
+    this.clearCoinRainLocalTimers();
+    this._coinRainSession = null;
+    this.elements.coinRainStage?.replaceChildren();
+    if (this.elements.coinRainOverlay) {
+      this.elements.coinRainOverlay.style.display = "none";
+      this.elements.coinRainOverlay.classList.remove("is-countdown", "is-paused");
+    }
+    this.hideCoinRainLeaveDialog(false);
+    if (typeof document !== "undefined" && document.body) document.body.style.overflow = "";
   },
 
   restoreCoinRainSettlement(result) {
@@ -385,6 +460,10 @@ export const coinRainUiMixin = {
   async abandonCoinRainImmediately() {
     const session = this._coinRainSession;
     if (!session || session.settling || session.settlementPending) return;
+    if (session.preparing) {
+      this.cancelCoinRainPreparation();
+      return;
+    }
     // Match the server's settlement admission boundary. A leave confirmed at
     // the end of the game must settle, not discard the locally collected count.
     if (session.endAt > 0 && Date.now() >= session.endAt - 2_000) {
@@ -488,12 +567,10 @@ export const coinRainUiMixin = {
 
   setCoinRainAdLoading(loading) {
     if (!this.elements.coinRainWatchAd) return;
-    this.elements.coinRainWatchAd.disabled = !!loading;
-    this.elements.coinRainWatchAd.textContent = loading
-      ? t("common.processing")
-      : this.elements.coinRainResult?.classList.contains("is-boost-prompt")
-        ? t("center.coinRainWatchVideo")
-        : t("center.coinRainWatchAd");
+    this.elements.coinRainWatchAd.setAttribute("aria-busy", String(!!loading));
+    this.elements.coinRainWatchAd.textContent = this.elements.coinRainResult?.classList.contains("is-boost-prompt")
+      ? t("center.coinRainWatchVideo")
+      : t("center.coinRainWatchAd");
   },
 
   showCoinRainBoostSuccess(result) {

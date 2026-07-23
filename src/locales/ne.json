@@ -1,14 +1,14 @@
 {
   "pages": {
     "activityCenter": "पुरस्कार केन्द्र",
-    "goldCoinsExchange": "सिक्का रिडिम गर्नुहोस्",
+    "goldCoinsExchange": "पुरस्कार रिडिम गर्नुहोस्",
     "topupStatus": "टप-अप स्थिति",
     "feedback": "प्रतिक्रिया",
     "feedbackSubmitted": "प्रतिक्रिया पठाइयो",
     "default": "पृष्ठ"
   },
   "common": {
-    "goldCoins": "गोल्ड सिक्का",
+    "goldCoins": "सिक्का",
     "coins": "सिक्का",
     "close": "बन्द",
     "back": "पछाडि",
@@ -58,7 +58,7 @@
   "center": {
     "myBalance": "मेरो ब्यालेन्स",
     "redeem": "रिडिम",
-    "redeemGapNeed": "{target} पुग्न अझै {count} सिक्का बाँकी",
+    "redeemGapNeed": "पुरस्कार रिडिम गर्न थप {count} सिक्का कमाउनुहोस्!",
     "redeemGapReady": "तपाईं अहिले पुरस्कार रिडिम गर्न सक्नुहुन्छ",
     "redeemRewardsTitle": "पुरस्कार रिडिम",
     "recentRedemptionsTitle": "पुरस्कार प्राप्त गर्ने प्रयोगकर्ताहरू",
@@ -78,10 +78,10 @@
     "flowStepRedeemTitle": "पुरस्कार रिडिम",
     "flowStepRedeemDesc": "विभिन्न आइटमका लागि सिक्का साट्नुहोस्।",
     "flowStepTasks": "कार्य\nपूरा गर्नुहोस्",
-    "flowStepCoins": "गोल्ड\nसिक्का कमाउनुहोस्",
+    "flowStepCoins": "सिक्का\nकमाउनुहोस्",
     "flowStepCredit": "क्रेडिट\nरिडिम",
     "flowTipBadge": "सुझाव",
-    "flowTipDesc": "स्थानीय मोबाइल रिचार्ज र अन्य पुरस्कार रिडिम गर्न गोल्ड सिक्का प्रयोग गर्नुहोस्।",
+    "flowTipDesc": "स्थानीय मोबाइल रिचार्ज र अन्य पुरस्कार रिडिम गर्न सिक्का प्रयोग गर्नुहोस्।",
     "dailyCheckin": "दैनिक चेक-इन",
     "checkinNow": "आजका सिक्का लिनुहोस्",
     "checkinPromptTitle": "आज {coin} सिक्का दाबी गर्नुहोस्",
@@ -173,6 +173,7 @@
     "checkinChestCongratulations": "बधाई छ!",
     "checkinChestYouGot": "तपाईंले पाउनुभयो",
     "checkinChestClaim": "दाबी गर्नुहोस्",
+    "checkinChestProcessing": "तपाईंको पुरस्कार प्रक्रियामा छ। कृपया केहीबेरपछि फेरि जाँच गर्नुहोस्।",
     "coinRainLeaveBeforeStartDesc": "अहिले छाड्नुभयो भने आज फेरि Coin Rain मा सहभागी हुन सक्नुहुने छैन।",
     "coinRainAlreadyJoinedTitle": "तपाईं आज पहिले नै Coin Rain मा सहभागी हुनुभएको छ।",
     "coinRainAlreadyJoinedDesc": "थप सिक्काका लागि भोलि फर्कनुहोस्।",
@@ -200,7 +201,7 @@
     "videoCompletedReward": "भिडियो पूरा! सिक्का प्रदान गरियो।"
   },
   "redeem": {
-    "pageTitle": "वालेट र रिडेम्पशन",
+    "pageTitle": "पुरस्कार रिडिम गर्नुहोस्",
     "totalBalance": "कुल ब्यालेन्स",
     "localCurrencyHint": "≈ {amount} स्थानीय मुद्रा",
     "tabListLabel": "रिडेम्पशन प्रकार",
@@ -272,7 +273,7 @@
     "confirmPrefix": "प्रयोग गर्नुहोस् ",
     "confirmInfix": " सिक्का रिडिम गर्न ",
     "confirmSuffix": "?",
-    "confirmTopupFallback": "{name} टप-अप रिडिम गर्न {coins} गोल्ड सिक्का प्रयोग गर्ने?",
+    "confirmTopupFallback": "{name} टप-अप रिडिम गर्न {coins} सिक्का प्रयोग गर्ने?",
     "coinsUnit": "{count} सिक्का",
     "loadingOptions": "रिचार्ज विकल्प लोड हुँदैछ...",
     "notEnoughCoins": "रिडिम गर्न पर्याप्त सिक्का छैन",
@@ -281,6 +282,7 @@
     "invalidPhone": "अवैध फोन नम्बर",
     "redeemFailed": "रिडेम्पशन असफल, कृपया पुनः प्रयास गर्नुहोस्",
     "submitFailed": "पेश गर्न असफल, कृपया पुनः प्रयास गर्नुहोस्",
+    "submissionPending": "तपाईंको अर्डर अझै प्रक्रियामा हुन सक्छ। कृपया पछि रिडेम्पशन इतिहास हेर्नुहोस्।",
     "missingDistributorRef": "distributor_ref छैन",
     "summarySelected": "{countryCode} {mobile} का लागि {operator} ({label}) {action} गर्न {coins} सिक्का प्रयोग गर्नुहोस्"
   },
