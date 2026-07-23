@@ -39,6 +39,7 @@ const props = defineProps({
 const emit = defineEmits(['exit']);
 
 const highlightRect = ref({ top: 0, left: 0, width: 0, height: 0 });
+const shadowClipPath = ref('polygon(0 0, 100% 0, 100% 100%, 0 100%)');
 const fingerPos     = ref({ x: 0, y: 0 });
 const textBoxTop    = ref(0);
 const textBoxMarginLeft = ref(0);
@@ -89,6 +90,10 @@ function recalc() {
     width:  rect.width,
     height: rect.height,
   };
+
+  // 阴影层 clip-path：顺时针外框 → 逆时针内框挖洞
+  const r = highlightRect.value;
+  shadowClipPath.value = `polygon(0 0,100% 0,100% 100%,0 100%,0 0,${r.left}px ${r.top}px,${r.left}px ${r.top + r.height}px,${r.left + r.width}px ${r.top + r.height}px,${r.left + r.width}px ${r.top}px,${r.left}px ${r.top}px)`;
 
   if (props.actionSelector) {
     const btn = document.querySelector(props.actionSelector);
@@ -243,25 +248,48 @@ function removeListeners() {
   scrollRAF = 0;
 }
 
+let shadowClickHandler = null;
+
+function bindShadowCatcher() {
+  unbindShadowCatcher();
+  nextTick(() => {
+    const el = document.querySelector('.ng-shadow-catcher');
+    if (el) {
+      shadowClickHandler = () => emit('exit');
+      el.addEventListener('click', shadowClickHandler);
+    }
+  });
+}
+
+function unbindShadowCatcher() {
+  if (shadowClickHandler) {
+    const el = document.querySelector('.ng-shadow-catcher');
+    if (el) el.removeEventListener('click', shadowClickHandler);
+    shadowClickHandler = null;
+  }
+}
+
 watch(() => props.active, (v) => {
   if (v) {
-    nextTick(() => { recalc(); computeCurvePath(); });
+    nextTick(() => { recalc(); computeCurvePath(); bindShadowCatcher(); });
     addListeners();
   } else {
     removeListeners();
+    unbindShadowCatcher();
     curvePath.value = '';
   }
 });
 
 onMounted(() => {
   if (props.active) {
-    nextTick(() => { recalc(); computeCurvePath(); });
+    nextTick(() => { recalc(); computeCurvePath(); bindShadowCatcher(); });
     addListeners();
   }
 });
 
 onBeforeUnmount(() => {
   removeListeners();
+  unbindShadowCatcher();
 });
 </script>
 
@@ -271,8 +299,12 @@ onBeforeUnmount(() => {
     <div
       v-if="active"
       class="ng-overlay"
-      @click="!actionSelector && onExit($event)"
     >
+      <!-- 可点击阴影层：clip-path 挖出高亮洞，点击阴影退出引导 -->
+      <div
+        class="ng-shadow-catcher"
+        :style="{ clipPath: shadowClipPath }"
+      />
       <div
         class="ng-highlight"
         :class="{ 'ng-highlight--glow': highlightGlow }"

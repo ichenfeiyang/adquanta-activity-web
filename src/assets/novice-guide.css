@@ -107,6 +107,15 @@
     0 0 36px 8px rgba(255, 92, 0, 0.12);
 }
 
+/* 可点击透明交互层：clip-path 挖出高亮洞，点击阴影区域退出引导 */
+.ng-shadow-catcher {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  z-index: 9999;
+  cursor: pointer;
+}
+
 .ng-finger {
   position: absolute;
   z-index: 10002;
