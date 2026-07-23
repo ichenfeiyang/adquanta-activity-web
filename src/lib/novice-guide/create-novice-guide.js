@@ -55,6 +55,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
   let isGuideActive = false;
   let stepAdvanceTimer = null;
   let stepActionCleanup = null;
+  let highlightClickCleanup = null;
 
   function clearStepTimers() {
     if (stepAdvanceTimer) {
@@ -64,6 +65,10 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     if (stepActionCleanup) {
       stepActionCleanup();
       stepActionCleanup = null;
+    }
+    if (highlightClickCleanup) {
+      highlightClickCleanup();
+      highlightClickCleanup = null;
     }
   }
 
@@ -144,6 +149,21 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.showWelcome  = false;
     state.showOverlay  = true;
     state.showComplete = false;
+
+    // 用户点击高亮卡片区域：触发 dismiss（Step 4 点击 My Balance 卡片）
+    if (cfg.highlightSelector && !cfg.actionSelector) {
+      const hlCard = document.querySelector(cfg.highlightSelector);
+      if (hlCard) {
+        const onHlClick = () => {
+          if (!isGuideActive || currentStep !== stepKey) return;
+          handleOverlayExit();
+        };
+        hlCard.addEventListener('click', onHlClick);
+        highlightClickCleanup = () => {
+          hlCard.removeEventListener('click', onHlClick);
+        };
+      }
+    }
 
     // 用户点击目标按钮后：仅隐藏 overlay
     // 推进逻辑完全由各步骤的 dismiss 回调负责（弹窗关闭或 API 失败时调用）

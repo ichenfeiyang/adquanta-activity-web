@@ -329,11 +329,11 @@ onBeforeUnmount(() => {
       <!-- 左气泡：Check in every day -->
       <div class="ng-bubble ng-bubble--left" :style="{ ...bubbleLeftStyle, '--arrow-x': arrowSvgLeft + 'px' }">
         <div class="ng-bubble-row">
-          <span class="ng-bubble-icon">📅</span>
+          <span class="ng-bubble-icon"><img :src="assetUrl('icons/icon_calendar.svg')" alt="" width="20" height="20"></span>
           <span class="ng-bubble-text">{{ bubbles[0]?.mainText }}</span>
         </div>
         <div class="ng-bubble-row">
-          <span class="ng-bubble-icon">🎬</span>
+          <span class="ng-bubble-icon"><img :src="assetUrl('icons/icon_video.svg')" alt="" width="20" height="20"></span>
           <span class="ng-bubble-text ng-bubble-text--sub">{{ bubbles[0]?.subText }}</span>
         </div>
       </div>
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
       <!-- 右气泡：Lucky chests -->
       <div class="ng-bubble ng-bubble--right" :style="bubbleRightStyle">
         <!-- 悬浮宝箱 Icon -->
-        <div class="ng-bubble-badge">🎁</div>
+        <div class="ng-bubble-badge"><img :src="assetUrl('icons/icon_gift.svg')" alt="" width="25" height="25"></div>
         <div class="ng-bubble-content">
           <p class="ng-bubble-main">{{ bubbles[1]?.mainText }}</p>
           <p class="ng-bubble-sub">{{ bubbles[1]?.subText }}</p>
