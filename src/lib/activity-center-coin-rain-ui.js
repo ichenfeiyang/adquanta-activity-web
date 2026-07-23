@@ -296,6 +296,7 @@ export const coinRainUiMixin = {
 
   hideCoinRainResult() {
     if (this.elements.coinRainResult) this.elements.coinRainResult.style.display = "none";
+    this.config.onCoinRainResultDismiss?.();
   },
 
   destroyCoinRain() {

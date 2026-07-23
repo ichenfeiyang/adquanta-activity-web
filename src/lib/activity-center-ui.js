@@ -147,6 +147,7 @@ export class ActivityCenterUI {
       onCoinRainSettle: config.onCoinRainSettle || (async () => ({ ok: false })),
       onCoinRainAbandon: config.onCoinRainAbandon || (() => {}),
       onCoinRainWatchAd: config.onCoinRainWatchAd || (() => {}),
+      onCoinRainResultDismiss: config.onCoinRainResultDismiss || (() => {}),
       ...config,
     };
 

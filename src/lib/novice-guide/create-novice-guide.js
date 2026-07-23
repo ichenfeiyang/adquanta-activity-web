@@ -281,6 +281,20 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     return true;
   }
 
+  // ---------- 金币雨弹框关闭回调 ----------
+  // initActivityCenter.js 会在金币雨结果弹窗关闭时调用此方法
+  function handleCoinRainDismiss() {
+    if (!isGuideActive || currentStep !== GUIDE_STEPS.STEP_COINRAIN) return false;
+    clearStepTimers();
+    const next = getNextStep(currentStep);
+    if (next) {
+      enterStep(next);
+    } else {
+      finishGuide();
+    }
+    return true;
+  }
+
   // ---------- 移除余额卡片外发光 ----------
   function removeCardGlow() {
     const balanceCard = document.querySelector('.tc-balance-card');
@@ -295,6 +309,7 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     start() { mount(); state.showWelcome = true; },
     handleSigninDismiss,
     handleSpinDismiss,
+    handleCoinRainDismiss,
     handleBalanceDismiss,
     isGuideRunning,
     dispose,

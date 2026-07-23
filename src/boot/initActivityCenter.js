@@ -258,6 +258,9 @@ export function initActivityCenter({ router, route }) {
           taskId: "task_watch_ad",
           error: error?.message || String(error),
         });
+        // 广告未接入时：关闭转盘弹窗，推进新手引导
+        ui.hideSpinWheel();
+        noviceGuide?.handleSpinDismiss();
       }
     },
     onSpinWheelOpen: async () => {
@@ -361,6 +364,9 @@ export function initActivityCenter({ router, route }) {
           taskId: "task_checkin",
           error: e?.message || String(e),
         });
+        // 广告未接入时：关闭签到弹窗，推进新手引导
+        ui.hideSigninDialog();
+        noviceGuide?.handleSigninDismiss();
       }
     },
     onSigninDialogDismiss: () => {
@@ -496,7 +502,13 @@ export function initActivityCenter({ router, route }) {
         coinRainAdInFlight.value = false;
         ui.setCoinRainAdLoading(false);
         showToast(normalizeAdMessage(error?.message, adNotAvailableMessage()), "error");
+        // 广告未接入时：关闭金币雨结果弹窗，推进新手引导
+        ui.hideCoinRainResult();
+        noviceGuide?.handleCoinRainDismiss();
       }
+    },
+    onCoinRainResultDismiss: () => {
+      noviceGuide?.handleCoinRainDismiss();
     },
   });
 
