@@ -328,7 +328,9 @@
     },
     "step3": {
       "text": "Tap coins and win rewards!",
-      "subtext": "Join once every day and win up to 400 Coins!"
+      "subtext": "Join once every day and win up to",
+      "extra": "400 Coins!",
+      "stepLabel": "Step 3 of 4"
     },
     "step4": {
       "text": "Check your Coins and track your progress toward rewards.",

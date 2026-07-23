@@ -72,7 +72,9 @@ export const COINRAIN_STEP = {
   actionSelector: '#tc-coin-rain-entry',
   guideTextKey: 'novice.step3.text',
   guideSubtextKey: 'novice.step3.subtext',
-  guideIcon: '💰',
+  guideExtraKey: 'novice.step3.extra',
+  guideIcon: '',
+  guideStepLabelKey: 'novice.step3.stepLabel',
   textPosition: 'above',
 };
 

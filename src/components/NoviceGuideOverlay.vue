@@ -40,6 +40,7 @@ const emit = defineEmits(['exit']);
 const highlightRect = ref({ top: 0, left: 0, width: 0, height: 0 });
 const fingerPos     = ref({ x: 0, y: 0 });
 const textBoxTop    = ref(0);
+const textBoxMarginLeft = ref(0);
 const containerStyle = ref({});
 const bubbleLeftStyle = ref({});
 const bubbleRightStyle = ref({});
@@ -64,8 +65,8 @@ function computeCurvePath() {
     const startY = boxRect.height * 0.35;
     // 终点：按钮正上方偏右空地（发光区域内）
     const btnCenterX = btnRect.left + btnRect.width / 2;
-    const endX = btnCenterX + btnRect.width * 0.3 - boxRect.left;
-    const endY = btnRect.top - 12 - boxRect.top;
+    const endX = btnCenterX + btnRect.width * 0.4 - boxRect.left;
+    const endY = btnRect.top - boxRect.top;
     // 二次贝塞尔：先向右凸出，再向下弯入
     const midX = Math.max(startX, endX) + 18;
     const midY = startY + (endY - startY) * 0.55;
@@ -92,10 +93,11 @@ function recalc() {
     const btn = document.querySelector(props.actionSelector);
     if (btn) {
       const btnRect = btn.getBoundingClientRect();
-      fingerPos.value = {
-        x: btnRect.left + btnRect.width * 0.68,
-        y: btnRect.top + btnRect.height * 0.3 + 10,
-      };
+      // Step 3：手指位于按钮右下角外侧
+        fingerPos.value = {
+          x: btnRect.left + btnRect.width * 0.9,
+          y: btnRect.top + btnRect.height * 0.5 + 10,
+        };
     }
   }
 
@@ -108,6 +110,11 @@ function recalc() {
   } else {
     textBoxTop.value = docTop - textBoxHeight - gap;
   }
+
+  // Step 3：气泡右移至卡片3/5位置（非居中）
+  textBoxMarginLeft.value = (props.extraText && props.textPosition === 'above')
+    ? rect.width * 0.1
+    : 0;
 
   // ── 双气泡容器模式 ──
   if (props.bubbles && props.bubbles.length && props.bubblesContainerSelector) {
@@ -363,7 +370,7 @@ onBeforeUnmount(() => {
         'ng-text-box--orange-icon': iconStyle === 'orange',
         'ng-text-box--glow': cardGlow,
       }"
-      :style="{ top: textBoxTop + 'px' }"
+      :style="{ top: textBoxTop + 'px', marginLeft: textBoxMarginLeft ? textBoxMarginLeft + 'px' : undefined }"
       @click="onExit"
     >
       <!-- Step 标签徽章 -->
@@ -374,13 +381,16 @@ onBeforeUnmount(() => {
         <span class="ng-header-badge-pill">{{ headerBadge }}</span>
       </div>
       <div class="ng-text-box-row">
-        <span v-if="!headerBadge" class="ng-text-box-icon">{{ icon }}</span>
+        <span v-if="!headerBadge && !stepLabel" class="ng-text-box-icon">{{ icon }}</span>
         <span class="ng-text-main">{{ mainText }}</span>
       </div>
       <p v-if="subText" class="ng-text-sub ng-text-sub--card">{{ subText }}</p>
-      <p v-if="extraText" class="ng-text-extra">{{ extraText }}</p>
+      <p v-if="extraText" class="ng-text-extra ng-text-extra--orange">{{ extraText }}</p>
       <div
-        :class="textPosition === 'below' ? 'ng-text-box-arrow--up' : 'ng-text-box-arrow'"
+        :class="[
+          textPosition === 'below' ? 'ng-text-box-arrow--up' : 'ng-text-box-arrow',
+          arrowX != null ? '' : (extraText ? 'ng-text-box-arrow--x75' : ''),
+        ]"
         :style="arrowX != null ? { left: (arrowX * 100) + '%', transform: 'translateX(-50%)' } : undefined"
       />
       <!-- 气泡右侧弧形虚线箭头（绝对定位，锚定气泡右上角） -->

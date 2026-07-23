@@ -237,6 +237,12 @@
   margin-top: 8px;
 }
 
+/* 强调金额橙色加粗（Step 3 extra text） */
+.ng-text-extra--orange {
+  color: #ff5c00;
+  font-weight: 800;
+}
+
 /* 头部徽标行：sparkle 图标 + Step X of Y 胶囊，左对齐 */
 .ng-header-badge-row {
   display: flex;
@@ -334,6 +340,11 @@
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 8px solid #ffffff;
+}
+
+/* 底部箭头偏右至3/4位置（Step 3） */
+.ng-text-box-arrow--x75 {
+  left: 75%;
 }
 
 /* 顶部小三角箭头（气泡在高亮区域下方时） */
