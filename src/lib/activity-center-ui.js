@@ -148,6 +148,7 @@ export class ActivityCenterUI {
       onSigninDialogDismiss: config.onSigninDialogDismiss || (() => {}),
       onCheckinPromptClaim: config.onCheckinPromptClaim || (() => {}),
       onCheckinPromptClose: config.onCheckinPromptClose || (() => {}),
+      onSpinWheelDismiss: config.onSpinWheelDismiss || (() => {}),
       onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
       onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
       onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
@@ -157,6 +158,7 @@ export class ActivityCenterUI {
       onCoinRainSettle: config.onCoinRainSettle || (async () => ({ ok: false })),
       onCoinRainAbandon: config.onCoinRainAbandon || (() => {}),
       onCoinRainWatchAd: config.onCoinRainWatchAd || (() => {}),
+      onCoinRainResultDismiss: config.onCoinRainResultDismiss || (() => {}),
       ...config,
     };
 
@@ -690,6 +692,7 @@ export class ActivityCenterUI {
         e.preventDefault();
         e.stopPropagation();
         this.hideSpinWheel();
+        this.config.onSpinWheelDismiss();
       });
     }
     if (this.elements.spinWheelSpinBtn) {

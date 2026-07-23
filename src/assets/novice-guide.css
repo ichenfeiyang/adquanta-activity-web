@@ -1,0 +1,598 @@
+/* =========================================================
+   Novice Guide – Overlay, Highlight & Finger Animation
+   ========================================================= */
+
+/* --- Welcome popup --- */
+.ng-welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.ng-welcome-card {
+  position: relative;
+  width: calc(100% - 60px);
+  max-width: 340px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+.ng-welcome-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  background: linear-gradient(135deg, #ffe6d9 0%, #ffd4bc 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.ng-welcome-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #050914;
+  margin: 0 0 8px;
+}
+
+.ng-welcome-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+
+.ng-welcome-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ng-btn-skip {
+  flex: 1;
+  height: 44px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ng-btn-start {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #ff5c00;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* --- Step overlay (shared for all steps) --- */
+.ng-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.ng-highlight {
+  position: absolute;
+  z-index: 10000;
+  border-radius: 16px;
+  pointer-events: none;
+  /* box-shadow creates the "cutout" dimming effect.
+     The shadow is painted outside the element, so the
+     element area stays bright while everything else dims.
+     0.55 opacity matches the Welcome overlay's rgba(0,0,0,0.55). */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+}
+
+/* 高亮区域橙色外发光（Step 2） */
+.ng-highlight--glow {
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.55),
+    0 0 0 3px rgba(255, 92, 0, 0.45),
+    0 0 18px 4px rgba(255, 140, 50, 0.30),
+    0 0 36px 8px rgba(255, 92, 0, 0.12);
+}
+
+/* 可点击透明交互层：clip-path 挖出高亮洞，点击阴影区域退出引导 */
+.ng-shadow-catcher {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.ng-finger {
+  position: absolute;
+  z-index: 10002;
+  pointer-events: none;
+  /* 指尖对齐坐标点：emoji 朝上，translate(-50%, 0) 让底部（指尖）落在定位点 */
+  transform: translate(-50%, 0);
+}
+
+.ng-finger-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  animation: ng-finger-bounce 1.2s ease-in-out infinite;
+}
+
+/* 手势倾斜姿态：食指斜指向按钮 */
+.ng-finger-icon--tilted {
+  animation: ng-finger-bounce-tilted 1.2s ease-in-out infinite;
+}
+
+/* 点击波纹：食指尖处扩散圆环 */
+.ng-finger-ripple {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 80, 0, 0.9);
+  background: none;
+  animation: ng-ripple 1.4s ease-out infinite;
+  z-index: 1;
+}
+
+@keyframes ng-finger-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@keyframes ng-finger-bounce-tilted {
+  0%, 100% { transform: translateY(0) rotate(-15deg); }
+  50%      { transform: translateY(-8px) rotate(-15deg); }
+}
+
+@keyframes ng-ripple {
+  0% {
+    width: 6px;
+    height: 6px;
+    opacity: 1;
+    border-width: 2px;
+  }
+  100% {
+    width: 44px;
+    height: 44px;
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+.ng-text-box {
+  position: absolute;
+  z-index: 10003;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 360px;
+  background: rgba(30, 30, 30, 0.75);
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ng-text-main {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+
+.ng-text-sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ng-text-extra {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 6px 0 0;
+  line-height: 1.35;
+}
+
+/* --- Single-bubble card mode (Step 2+) --- */
+.ng-text-box--card {
+  position: absolute;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  text-align: left;
+  width: fit-content;
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+/* 紧凑气泡：橙色边框发光（Step 2） */
+.ng-text-box--card.ng-text-box--glow {
+  border: 1.5px solid rgba(255, 92, 0, 0.35);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.15),
+    0 0 14px rgba(255, 92, 0, 0.18);
+}
+
+/* 标题不换行（Step 2，不含橙色图标模式） */
+.ng-text-box--card:not(.ng-text-box--orange-icon) .ng-text-main {
+  white-space: nowrap;
+}
+
+/* 标题与副标题间距 */
+.ng-text-sub--card {
+  margin-top: 8px;
+}
+
+/* 强调金额橙色加粗（Step 3 extra text） */
+.ng-text-extra--orange {
+  color: #ff5c00;
+  font-weight: 800;
+}
+
+/* 头部徽标行：sparkle 图标 + Step X of Y 胶囊，左对齐 */
+.ng-header-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ng-header-badge-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.ng-header-badge-pill {
+  display: inline-block;
+  border: 2px solid #ff5c00;
+  color: #ff5c00;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* Step 标签胶囊徽章 */
+.ng-step-badge {
+  display: inline-block;
+  background: #ff5c00;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.ng-text-box--card .ng-text-box-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ng-text-box--card .ng-text-box-icon {
+  font-size: 18px;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+/* 橙色圆形图标背景（Step 4 🪙） */
+.ng-text-box--orange-icon .ng-text-box-icon {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #fff0e0 0%, #ffe0c0 100%);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  box-shadow: 0 0 10px rgba(255, 92, 0, 0.18);
+  flex-shrink: 0;
+}
+
+/* 标题文字自动换行 */
+.ng-text-box--card .ng-text-main {
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.ng-text-box--card .ng-text-main {
+  font-size: 15px;
+  font-weight: 700;
+  color: #050914;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ng-text-box--card .ng-text-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+/* 气泡副标题（Step 4 专用，带顶部分隔线） */
+.ng-text-sub--card {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 底部小三角箭头指向高亮区域 */
+.ng-text-box-arrow {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #ffffff;
+}
+
+/* 底部箭头偏右至3/4位置（Step 3） */
+.ng-text-box-arrow--x75 {
+  left: 75%;
+}
+
+/* 顶部小三角箭头（气泡在高亮区域下方时） */
+.ng-text-box-arrow--up {
+  position: absolute;
+  top: -8px;
+  left: 65%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #ffffff;
+}
+
+/* --- Spin card glow (Step 2) --- */
+.tc-lucky-spin-section .tc-card--glow {
+  box-shadow:
+    0 0 0 2px rgba(255, 92, 0, 0.45),
+    0 0 18px 4px rgba(255, 140, 50, 0.30),
+    0 0 36px 8px rgba(255, 92, 0, 0.12);
+  position: relative;
+  z-index: 10001;
+  border-radius: 16px;
+  transition: box-shadow 0.3s ease;
+}
+
+/* --- Balance card glow (Step 4) --- */
+.tc-balance-card--glow {
+  box-shadow:
+    0 0 0 2px rgba(255, 92, 0, 0.45),
+    0 0 18px 4px rgba(255, 140, 50, 0.30),
+    0 0 36px 8px rgba(255, 92, 0, 0.12);
+  position: relative;
+  z-index: 10001;
+  border-radius: 16px;
+  transition: box-shadow 0.3s ease;
+}
+
+/* --- Step 4 finger pointers --- */
+.ng-finger--step4 {
+  position: fixed;
+  z-index: 10004;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+}
+
+/* --- Dual-bubble white tooltips (used for multi-element steps) --- */
+.ng-bubble-container {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ng-bubble {
+  position: relative;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+}
+
+/* ── 左气泡：图标行列表 ── */
+.ng-bubble--left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 左气泡顶部箭头：45° 旋转菱形 + 微圆角，与白色气泡无缝一体 */
+.ng-bubble--left::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: var(--arrow-x, 20px);
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 2px;
+  z-index: 3;
+}
+
+.ng-bubble-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ng-bubble-icon {
+  font-size: 18px;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.ng-bubble-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #050914;
+  line-height: 1.35;
+}
+
+.ng-bubble-text--sub {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* ── 右气泡：标题 + 悬浮徽章 ── */
+.ng-bubble--right {
+  padding-top: 16px;
+  padding-left: 16px;
+}
+
+.ng-bubble-content {
+  position: relative;
+  z-index: 1;
+}
+
+.ng-bubble-main {
+  font-size: 13px;
+  font-weight: 800;
+  color: #050914;
+  margin: 0 0 4px;
+  line-height: 1.35;
+}
+
+.ng-bubble-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 悬浮宝箱 Icon（左上角外挂） */
+.ng-bubble-badge {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe4b8 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow:
+    0 0 12px rgba(255, 215, 0, 0.8),
+    0 2px 8px rgba(255, 215, 0, 0.4);
+  z-index: 2;
+}
+
+/* SVG 曲线虚线箭头（容器级别，覆盖整个容器区域） */
+.ng-bubble-svg-arrow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 气泡右侧弧形虚线箭头（绝对锚定在气泡内部，溢出可见） */
+.ng-bubble-curve-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* --- Complete popup --- */
+.ng-complete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.ng-complete-card {
+  position: relative;
+  width: calc(100% - 60px);
+  max-width: 340px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+.ng-complete-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  background: linear-gradient(135deg, #d4fce4 0%, #b4f5c6 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.ng-complete-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #050914;
+  margin: 0 0 8px;
+}
+
+.ng-complete-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+
+.ng-complete-ok {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #ff5c00;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}

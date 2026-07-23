@@ -316,5 +316,37 @@
     "avgTimeTitle": "গড় প্রক্রিয়াকরণ সময়",
     "avgTimeDesc": "সাধারণত ২ মিনিটের কম।",
     "returnToTasks": "কাজে ফিরে যান"
+  },
+  "novice": {
+    "welcome": {
+      "title": "Welcome to Rewards Center!",
+      "desc": "Learn how to earn Coins and get more rewards.",
+      "skip": "Skip",
+      "start": "OK"
+    },
+    "step1": {
+      "text": "Check in every day to earn Coins!",
+      "subtext": "Watch a video to double your check-in reward.",
+      "chestTip": "Lucky chests may appear on Day 3, Day 5 and Day 7!",
+      "chestSubtext": "Keep checking in continuously to get a chance to win random Coin chests!"
+    },
+    "step2": {
+      "text": "Watch videos to get spin chances!",
+      "subtext": "Spin up to 20 times every day and win Coins!"
+    },
+    "step3": {
+      "text": "কয়েনে ট্যাপ করে পুরস্কার জিতুন!",
+      "subtext": "প্রতিদিন একবার যোগ দিন এবং সর্বোচ্চ ৪০০ কয়েন জিতুন!"
+    },
+    "step4": {
+      "text": "Check your Coins and track your progress toward rewards.",
+      "subtext": "See how many Coins you have and how many more you need to redeem rewards.",
+      "stepLabel": "Step 4 of 4"
+    },
+    "complete": {
+      "title": "You're Ready!",
+      "desc": "Come back every day to earn Coins, track your progress, and redeem rewards like mobile data and gift cards.",
+      "ok": "OK"
+    }
   }
 }

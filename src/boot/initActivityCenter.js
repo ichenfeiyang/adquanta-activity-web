@@ -28,6 +28,9 @@ import {
 import { dismissCheckinPrompt, shouldShowCheckinPrompt } from "../lib/checkin-prompt.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import * as logger from "../lib/activity-logger.js";
+import { isNoviceGuideCompleted, markNoviceGuideCompleted } from "../lib/novice-guide/novice-guide-state.js";
+import { createNoviceGuide } from "../lib/novice-guide/create-novice-guide.js";
+import "../assets/novice-guide.css";
 
 // Temporary QA switch: show the new-user bonus modal on every activity-center visit.
 // Set to false before release to restore the server-controlled eligibility rule.
@@ -240,6 +243,8 @@ export function initActivityCenter({ router, route }) {
       } else {
         ui.hideNewUserBonusDialog();
         updateCheckinPromptDialog(latestCheckinPrompt, latestCheckinPromptDetail);
+        // 无 Welcome Bonus 弹窗 → 直接启动新手引导
+        startGuideIfReady();
       }
     },
     onCheckinChestUpdate: (chest) => {
@@ -323,6 +328,9 @@ export function initActivityCenter({ router, route }) {
           taskId: "task_watch_ad",
           error: error?.message || String(error),
         });
+        // 广告未接入时：关闭转盘弹窗，推进新手引导
+        ui.hideSpinWheel();
+        noviceGuide?.handleSpinDismiss();
       }
     },
     onSpinWheelOpen: async () => {
@@ -354,7 +362,10 @@ export function initActivityCenter({ router, route }) {
         tab: category === "gift_cards" ? "gift" : "topup",
       });
     },
-    onSigninClick: () => claimTodayCheckin("card"),
+    onSigninClick: async () => {
+      const success = await claimTodayCheckin("card");
+      if (!success) noviceGuide?.handleSigninDismiss();
+    },
     onCheckinPromptClaim: async ({ prompt } = {}) => {
       const serverDate = String(prompt?.server_date || "");
       ui.hideCheckinPrompt();
@@ -400,9 +411,18 @@ export function initActivityCenter({ router, route }) {
           taskId: "task_checkin",
           error: e?.message || String(e),
         });
+        // 广告未接入时：关闭签到弹窗，推进新手引导
+        ui.hideSigninDialog();
+        noviceGuide?.handleSigninDismiss();
       }
     },
-    onSigninDialogDismiss: () => revealDeferredCheckinChest(),
+    onSigninDialogDismiss: () => {
+      if (noviceGuide?.handleSigninDismiss()) return;
+      revealDeferredCheckinChest();
+    },
+    onSpinWheelDismiss: () => {
+      noviceGuide?.handleSpinDismiss();
+    },
     onNewUserBonusVideoClick: async (bonus) => {
       if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) return;
       try {
@@ -431,6 +451,8 @@ export function initActivityCenter({ router, route }) {
         const result = await business.submitNewUserBonusAction(apiOptions, "dismiss");
         if (result?.ok) {
           ui.hideNewUserBonusDialog();
+          // Welcome Bonus 弹窗已关闭 → 启动新手引导
+          startGuideIfReady();
         } else {
           ui.setNewUserBonusLoading(false);
         }
@@ -576,7 +598,13 @@ export function initActivityCenter({ router, route }) {
         const reason = normalizeAdMessage(error?.message, adNotAvailableMessage());
         showToast(reason, "error");
         trackActivityEvent("coin_rain_ad_failed", { task_id: "task_coin_rain", reason });
+        // 广告未接入时：关闭金币雨结果弹窗，推进新手引导
+        ui.hideCoinRainResult();
+        noviceGuide?.handleCoinRainDismiss();
       }
+    },
+    onCoinRainResultDismiss: () => {
+      noviceGuide?.handleCoinRainDismiss();
     },
   });
 
@@ -671,6 +699,41 @@ export function initActivityCenter({ router, route }) {
   ui.bindEvents();
   ui.renderInitialShell();
 
+  // ── 新手引导 ──
+  let noviceGuide = null;
+  let guideStarted = false;
+  let onBeforeUnloadGuide = null;
+  if (!isNoviceGuideCompleted()) {
+    noviceGuide = createNoviceGuide({
+      onStepAction: () => {},
+      onComplete: () => {},
+      onStart: () => {
+        adapter.trackEvent('rewards_onboarding_start_click', {
+          page_id: '/activity-center',
+          element_id: 'OK_button',
+          element_name: '点击开始引导',
+        });
+      },
+      onSkip: () => {
+        adapter.trackEvent('rewards_onboarding_skip_click', {
+          page_id: '/activity-center',
+          element_id: 'Skip_button',
+          element_name: '点击跳过引导',
+        });
+      },
+    });
+    onBeforeUnloadGuide = () => {
+      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted();
+    };
+    window.addEventListener('beforeunload', onBeforeUnloadGuide);
+  }
+
+  function startGuideIfReady() {
+    if (guideStarted || !noviceGuide) return;
+    guideStarted = true;
+    noviceGuide.start();
+  }
+
   const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
   if (cachedActivityInfo) {
     business.applyActivityInfoData(cachedActivityInfo, { fromCache: true });
@@ -696,6 +759,10 @@ export function initActivityCenter({ router, route }) {
     ui.destroyCoinRain();
     window.onRewardedAdError = null;
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
+    if (onBeforeUnloadGuide) {
+      window.removeEventListener('beforeunload', onBeforeUnloadGuide);
+    }
+    noviceGuide?.dispose();
   };
 }
 

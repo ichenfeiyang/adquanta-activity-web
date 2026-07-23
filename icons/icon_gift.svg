@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Background / Shadow Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFE57F" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#FFB300" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FF6F00" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Outer stroke / Orange Border Gradient -->
+    <linearGradient id="strokeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D84315"/>
+      <stop offset="100%" stop-color="#BF360C"/>
+    </linearGradient>
+
+    <!-- Box Fill Gradient (Gold / Orange) -->
+    <linearGradient id="boxFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="30%" stop-color="#FFCA28"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+
+    <!-- Cap Fill Gradient -->
+    <linearGradient id="capFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082"/>
+      <stop offset="50%" stop-color="#FFC107"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+
+    <!-- Highlight Reflection Gradient -->
+    <linearGradient id="highlightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <!-- Ribbon Gradient -->
+    <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE57F"/>
+      <stop offset="50%" stop-color="#FFC107"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Glow / Halo -->
+  <circle cx="250" cy="250" r="220" fill="url(#bgGlow)"/>
+
+  <g transform="translate(0, 20)">
+    <!-- BOW TOP -->
+    <!-- Left Loop Outer -->
+    <path d="M 250,130 C 210,50 120,60 135,120 C 148,170 230,145 250,135 Z" 
+          fill="url(#boxFill)" stroke="url(#strokeGrad)" stroke-width="12" stroke-linejoin="round"/>
+    <!-- Left Loop Inner Hole -->
+    <path d="M 225,120 C 190,80 155,85 160,118 C 165,140 210,130 225,120 Z" 
+          fill="#E65100" opacity="0.8"/>
+
+    <!-- Right Loop Outer -->
+    <path d="M 250,130 C 290,50 380,60 365,120 C 352,170 270,145 250,135 Z" 
+          fill="url(#boxFill)" stroke="url(#strokeGrad)" stroke-width="12" stroke-linejoin="round"/>
+    <!-- Right Loop Inner Hole -->
+    <path d="M 275,120 C 310,80 345,85 340,118 C 335,140 290,130 275,120 Z" 
+          fill="#E65100" opacity="0.8"/>
+
+    <!-- Bow Knot Center -->
+    <ellipse cx="250" cy="132" rx="24" ry="18" fill="url(#capFill)" stroke="url(#strokeGrad)" stroke-width="10"/>
+
+    <!-- MAIN BOX BODY -->
+    <rect x="100" y="210" width="300" height="190" rx="24" ry="24" 
+          fill="url(#boxFill)" stroke="url(#strokeGrad)" stroke-width="14"/>
+
+    <!-- Inner Shadow on Body -->
+    <rect x="110" y="220" width="280" height="170" rx="16" ry="16" 
+          fill="none" stroke="#D84315" stroke-width="6" opacity="0.3"/>
+
+    <!-- BOX CAP / LID -->
+    <rect x="80" y="150" width="340" height="75" rx="20" ry="20" 
+          fill="url(#capFill)" stroke="url(#strokeGrad)" stroke-width="14"/>
+
+    <!-- Cap Highlight Bar -->
+    <rect x="98" y="162" width="304" height="22" rx="10" ry="10" 
+          fill="url(#highlightGrad)"/>
+
+    <!-- VERTICAL RIBBON -->
+    <!-- Ribbon Body Part -->
+    <rect x="226" y="217" width="48" height="176" fill="url(#ribbonGrad)" stroke="url(#strokeGrad)" stroke-width="10"/>
+    <!-- Ribbon Cap Part -->
+    <rect x="226" y="157" width="48" height="61" fill="url(#ribbonGrad)" stroke="url(#strokeGrad)" stroke-width="10"/>
+
+    <!-- Ribbon Highlight -->
+    <rect x="234" y="157" width="12" height="236" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+</svg>

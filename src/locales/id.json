@@ -316,5 +316,37 @@
     "avgTimeTitle": "Rata-rata Waktu Proses",
     "avgTimeDesc": "Biasanya kurang dari 2 menit.",
     "returnToTasks": "Kembali ke Tugas"
+  },
+  "novice": {
+    "welcome": {
+      "title": "Welcome to Rewards Center!",
+      "desc": "Learn how to earn Coins and get more rewards.",
+      "skip": "Skip",
+      "start": "OK"
+    },
+    "step1": {
+      "text": "Check in every day to earn Coins!",
+      "subtext": "Watch a video to double your check-in reward.",
+      "chestTip": "Lucky chests may appear on Day 3, Day 5 and Day 7!",
+      "chestSubtext": "Keep checking in continuously to get a chance to win random Coin chests!"
+    },
+    "step2": {
+      "text": "Watch videos to get spin chances!",
+      "subtext": "Spin up to 20 times every day and win Coins!"
+    },
+    "step3": {
+      "text": "Ketuk koin dan menangkan hadiah!",
+      "subtext": "Bergabung sekali setiap hari dan menangkan hingga 400 Koin!"
+    },
+    "step4": {
+      "text": "Check your Coins and track your progress toward rewards.",
+      "subtext": "See how many Coins you have and how many more you need to redeem rewards.",
+      "stepLabel": "Step 4 of 4"
+    },
+    "complete": {
+      "title": "You're Ready!",
+      "desc": "Come back every day to earn Coins, track your progress, and redeem rewards like mobile data and gift cards.",
+      "ok": "OK"
+    }
   }
 }
