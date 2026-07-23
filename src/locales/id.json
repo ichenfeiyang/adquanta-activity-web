@@ -86,6 +86,8 @@
     "checkinNow": "Klaim Koin Hari Ini",
     "checkinPromptTitle": "Klaim {coin} Koin Hari Ini",
     "checkinPromptSubtitle": "Check-in selama {count} hari berturut-turut",
+    "checkinPromptEncouragement": "Check-in setiap hari untuk mendapatkan lebih banyak koin!",
+    "checkinPromptChestTip": "Peti keberuntungan mungkin muncul pada {days}!",
     "checkinVideoTip": "Setelah klaim, tonton video untuk menggandakan menjadi {totalCoin} koin.",
     "superPrizeDay": "Hari ke-7: Hari Hadiah Super",
     "rewardsTitle": "Hadiah",

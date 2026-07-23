@@ -86,6 +86,8 @@
     "checkinNow": "আজকের কয়েন নিন",
     "checkinPromptTitle": "আজ {coin} কয়েন সংগ্রহ করুন",
     "checkinPromptSubtitle": "টানা {count} দিন চেক-ইন করেছেন",
+    "checkinPromptEncouragement": "প্রতিদিন চেক-ইন করে আরও কয়েন পান!",
+    "checkinPromptChestTip": "লাকি চেস্ট {days}-এ পাওয়া যেতে পারে!",
     "checkinVideoTip": "ক্লেইম করার পর, {totalCoin} কয়েনে দ্বিগুণ করতে একটি ভিডিও দেখুন।",
     "superPrizeDay": "দিন ৭: সুপার পুরস্কার দিবস",
     "rewardsTitle": "পুরস্কার",

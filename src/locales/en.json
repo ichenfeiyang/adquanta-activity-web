@@ -86,6 +86,8 @@
     "checkinNow": "Claim Today’s Reward",
     "checkinPromptTitle": "Claim {coin} Coins Today",
     "checkinPromptSubtitle": "Checked in for {count} consecutive days",
+    "checkinPromptEncouragement": "Check in daily and get more coins!",
+    "checkinPromptChestTip": "Lucky chests may drop on {days}!",
     "checkinVideoTip": "After claiming, watch a video to double to {totalCoin} coins.",
     "superPrizeDay": "Day 7: Super Prize Day",
     "rewardsTitle": "Rewards",

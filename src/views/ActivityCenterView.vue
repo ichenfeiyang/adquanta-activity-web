@@ -409,9 +409,22 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       <div class="checkin-prompt-hero">
         <span class="checkin-prompt-spark checkin-prompt-spark--left" aria-hidden="true">✦</span>
         <span class="checkin-prompt-spark checkin-prompt-spark--right" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--top" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--lower-right" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--tiny-left" aria-hidden="true">✧</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--tiny-top" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--tiny-bottom-left" aria-hidden="true">✧</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--tiny-bottom-right" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--large-left" aria-hidden="true">✦</span>
+        <span class="checkin-prompt-spark checkin-prompt-spark--large-right" aria-hidden="true">✦</span>
         <h2 id="checkinPromptTitle" class="checkin-prompt-title">{{ t('center.checkinNow') }}</h2>
+        <p class="checkin-prompt-subtitle">{{ t('center.checkinPromptEncouragement') }}</p>
       </div>
       <div id="checkinPromptDays" class="checkin-prompt-days" />
+      <div id="checkinPromptChestTip" class="checkin-prompt-chest-tip" style="display:none;">
+        <img :src="assetUrl('images/checkin-prompt-lucky-chest.png')" alt="" width="30" height="30">
+        <span id="checkinPromptChestTipText" />
+      </div>
       <button id="checkinPromptClaim" type="button" class="checkin-prompt-claim">
         <img :src="assetUrl('icons/gold-coin-white.svg')" alt="" width="24" height="24">
         <span>{{ t('center.checkinNow') }}</span>

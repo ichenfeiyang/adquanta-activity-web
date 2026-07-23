@@ -105,6 +105,8 @@ export class ActivityCenterUI {
       checkinPromptClose: "checkinPromptClose",
       checkinPromptTitle: "checkinPromptTitle",
       checkinPromptDays: "checkinPromptDays",
+      checkinPromptChestTip: "checkinPromptChestTip",
+      checkinPromptChestTipText: "checkinPromptChestTipText",
       checkinPromptClaim: "checkinPromptClaim",
       checkinVideoTip: "tc-checkin-video-tip",
       newUserBonusModal: "newUserBonusModal",

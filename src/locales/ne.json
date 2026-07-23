@@ -86,6 +86,8 @@
     "checkinNow": "आजका सिक्का लिनुहोस्",
     "checkinPromptTitle": "आज {coin} सिक्का दाबी गर्नुहोस्",
     "checkinPromptSubtitle": "{count} दिन लगातार चेक-इन् गर्नुभयो",
+    "checkinPromptEncouragement": "हरेक दिन चेक-इन गरी थप सिक्का पाउनुहोस्!",
+    "checkinPromptChestTip": "भाग्यशाली बक्स {days} मा झर्न सक्छ!",
     "checkinVideoTip": "दाबी गरेपछि, {totalCoin} सिक्कासम्म दोब्बर गर्न भिडियो हेर्नुहोस्।",
     "superPrizeDay": "दिन ७: सुपर पुरस्कार दिन",
     "rewardsTitle": "पुरस्कार",

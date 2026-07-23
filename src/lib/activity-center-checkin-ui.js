@@ -93,12 +93,45 @@ export const checkinUiMixin = {
     this._checkinPrompt = { detail, prompt };
 
     if (this.elements.checkinPromptTitle) {
-      this.elements.checkinPromptTitle.textContent = t("center.checkinPromptTitle", { coin });
+      const title = t("center.checkinPromptTitle", { coin });
+      const coinText = String(coin);
+      const coinOffset = title.indexOf(coinText);
+      if (coinOffset < 0) {
+        this.elements.checkinPromptTitle.textContent = title;
+      } else {
+        const highlightedCoin = document.createElement("span");
+        highlightedCoin.className = "checkin-prompt-title-coin";
+        highlightedCoin.textContent = coinText;
+        this.elements.checkinPromptTitle.replaceChildren(
+          title.slice(0, coinOffset),
+          highlightedCoin,
+          title.slice(coinOffset + coinText.length),
+        );
+      }
     }
     const daysContainer = this.elements.checkinPromptDays;
     if (daysContainer) {
       daysContainer.replaceChildren();
       const chestDays = new Set(normalizeCheckinChestEligibleDays(detail.chest_eligible_days));
+      const formattedChestDays = [...chestDays]
+        .sort((left, right) => left - right)
+        .map((day) => t("common.day", { day }))
+        .join(", ");
+      if (this.elements.checkinPromptChestTip && this.elements.checkinPromptChestTipText) {
+        const hasChestDays = formattedChestDays.length > 0;
+        this.elements.checkinPromptChestTip.style.display = hasChestDays ? "flex" : "none";
+        if (!hasChestDays) {
+          this.elements.checkinPromptChestTipText.replaceChildren();
+        } else {
+          const template = t("center.checkinPromptChestTip", { days: "{days}" });
+          const [prefix = "", suffix = ""] = template.split("{days}");
+          const highlightedDays = document.createElement("span");
+          highlightedDays.className = "checkin-prompt-chest-tip-days";
+          highlightedDays.textContent = formattedChestDays;
+          // Keep configured chest days on their own line in the compact dialog.
+          this.elements.checkinPromptChestTipText.replaceChildren(prefix, document.createElement("br"), highlightedDays, suffix);
+        }
+      }
       const pendingChestDays = new Set(
         (Array.isArray(detail.chests) ? detail.chests : [])
           .filter((chest) => chest?.status === "pending")
@@ -121,7 +154,7 @@ export const checkinUiMixin = {
         item.append(label);
         if (hasChest) {
           const chestIcon = document.createElement("img");
-          chestIcon.src = assetUrl("icons/card_giftcard.svg");
+          chestIcon.src = assetUrl("images/checkin-prompt-lucky-chest.png");
           chestIcon.alt = "";
           chestIcon.className = "checkin-prompt-chest-icon";
           item.appendChild(chestIcon);
