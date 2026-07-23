@@ -90,6 +90,6 @@ export const BALANCE_STEP = {
   textPosition: 'below',
   // Step 4 手指指向元素
   fingerTargets: [
-    { selector: '#goldCoins', offsetX: 0, offsetY: -30 },
+    { selector: '#goldCoins', offsetX: 50, offsetY: 40 },
   ],
 };

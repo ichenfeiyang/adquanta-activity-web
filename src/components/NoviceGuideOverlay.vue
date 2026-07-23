@@ -14,6 +14,7 @@
  *  - bubblesContainerSelector  双气泡容器锚定的元素选择器
  */
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { assetUrl } from '../lib/asset-url.js';
 
 const props = defineProps({
   active:           { type: Boolean, default: false },
@@ -354,11 +355,11 @@ onBeforeUnmount(() => {
     <div
       v-for="(pos, i) in fingerTargetsPos"
       :key="'ft-' + i"
-      class="ng-finger ng-finger--step4"
+      class="ng-finger"
       :style="{ left: pos.x + 'px', top: pos.y + 'px' }"
     >
       <div class="ng-finger-ripple" />
-      <div class="ng-finger-icon">👆</div>
+      <div class="ng-finger-icon ng-finger-icon--tilted">👆</div>
     </div>
   </Teleport>
 
@@ -381,7 +382,10 @@ onBeforeUnmount(() => {
         <span class="ng-header-badge-pill">{{ headerBadge }}</span>
       </div>
       <div class="ng-text-box-row">
-        <span v-if="!headerBadge && !stepLabel" class="ng-text-box-icon">{{ icon }}</span>
+        <span v-if="iconStyle === 'orange' || (!headerBadge && !stepLabel)" class="ng-text-box-icon">
+          <img v-if="iconStyle === 'orange'" :src="assetUrl('icons/gold_coin.svg')" alt="" width="28" height="28">
+          <template v-else>{{ icon }}</template>
+        </span>
         <span class="ng-text-main">{{ mainText }}</span>
       </div>
       <p v-if="subText" class="ng-text-sub ng-text-sub--card">{{ subText }}</p>
