@@ -13,7 +13,7 @@
  *  - bubbles         多气泡模式：[{ mainText, subText, highlightSelector?, offset? }]
  *  - bubblesContainerSelector  双气泡容器锚定的元素选择器
  */
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   active:           { type: Boolean, default: false },
@@ -41,38 +41,7 @@ const bubbleLeftStyle = ref({});
 const bubbleRightStyle = ref({});
 const arrowSvgLeft = ref(0);
 const arrowSvgPath = ref('');
-const arrowEndpoint = ref({ x: 0, y: 0 });
 const fingerTargetsPos = ref([]);
-
-// 箭头三角：基于 Q 曲线终点切线方向计算
-const arrowHeadPoints = computed(() => {
-  const p = arrowSvgPath.value;
-  if (!p) return '';
-  // 解析 Q cmd 的控制点和终点
-  const parts = p.split(/[\s,]+/);
-  // M x1 y1 Q cx cy ex ey
-  const cx = parseFloat(parts[3]);
-  const cy = parseFloat(parts[4]);
-  const ex = parseFloat(parts[5]);
-  const ey = parseFloat(parts[6]);
-  if ([cx, cy, ex, ey].some(Number.isNaN)) return '';
-  // 切线方向 (cx→ex, cy→ey)
-  const dx = ex - cx;
-  const dy = ey - cy;
-  const len = Math.sqrt(dx * dx + dy * dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
-  // 三角形参数
-  const size = 7;
-  const spread = 4;
-  // 顶点 = 终点
-  // 两个底角 = 沿反方向偏移
-  const bx1 = ex - ux * size - uy * spread;
-  const by1 = ey - uy * size + ux * spread;
-  const bx2 = ex - ux * size + uy * spread;
-  const by2 = ey - uy * size - ux * spread;
-  return `${ex},${ey} ${bx1},${by1} ${bx2},${by2}`;
-});
 
 function recalc() {
   const el = document.querySelector(props.selector);
@@ -94,7 +63,7 @@ function recalc() {
     if (btn) {
       const btnRect = btn.getBoundingClientRect();
       fingerPos.value = {
-        x: btnRect.left + btnRect.width * 0.78,
+        x: btnRect.left + btnRect.width * 0.68,
         y: btnRect.top + btnRect.height * 0.3 + 10,
       };
     }
@@ -171,16 +140,20 @@ function recalc() {
       // SVG 起点：右气泡右上角
       const startX = containerWidth - 4;
       const startY = 4;
-      // SVG 终点：Day 7 节点中心（相对于容器）
-      const endX = day7DocLeft - containerDocLeftVal;
-      const endY = day7DocTop - rightBubbleTop;
+      // SVG 终点：Day 7 圆圈右侧外部（留出箭头安全间隙）
+      const day7RightEdgeX = day7Rect.left + day7Rect.width;
+      const offsetGap = 6;
+      const endX = (day7RightEdgeX - containerDocLeftVal) + offsetGap;
+      const day7CenterY = day7DocTop + day7Rect.height / 2;
+      const endY = day7CenterY - rightBubbleTop;
 
-      // 控制点：向右弯曲的弧线
-      const midX = Math.max(startX, endX) + 30;
-      const midY = (startY + endY) / 2;
+      // 控制点：饱满右凸弧度 + 50% 中点入射
+      const distanceY = Math.abs(endY - startY);
+      const rightOffset = Math.max(65, distanceY * 0.45);
+      const midX = Math.max(startX, endX) + rightOffset;
+      const midY = startY + (endY - startY) * 0.5;
 
       arrowSvgPath.value = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
-      arrowEndpoint.value = { x: endX, y: endY };
     }
   }
 
@@ -276,7 +249,7 @@ onBeforeUnmount(() => {
         :style="{ left: fingerPos.x + 'px', top: fingerPos.y + 'px' }"
       >
         <div class="ng-finger-ripple" />
-        <div class="ng-finger-icon">👆</div>
+        <div class="ng-finger-icon ng-finger-icon--tilted">👆</div>
       </div>
     </div>
   </Teleport>
@@ -290,6 +263,18 @@ onBeforeUnmount(() => {
         class="ng-bubble-svg-arrow"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          <marker
+            id="ng-arrowhead"
+            markerWidth="8"
+            markerHeight="6"
+            refX="7"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 8 3, 0 6" fill="#ec5b13" />
+          </marker>
+        </defs>
         <path
           :d="arrowSvgPath"
           fill="none"
@@ -297,11 +282,7 @@ onBeforeUnmount(() => {
           stroke-width="2"
           stroke-dasharray="4 4"
           stroke-linecap="round"
-        />
-        <!-- 箭头三角 -->
-        <polygon
-          :points="arrowHeadPoints"
-          fill="#ec5b13"
+          marker-end="url(#ng-arrowhead)"
         />
       </svg>
 

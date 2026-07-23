@@ -115,17 +115,22 @@
   animation: ng-finger-bounce 1.2s ease-in-out infinite;
 }
 
-/* 点击波纹：指尖下方扩散圆环 */
+/* 手势倾斜姿态：食指斜指向按钮 */
+.ng-finger-icon--tilted {
+  animation: ng-finger-bounce-tilted 1.2s ease-in-out infinite;
+}
+
+/* 点击波纹：食指尖处扩散圆环 */
 .ng-finger-ripple {
   position: absolute;
-  bottom: -4px;
+  top: -6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 12px;
-  height: 12px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 107, 0, 0.6);
-  background: rgba(255, 107, 0, 0.08);
+  border: 2px solid rgba(255, 80, 0, 0.9);
+  background: none;
   animation: ng-ripple 1.4s ease-out infinite;
   z-index: 1;
 }
@@ -135,10 +140,15 @@
   50%      { transform: translateY(-8px); }
 }
 
+@keyframes ng-finger-bounce-tilted {
+  0%, 100% { transform: translateY(0) rotate(-15deg); }
+  50%      { transform: translateY(-8px) rotate(-15deg); }
+}
+
 @keyframes ng-ripple {
   0% {
-    width: 12px;
-    height: 12px;
+    width: 6px;
+    height: 6px;
     opacity: 1;
     border-width: 2px;
   }
@@ -327,11 +337,11 @@
   gap: 8px;
 }
 
-/* 左气泡顶部尖角（::before 旋转方块 + border-radius 柔化） */
+/* 左气泡顶部箭头：45° 旋转菱形 + 微圆角，与白色气泡无缝一体 */
 .ng-bubble--left::before {
   content: '';
   position: absolute;
-  top: -5px;
+  top: -6px;
   left: var(--arrow-x, 20px);
   transform: translateX(-50%) rotate(45deg);
   width: 10px;
