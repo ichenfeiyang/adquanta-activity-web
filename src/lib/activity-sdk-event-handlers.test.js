@@ -74,3 +74,91 @@ test("shows the chest reward result dialog after the chest ad is settled", async
     globalThis.window = originalWindow;
   }
 });
+
+test("new-user bonus ad failure keeps the dialog actionable and reports the SDK message", async () => {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  globalThis.window = {
+    ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } },
+    alert: () => {},
+  };
+  globalThis.document = { getElementById: () => null };
+  const calls = [];
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: {},
+      ui: {
+        setNewUserBonusLoading: () => calls.push("loading"),
+        restoreNewUserBonusVideoButton: () => calls.push("restore"),
+      },
+      adapter: { trackEvent: (name, payload) => calls.push([name, payload]) },
+      apiOptions: {},
+      getLastRewardAdTaskId: () => "task_new_user_bonus",
+      normalizeAdMessage: (message) => `shown:${message}`,
+      newUserBonusAdInFlight: { value: true },
+      newUserBonusClaimInFlight: { value: false },
+    });
+
+    await handler({ eventType: "reward", success: false, message: "No ad available" });
+
+    assert.equal(calls.includes("loading"), false);
+    assert.equal(calls.includes("restore"), false);
+    assert.deepEqual(calls, [["new_user_bonus_video_failed", {
+      taskId: "task_new_user_bonus",
+      reason: "shown:No ad available",
+      adStatusCode: undefined,
+      adErrorCode: undefined,
+      adDetail: undefined,
+    }]]);
+  } finally {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+  }
+});
+
+test("new-user bonus success claims the reward without disabling the dialog", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
+  const calls = [];
+  const newUserBonusAdInFlight = { value: true };
+  const newUserBonusClaimInFlight = { value: false };
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: {
+        submitNewUserBonusAction: async (...args) => {
+          calls.push(["claim", args]);
+          return { ok: true };
+        },
+      },
+      ui: {
+        setNewUserBonusLoading: () => calls.push("loading"),
+        hideNewUserBonusDialog: () => calls.push("hide"),
+      },
+      adapter: {
+        getPlatform: () => "android",
+        trackEvent: (name, payload) => calls.push([name, payload]),
+      },
+      apiOptions: { token: "test-token" },
+      getLastRewardAdTaskId: () => "task_new_user_bonus",
+      newUserBonusAdInFlight,
+      newUserBonusClaimInFlight,
+    });
+
+    await handler({ eventType: "reward", success: true, ad_event_id: "ad-1" });
+
+    assert.equal(newUserBonusAdInFlight.value, false);
+    assert.equal(newUserBonusClaimInFlight.value, false);
+    assert.equal(calls.includes("loading"), false);
+    assert.deepEqual(calls, [
+      ["claim", [{ token: "test-token" }, "claim_video", "ad-1"]],
+      "hide",
+      ["new_user_bonus_video_completed", {
+        taskId: "task_new_user_bonus",
+        success: true,
+        platform: "android",
+      }],
+    ]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});

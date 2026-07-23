@@ -239,6 +239,27 @@ export const giftCardRedeemMethods = {
     );
   },
 
+  updateGiftRecipientValidation() {
+    const recipientName = getRecipientName(this);
+    const recipientEmail = getRecipientEmail(this);
+    const nameError = this.$.giftRecipientNameError;
+    const emailError = this.$.giftRecipientEmailError;
+
+    if (nameError) {
+      nameError.textContent = recipientName
+        ? ""
+        : t("redeem.recipientNameRequired");
+    }
+    this.setRecipientNameErrorVisible(!recipientName);
+
+    if (emailError) {
+      emailError.textContent = !recipientEmail || !isValidRecipientEmail(recipientEmail)
+        ? t("redeem.recipientEmailRequired")
+        : "";
+    }
+    this.setRecipientEmailErrorVisible(!isValidRecipientEmail(recipientEmail));
+  },
+
   hideGiftRecipientSkeleton() {
     if (this.$.giftRecipientSkeleton) {
       this.$.giftRecipientSkeleton.hidden = true;
@@ -418,7 +439,10 @@ export const giftCardRedeemMethods = {
       });
     }
 
-    const onRecipientInput = () => this.updateGiftRedeemState();
+    const onRecipientInput = () => {
+      this.updateGiftRecipientValidation();
+      this.updateGiftRedeemState();
+    };
     if (this.$.inputGiftRecipientName) {
       this.$.inputGiftRecipientName.setAttribute("maxlength", String(GIFT_RECIPIENT_NAME_MAX_LENGTH));
       this._addDomListener(this.$.inputGiftRecipientName, "beforeinput", (e) => {
@@ -433,7 +457,12 @@ export const giftCardRedeemMethods = {
       this._addDomListener(this.$.inputGiftRecipientName, "input", () => {
         if (this.giftExchangeLoading) return;
         const wasTrimmed = trimInputToMax(this.$.inputGiftRecipientName, GIFT_RECIPIENT_NAME_MAX_LENGTH);
-        this.setRecipientNameErrorVisible(wasTrimmed);
+        if (wasTrimmed && this.$.giftRecipientNameError) {
+          this.$.giftRecipientNameError.textContent = t("redeem.recipientNameTooLong", {
+            max: GIFT_RECIPIENT_NAME_MAX_LENGTH,
+          });
+          this.setRecipientNameErrorVisible(true);
+        }
         onRecipientInput();
       });
     }
@@ -451,7 +480,12 @@ export const giftCardRedeemMethods = {
       this._addDomListener(this.$.inputGiftRecipientEmail, "input", () => {
         if (this.giftExchangeLoading) return;
         const wasTrimmed = trimInputToMax(this.$.inputGiftRecipientEmail, GIFT_RECIPIENT_EMAIL_MAX_LENGTH);
-        this.setRecipientEmailErrorVisible(wasTrimmed);
+        if (wasTrimmed && this.$.giftRecipientEmailError) {
+          this.$.giftRecipientEmailError.textContent = t("redeem.recipientEmailTooLong", {
+            max: GIFT_RECIPIENT_EMAIL_MAX_LENGTH,
+          });
+          this.setRecipientEmailErrorVisible(true);
+        }
         onRecipientInput();
       });
     }
@@ -633,17 +667,22 @@ export const giftCardRedeemMethods = {
       return;
     }
 
+    const denominations = Array.isArray(product.denominations) ? product.denominations : [];
+    // A gift-card redemption must always have a value selected. Preserve a
+    // refreshed selection when possible; otherwise select the first valid
+    // amount presented by the catalog.
     const currentDenomination = findCurrentDenomination(
-      product.denominations,
+      denominations,
       previousDenomination,
-    );
+    ) || denominations.find((item) => Number(item?.denomination) > 0) || null;
     this.giftState.selectedDenomination = currentDenomination;
     this.giftState.spendCoin = Number(currentDenomination?.spend_coin ?? 0);
 
     if (this.$.giftAmountSection) this.$.giftAmountSection.hidden = false;
     if (this.$.giftRecipientSection) this.$.giftRecipientSection.hidden = false;
     this.hideGiftRecipientSkeleton();
-    this.renderGiftAmountGrid(product.denominations || []);
+    this.updateGiftRecipientValidation();
+    this.renderGiftAmountGrid(denominations);
     if (currentDenomination) {
       const denomination = Number(currentDenomination.denomination);
       const button = Array.from(

@@ -29,6 +29,10 @@ import { dismissCheckinPrompt, shouldShowCheckinPrompt } from "../lib/checkin-pr
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import * as logger from "../lib/activity-logger.js";
 
+// Temporary QA switch: show the new-user bonus modal on every activity-center visit.
+// Set to false before release to restore the server-controlled eligibility rule.
+const FORCE_NEW_USER_BONUS_MODAL = true;
+
 function renderUnauthenticatedActivityCenterPreview() {
   const showAuthRequired = () => showToast(authFailedMessage(), "error");
   const ui = new ActivityCenterUI({
@@ -83,7 +87,6 @@ export function initActivityCenter({ router, route }) {
   let adapter;
   let rewardAdTimeout;
   let interstitialAdTimeout;
-  let newUserBonusAdTimeout;
   let checkinChestAdTimeout;
   let coinRainAdTimeout;
   let deferCheckinChestDialog = false;
@@ -145,6 +148,7 @@ export function initActivityCenter({ router, route }) {
   }
 
   function shouldShowNewUserBonus(bonus) {
+    if (FORCE_NEW_USER_BONUS_MODAL) return true;
     return bonus?.eligible === true && bonus?.show === true && bonus?.status === "pending";
   }
 
@@ -262,9 +266,6 @@ export function initActivityCenter({ router, route }) {
     },
     get interstitialAdTimeout() {
       return interstitialAdTimeout;
-    },
-    get newUserBonusAdTimeout() {
-      return newUserBonusAdTimeout;
     },
     normalizeAdMessage,
     showDailyAdLimitToast,
@@ -406,18 +407,13 @@ export function initActivityCenter({ router, route }) {
       if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) return;
       try {
         newUserBonusAdInFlight.value = true;
-        ui.setNewUserBonusLoading(true, "video");
         lastRewardAdTaskId = "task_new_user_bonus";
-        newUserBonusAdTimeout?.start();
         await adapter.triggerRewardAd({
           taskId: "task_new_user_bonus",
           reward: bonus?.video_coin,
         });
       } catch (error) {
-        newUserBonusAdTimeout?.clear();
         newUserBonusAdInFlight.value = false;
-        ui.setNewUserBonusLoading(false);
-        ui.restoreNewUserBonusVideoButton();
         const message = normalizeAdMessage(error?.message, adNotAvailableMessage());
         logger.error("[Ad trigger failed] reward_ad task_new_user_bonus", error);
         showToast(message, "error");
@@ -606,19 +602,6 @@ export function initActivityCenter({ router, route }) {
     },
   });
 
-  newUserBonusAdTimeout = createAdCallbackTimeout({
-    ms: AD_CALLBACK_TIMEOUT_MS,
-    isActive: () => newUserBonusAdInFlight.value,
-    onTimeout: () => {
-      logger.warn("[Ad timeout] reward_ad task_new_user_bonus");
-      newUserBonusAdInFlight.value = false;
-      ui.setNewUserBonusLoading(false);
-      ui.restoreNewUserBonusVideoButton();
-      showToast(newUserBonusAdTimeout.message, "warning");
-      adapter.trackEvent("new_user_bonus_video_timeout", { taskId: "task_new_user_bonus" });
-    },
-  });
-
   checkinChestAdTimeout = createAdCallbackTimeout({
     ms: AD_CALLBACK_TIMEOUT_MS,
     isActive: () => checkinChestAdInFlight.value,
@@ -666,10 +649,7 @@ export function initActivityCenter({ router, route }) {
       return;
     }
     if (newUserBonusAdInFlight.value) {
-      newUserBonusAdTimeout?.clear();
       newUserBonusAdInFlight.value = false;
-      ui.setNewUserBonusLoading(false);
-      ui.restoreNewUserBonusVideoButton();
       const message = normalizeAdMessage(error?.message, adFailedMessage());
       showToast(message, "error");
       adapter.trackEvent("new_user_bonus_video_error", {
@@ -710,7 +690,6 @@ export function initActivityCenter({ router, route }) {
   return function disposeActivityCenter() {
     rewardAdTimeout?.clear();
     interstitialAdTimeout?.clear();
-    newUserBonusAdTimeout?.clear();
     checkinChestAdTimeout?.clear();
     coinRainAdTimeout?.clear();
     ui.destroyRecentRedemptions();

@@ -27,7 +27,6 @@ async function handleRewardAdEvent(ctx, result) {
     apiOptions,
     getLastRewardAdTaskId,
     rewardAdTimeout,
-    newUserBonusAdTimeout,
     normalizeAdMessage,
     showDailyAdLimitToast,
     newUserBonusAdInFlight,
@@ -86,13 +85,11 @@ async function handleRewardAdEvent(ctx, result) {
   }
 
   if (taskId === "task_new_user_bonus") {
-    newUserBonusAdTimeout?.clear();
     newUserBonusAdInFlight.value = false;
 
     if (success) {
       if (newUserBonusClaimInFlight.value) return;
       newUserBonusClaimInFlight.value = true;
-      ui.setNewUserBonusLoading(true, "video");
       const adEventId =
         result.ad_event_id ??
         result.adEventId ??
@@ -110,8 +107,7 @@ async function handleRewardAdEvent(ctx, result) {
       if (claimResult?.ok) {
         ui.hideNewUserBonusDialog();
       } else {
-        ui.setNewUserBonusLoading(false);
-        ui.restoreNewUserBonusVideoButton();
+        // Keep the dialog actionable: the user can retry or choose to dismiss it.
       }
       adapter.trackEvent("new_user_bonus_video_completed", {
         taskId,
@@ -121,8 +117,6 @@ async function handleRewardAdEvent(ctx, result) {
       return;
     }
 
-    ui.setNewUserBonusLoading(false);
-    ui.restoreNewUserBonusVideoButton();
     const displayMessage = normalizeAdMessage(message, adNotCompletedMessage());
     showToast(displayMessage, "warning");
     adapter.trackEvent("new_user_bonus_video_failed", {
