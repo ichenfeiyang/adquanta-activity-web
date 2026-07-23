@@ -173,6 +173,8 @@ export function initActivityCenter({ router, route }) {
         ui.showNewUserBonusDialog(bonus);
       } else {
         ui.hideNewUserBonusDialog();
+        // 无 Welcome Bonus 弹窗 → 直接启动新手引导
+        startGuideIfReady();
       }
     },
     onCheckinChestUpdate: (chest) => {
@@ -298,7 +300,11 @@ export function initActivityCenter({ router, route }) {
         beginCheckinChestDeferral();
         const result = await business.doCheckin(apiOptions);
         if (result.ok) ui.showSigninDialog(result);
-        else revealDeferredCheckinChest();
+        else {
+          revealDeferredCheckinChest();
+          // API 失败 → 弹窗不会出现，主动推进引导
+          noviceGuide?.handleSigninDismiss();
+        }
         return;
       }
 
@@ -323,6 +329,8 @@ export function initActivityCenter({ router, route }) {
       }
 
       showToast(alreadyCheckedInMessage(), "info");
+      // 已签到且已看视频、无待处理宝箱 → 弹窗不会出现，主动推进引导
+      noviceGuide?.handleSigninDismiss();
     },
     onSigninWatchVideoClick: async () => {
       if (ui.isSigninVideoCompleted()) {
@@ -395,6 +403,8 @@ export function initActivityCenter({ router, route }) {
         const result = await business.submitNewUserBonusAction(apiOptions, "dismiss");
         if (result?.ok) {
           ui.hideNewUserBonusDialog();
+          // Welcome Bonus 弹窗已关闭 → 启动新手引导
+          startGuideIfReady();
         } else {
           ui.setNewUserBonusLoading(false);
         }
@@ -595,17 +605,23 @@ export function initActivityCenter({ router, route }) {
 
   // ── 新手引导 ──
   let noviceGuide = null;
+  let guideStarted = false;
   let onBeforeUnloadGuide = null;
   if (!isNoviceGuideCompleted()) {
     noviceGuide = createNoviceGuide({
       onStepAction: () => {},
       onComplete: () => {},
     });
-    noviceGuide.start();
     onBeforeUnloadGuide = () => {
       if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted();
     };
     window.addEventListener('beforeunload', onBeforeUnloadGuide);
+  }
+
+  function startGuideIfReady() {
+    if (guideStarted || !noviceGuide) return;
+    guideStarted = true;
+    noviceGuide.start();
   }
 
   const cachedActivityInfo = getActivityInfoCache(apiOptions.token);

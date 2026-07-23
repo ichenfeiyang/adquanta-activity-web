@@ -117,24 +117,14 @@ export function createNoviceGuide({ onStepAction, onComplete }) {
     state.showOverlay  = true;
     state.showComplete = false;
 
-    // 用户点击目标按钮后：隐藏 overlay，并设置2秒 fallback 计时器
-    // 如果 dismiss 回调（handleSigninDismiss/handleSpinDismiss）先触发，会清除该计时器
-    // 如果 API 失败导致弹框不出现，2秒后由计时器兜底推进
+    // 用户点击目标按钮后：仅隐藏 overlay
+    // 推进逻辑完全由各步骤的 dismiss 回调负责（弹窗关闭或 API 失败时调用）
     if (cfg.actionSelector) {
       const actionBtn = document.querySelector(cfg.actionSelector);
       if (actionBtn) {
         const onActionClick = () => {
           if (!isGuideActive || currentStep !== stepKey) return;
           state.showOverlay = false;
-          stepAdvanceTimer = setTimeout(() => {
-            if (!isGuideActive || currentStep !== stepKey) return;
-            let next = getNextStep(stepKey);
-            while (next && !createStepConfig(next)) {
-              next = getNextStep(next);
-            }
-            if (next) enterStep(next);
-            else finishGuide();
-          }, 2000);
         };
         actionBtn.addEventListener('click', onActionClick);
         stepActionCleanup = () => {
