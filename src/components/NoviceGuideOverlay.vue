@@ -183,17 +183,19 @@ function recalc() {
       // SVG 起点：右气泡右上角
       const startX = containerWidth - 4;
       const startY = 4;
-      // SVG 终点：Day 7 圆圈右侧外部（留出箭头安全间隙）
-      const day7RightEdgeX = day7Rect.left + day7Rect.width;
-      const offsetGap = 6;
-      const endX = (day7RightEdgeX - containerDocLeftVal) + offsetGap;
-      const day7CenterY = day7DocTop + day7Rect.height / 2;
-      const endY = day7CenterY - rightBubbleTop;
+      // SVG 终点：Day 7 礼盒图标底部中心
+      const chestIcon = day7Node.querySelector('.tc-checkin-chest-icon-img');
+      const targetRect = chestIcon ? chestIcon.getBoundingClientRect() : day7Rect;
+      const endX = (targetRect.left + targetRect.width / 2 - containerDocLeftVal) + 6;
+      const endY = (targetRect.top + targetRect.height - rightBubbleTop) + 10;
 
       // 控制点：饱满右凸弧度 + 50% 中点入射
       const distanceY = Math.abs(endY - startY);
       const rightOffset = Math.max(65, distanceY * 0.45);
-      const midX = Math.max(startX, endX) + rightOffset;
+      // 约束曲线 X 不超出卡片右边界，避免手机端溢出裁剪
+      const cardRightInSvg = (anchorRect.right - containerDocLeftVal);
+      const midXAbsMax = cardRightInSvg - 6; // 留出 stroke-width + 安全间隙
+      const midX = Math.min(Math.max(startX, endX) + rightOffset, midXAbsMax);
       const midY = startY + (endY - startY) * 0.5;
 
       arrowSvgPath.value = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;

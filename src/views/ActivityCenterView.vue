@@ -87,7 +87,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
           </button>
           <div class="tc-checkin-info-bar">
             <span class="tc-checkin-info-icon" aria-hidden="true">ⓘ</span>
-            <span class="tc-checkin-info-text">Lucky chests may appear on Day 3, Day 5 and Day 7!</span>
+            <span class="tc-checkin-info-text">{{ t('novice.step1.chestTip') }}</span>
           </div>
         </div>
       </section>

@@ -703,10 +703,85 @@ export function initActivityCenter({ router, route }) {
     window.addEventListener('beforeunload', onBeforeUnloadGuide);
   }
 
+  // 新手引导启动前需要等待关闭的业务弹窗
+  // 这些弹窗始终在 DOM 中，通过 style.display 控制显隐
+  const GUIDE_BLOCKING_MODALS = [
+    '#checkinPromptModal',
+    '#newUserBonusModal',
+    '#checkinChestModal',
+  ];
+
+  function hasVisibleBlockingModal() {
+    return GUIDE_BLOCKING_MODALS.some(sel => {
+      const el = document.querySelector(sel);
+      return el && el.style.display !== 'none';
+    });
+  }
+
+  let guideWaitObserver = null;
+  let guideWaitTimer = null;
+
+  function waitForModalsThenStart() {
+    if (guideWaitObserver) { guideWaitObserver.disconnect(); }
+    if (guideWaitTimer) { clearTimeout(guideWaitTimer); }
+
+    guideWaitObserver = new MutationObserver(() => {
+      if (!hasVisibleBlockingModal()) {
+        guideWaitObserver.disconnect();
+        guideWaitObserver = null;
+        if (!guideStarted && noviceGuide) {
+          guideStarted = true;
+          noviceGuide.start();
+        }
+      }
+    });
+
+    guideWaitObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+
+    // 兜底超时
+    guideWaitTimer = setTimeout(() => {
+      if (guideWaitObserver) { guideWaitObserver.disconnect(); guideWaitObserver = null; }
+      if (!guideStarted && noviceGuide) {
+        guideStarted = true;
+        noviceGuide.start();
+      }
+    }, 10000);
+  }
+
   function startGuideIfReady() {
     if (guideStarted || !noviceGuide) return;
-    guideStarted = true;
-    noviceGuide.start();
+
+    // 情况1：当前有业务弹窗在显示 → 等它关闭
+    if (hasVisibleBlockingModal()) {
+      waitForModalsThenStart();
+      return;
+    }
+
+    // 情况2：当前无弹窗，但签到提示数据可能还没到
+    // 等待一小段时间，看是否有弹窗出现
+    const checkTimer = setTimeout(() => {
+      if (guideStarted) return;
+      if (hasVisibleBlockingModal()) {
+        waitForModalsThenStart();
+      } else {
+        guideStarted = true;
+        noviceGuide.start();
+      }
+    }, 300);
+
+    // 兜底超时：防止任何情况导致引导不启动
+    guideWaitTimer = setTimeout(() => {
+      clearTimeout(checkTimer);
+      if (!guideStarted && noviceGuide) {
+        guideStarted = true;
+        noviceGuide.start();
+      }
+    }, 5000);
   }
 
   const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
