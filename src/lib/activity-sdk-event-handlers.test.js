@@ -111,6 +111,46 @@ test("uses the request-scoped event ID when the SDK coin-rain callback omits one
   }
 });
 
+test("uses the request-scoped event ID for a check-in chest when the SDK omits one", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
+  const claims = [];
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: {
+        submitCheckinChestAction: async (_options, action, chestId, adEventId) => {
+          claims.push({ action, chestId, adEventId });
+          return { ok: true, coin: 15 };
+        },
+      },
+      ui: {
+        setCheckinChestLoading: () => {},
+        hideCheckinChestDialog: () => {},
+        showCheckinChestRewardDialog: () => {},
+      },
+      adapter: { trackEvent: () => {} },
+      apiOptions: {},
+      normalizeAdMessage: (message) => message,
+      showDailyAdLimitToast: () => {},
+      checkinChestAdInFlight: { value: true },
+      checkinChestClaimInFlight: { value: false },
+      checkinChestSettlingIds: new Set(),
+      getCheckinChest: () => ({ id: 9 }),
+    });
+
+    await handler({
+      eventType: "reward",
+      taskId: "task_checkin_chest",
+      success: true,
+      request_ad_event_id: "checkin-chest-fallback-id",
+    });
+
+    assert.deepEqual(claims, [{ action: "claim", chestId: 9, adEventId: "checkin-chest-fallback-id" }]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
 test("keeps a chest locked when its reward claim is queued for retry", async () => {
   const originalWindow = globalThis.window;
   globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };

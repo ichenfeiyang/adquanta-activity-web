@@ -94,6 +94,7 @@ async function handleRewardAdEvent(ctx, result) {
         result.videoId ??
         result.data?.ad_event_id ??
         result.data?.video_id ??
+        result.request_ad_event_id ??
         "";
       const claimResult = await business.submitNewUserBonusAction(
         apiOptions,
@@ -144,7 +145,7 @@ async function handleRewardAdEvent(ctx, result) {
     if (checkinChestClaimInFlight.value) return;
     checkinChestClaimInFlight.value = true;
     checkinChestSettlingIds.add(Number(chest.id));
-    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? "";
+    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? result.request_ad_event_id ?? "";
     const claimResult = await business.submitCheckinChestAction(apiOptions, "claim", chest.id, adEventId);
     checkinChestClaimInFlight.value = false;
     ui.setCheckinChestLoading(false);

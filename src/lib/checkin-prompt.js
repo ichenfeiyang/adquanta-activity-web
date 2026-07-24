@@ -1,4 +1,9 @@
-const DISMISSED_DATE_KEY = "activity_checkin_prompt_dismissed_date_v1";
+const DISMISSED_DATE_KEY = "activity_checkin_prompt_dismissed_date_v2";
+
+function dismissedDateKey(scope = "") {
+  const normalized = String(scope || "").trim();
+  return normalized ? `${DISMISSED_DATE_KEY}:${encodeURIComponent(normalized)}` : DISMISSED_DATE_KEY;
+}
 
 export function normalizeCheckinPrompt(prompt) {
   const serverDate = String(prompt?.server_date || "").trim();
@@ -8,23 +13,23 @@ export function normalizeCheckinPrompt(prompt) {
   };
 }
 
-export function isCheckinPromptDismissed(serverDate) {
+export function isCheckinPromptDismissed(serverDate, scope = "") {
   if (!serverDate) return false;
   try {
-    return localStorage.getItem(DISMISSED_DATE_KEY) === serverDate;
+    return localStorage.getItem(dismissedDateKey(scope)) === serverDate;
   } catch (_) {
     return false;
   }
 }
 
-export function dismissCheckinPrompt(serverDate) {
+export function dismissCheckinPrompt(serverDate, scope = "") {
   if (!serverDate) return;
   try {
-    localStorage.setItem(DISMISSED_DATE_KEY, serverDate);
+    localStorage.setItem(dismissedDateKey(scope), serverDate);
   } catch (_) {}
 }
 
-export function shouldShowCheckinPrompt(prompt) {
+export function shouldShowCheckinPrompt(prompt, scope = "") {
   const normalized = normalizeCheckinPrompt(prompt);
-  return normalized.show && !!normalized.serverDate && !isCheckinPromptDismissed(normalized.serverDate);
+  return normalized.show && !!normalized.serverDate && !isCheckinPromptDismissed(normalized.serverDate, scope);
 }

@@ -34,6 +34,19 @@ test("check-in prompt requires a server-approved valid date", () => {
   }
 });
 
+test("dismissal is isolated by activity user scope", () => {
+  const restore = installStorage();
+  try {
+    const prompt = { show: true, server_date: "2026-07-22" };
+    dismissCheckinPrompt("2026-07-22", "activity-1:user-a");
+
+    assert.equal(shouldShowCheckinPrompt(prompt, "activity-1:user-a"), false);
+    assert.equal(shouldShowCheckinPrompt(prompt, "activity-1:user-b"), true);
+  } finally {
+    restore();
+  }
+});
+
 test("closing the prompt suppresses only that server date", () => {
   const restore = installStorage();
   try {

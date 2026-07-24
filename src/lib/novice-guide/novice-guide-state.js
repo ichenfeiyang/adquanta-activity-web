@@ -3,12 +3,17 @@
  * 使用 localStorage 持久化，满足 PRD「退出后不再触发」要求
  */
 
-const STORAGE_KEY = 'novice_guide_completed';
+const STORAGE_KEY = 'novice_guide_completed_v2';
 
-export function isNoviceGuideCompleted() {
-  return localStorage.getItem(STORAGE_KEY) === 'true';
+function storageKey(scope = '') {
+  const normalized = String(scope || '').trim();
+  return normalized ? `${STORAGE_KEY}:${encodeURIComponent(normalized)}` : STORAGE_KEY;
 }
 
-export function markNoviceGuideCompleted() {
-  localStorage.setItem(STORAGE_KEY, 'true');
+export function isNoviceGuideCompleted(scope = '') {
+  return localStorage.getItem(storageKey(scope)) === 'true';
+}
+
+export function markNoviceGuideCompleted(scope = '') {
+  localStorage.setItem(storageKey(scope), 'true');
 }

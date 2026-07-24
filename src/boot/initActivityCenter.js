@@ -196,12 +196,18 @@ export function initActivityCenter({ router, route }) {
     return bonus?.eligible === true && bonus?.show === true && bonus?.status === "pending";
   }
 
+  function getUserTipStorageScope() {
+    const userId = String(business?.getUserId?.() || "").trim();
+    return userId ? `${activityId}:${userId}` : "";
+  }
+
   function updateCheckinPromptDialog(prompt, detail, { fromCache = false } = {}) {
     latestCheckinPrompt = prompt;
     latestCheckinPromptDetail = detail;
     const chestBlocksPrompt = !!deferredCheckinChest?.id
       && !isCheckinChestSoftClosed(deferredCheckinChest.id);
-    if (fromCache || newUserBonusVisible || chestBlocksPrompt || !shouldShowCheckinPrompt(prompt)) {
+    const storageScope = getUserTipStorageScope();
+    if (fromCache || !storageScope || newUserBonusVisible || chestBlocksPrompt || !shouldShowCheckinPrompt(prompt, storageScope)) {
       ui.hideCheckinPrompt();
       return;
     }
@@ -277,6 +283,7 @@ export function initActivityCenter({ router, route }) {
       ui.updateCoinRain(status);
     },
     onNewUserBonusUpdate: (bonus) => {
+      ensureNoviceGuide();
       newUserBonusVisible = shouldShowNewUserBonus(bonus);
       if (newUserBonusVisible) {
         ui.hideCheckinPrompt();
@@ -293,7 +300,8 @@ export function initActivityCenter({ router, route }) {
     },
     onCheckinPromptUpdate: (prompt, detail, metadata) => {
       // 引导未完成时静默忽略签到提示（让位给新手引导）
-      if (!isNoviceGuideCompleted() && !guideStarted && !noviceGuide?.isGuideRunning()) {
+      ensureNoviceGuide();
+      if (!isNoviceGuideCompleted(getUserTipStorageScope()) && !guideStarted && !noviceGuide?.isGuideRunning()) {
         return;
       }
       updateCheckinPromptDialog(prompt, detail, metadata);
@@ -341,6 +349,9 @@ export function initActivityCenter({ router, route }) {
       // the ID generated when this serialized request was initiated so the
       // backend can safely settle the coin-rain boost.
       coin_rain_ad_event_id: request.coinRainAdEventId || "",
+      // Reused by reward flows whose backend records an ad event for
+      // idempotency/audit but whose current SDK callback omits that ID.
+      request_ad_event_id: request.rewardAdEventId || "",
     });
   };
 
@@ -429,14 +440,14 @@ export function initActivityCenter({ router, route }) {
       ui.hideCheckinPrompt();
       trackActivityEvent("checkin_prompt_claim_click", { server_date: serverDate });
       const success = await claimTodayCheckin("prompt");
-      if (!success && shouldShowCheckinPrompt(prompt)) {
+      if (!success && shouldShowCheckinPrompt(prompt, getUserTipStorageScope())) {
         checkinPromptShownForDate = "";
         updateCheckinPromptDialog(prompt, latestCheckinPromptDetail);
       }
     },
     onCheckinPromptClose: ({ prompt } = {}) => {
       const serverDate = String(prompt?.server_date || "");
-      dismissCheckinPrompt(serverDate);
+      dismissCheckinPrompt(serverDate, getUserTipStorageScope());
       ui.hideCheckinPrompt();
       trackActivityEvent("checkin_prompt_close", { server_date: serverDate });
     },
@@ -488,7 +499,9 @@ export function initActivityCenter({ router, route }) {
         showAdProcessingToast();
         return;
       }
-      const request = beginAdRequest("reward_ad", "task_new_user_bonus");
+      const request = beginAdRequest("reward_ad", "task_new_user_bonus", {
+        rewardAdEventId: createClientAdEventId("new-user-bonus"),
+      });
       if (!request) return;
       try {
         newUserBonusAdInFlight.value = true;
@@ -530,7 +543,9 @@ export function initActivityCenter({ router, route }) {
         showAdProcessingToast();
         return;
       }
-      const request = beginAdRequest("reward_ad", "task_checkin_chest");
+      const request = beginAdRequest("reward_ad", "task_checkin_chest", {
+        rewardAdEventId: createClientAdEventId("checkin-chest"),
+      });
       if (!request) return;
       try {
         checkinChestAdInFlight.value = true;
@@ -712,8 +727,13 @@ export function initActivityCenter({ router, route }) {
   let noviceGuide = null;
   let guideStarted = false;
   let onBeforeUnloadGuide = null;
-  if (!isNoviceGuideCompleted()) {
+  let noviceGuideStorageScope = "";
+  function ensureNoviceGuide() {
+    const storageScope = getUserTipStorageScope();
+    if (!storageScope || noviceGuide || isNoviceGuideCompleted(storageScope)) return;
+    noviceGuideStorageScope = storageScope;
     noviceGuide = createNoviceGuide({
+      storageScope,
       onStepAction: () => {},
       onComplete: () => {},
       onStart: () => {
@@ -732,7 +752,7 @@ export function initActivityCenter({ router, route }) {
       },
     });
     onBeforeUnloadGuide = () => {
-      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted();
+      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted(noviceGuideStorageScope);
     };
     window.addEventListener('beforeunload', onBeforeUnloadGuide);
   }
@@ -821,6 +841,7 @@ export function initActivityCenter({ router, route }) {
   const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
   if (cachedActivityInfo) {
     business.applyActivityInfoData(cachedActivityInfo, { fromCache: true });
+    ensureNoviceGuide();
   }
 
   // The prompt must use a fresh server decision so a cached pre-midnight state
