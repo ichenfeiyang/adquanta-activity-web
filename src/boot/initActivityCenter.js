@@ -88,6 +88,7 @@ export function initActivityCenter({ router, route }) {
   let latestCheckinPromptDetail = null;
   let checkinPromptShownForDate = "";
   let newUserBonusVisible = false;
+  let deferredNewUserBonus = null;
   const checkinChestDroppedIds = new Set();
   const checkinChestImpressedIds = new Set();
   const checkinChestSettlingIds = new Set();
@@ -255,20 +256,28 @@ export function initActivityCenter({ router, route }) {
     },
     onNewUserBonusUpdate: (bonus) => {
       newUserBonusVisible = shouldShowNewUserBonus(bonus);
-      if (newUserBonusVisible) {
+      if (!isNoviceGuideCompleted()) {
+        // 引导未完成：延迟业务弹窗，直接启动引导
+        deferredNewUserBonus = newUserBonusVisible ? bonus : null;
+        ui.hideCheckinPrompt();
+        ui.hideNewUserBonusDialog();
+        startGuideIfReady();
+      } else if (newUserBonusVisible) {
         ui.hideCheckinPrompt();
         ui.showNewUserBonusDialog(bonus);
       } else {
         ui.hideNewUserBonusDialog();
         updateCheckinPromptDialog(latestCheckinPrompt, latestCheckinPromptDetail);
-        // 无 Welcome Bonus 弹窗 → 直接启动新手引导
-        startGuideIfReady();
       }
     },
     onCheckinChestUpdate: (chest) => {
       updateCheckinChestDialog(chest);
     },
     onCheckinPromptUpdate: (prompt, detail, metadata) => {
+      // 引导未完成时静默忽略签到提示（让位给新手引导）
+      if (!isNoviceGuideCompleted() && !guideStarted && !noviceGuide?.isGuideRunning()) {
+        return;
+      }
       updateCheckinPromptDialog(prompt, detail, metadata);
     },
   });
@@ -681,7 +690,14 @@ export function initActivityCenter({ router, route }) {
   if (!isNoviceGuideCompleted()) {
     noviceGuide = createNoviceGuide({
       onStepAction: () => {},
-      onComplete: () => {},
+      onComplete: () => {
+        // 引导完成 → 回放被延迟的业务弹窗
+        if (deferredNewUserBonus && shouldShowNewUserBonus(deferredNewUserBonus)) {
+          newUserBonusVisible = true;
+          ui.showNewUserBonusDialog(deferredNewUserBonus);
+          deferredNewUserBonus = null;
+        }
+      },
       onStart: () => {
         adapter.trackEvent('rewards_onboarding_start_click', {
           page_id: '/activity-center',
