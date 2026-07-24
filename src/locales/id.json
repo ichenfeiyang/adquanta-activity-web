@@ -188,6 +188,7 @@
     "pageLoadFailedTitle": "Gagal Memuat Halaman",
     "pageLoadFailed": "{page} gagal dimuat. Periksa jaringan Anda dan muat ulang.",
     "activityLoadFailed": "Gagal memuat data aktivitas, silakan coba lagi",
+    "rateLimited": "Terlalu banyak permintaan saat ini. Harap tunggu sebentar lalu coba lagi.",
     "checkinFailed": "Check-in gagal",
     "checkinFailedRetry": "Check-in gagal, silakan coba lagi",
     "videoCheckinSuccess": "Check-in video berhasil",

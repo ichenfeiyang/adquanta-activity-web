@@ -71,7 +71,24 @@ export function initActivityCenter({ router, route }) {
 
   const { code, activityId, apiOptions } = session;
 
-  const adRequestCoordinator = new ActivityAdRequestCoordinator();
+  const adRequestCoordinator = new ActivityAdRequestCoordinator({
+    onTimeout: (request) => {
+      logger.warn("Native ad callback timed out", { eventType: request.eventType, taskId: request.taskId });
+      showToast(adNotAvailableMessage(), "warning");
+      adapter?.trackEvent("ad_callback_timeout", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: request.taskId,
+        ad_event_type: request.eventType,
+      });
+      void handleSDKEventCompleted({
+        eventType: request.eventType,
+        taskId: request.taskId,
+        task_id: request.taskId,
+        success: false,
+        message: adNotAvailableMessage(),
+      });
+    },
+  });
   const checkinWatchAdInFlight = { value: false };
   const checkinVideoClaimInFlight = { value: false };
   const newUserBonusAdInFlight = { value: false };
@@ -96,10 +113,16 @@ export function initActivityCenter({ router, route }) {
     showToast(t("common.processing"), "info");
   }
 
-  function beginAdRequest(eventType, taskId) {
-    const request = adRequestCoordinator.begin(eventType, taskId);
+  function beginAdRequest(eventType, taskId, metadata = {}) {
+    const request = adRequestCoordinator.begin(eventType, taskId, metadata);
     if (!request) showAdProcessingToast();
     return request;
+  }
+
+  function createClientAdEventId(prefix) {
+    const uuid = globalThis.crypto?.randomUUID?.();
+    if (uuid) return `${prefix}-${uuid}`;
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
   }
 
   async function triggerNativeAd(request, eventData) {
@@ -311,8 +334,13 @@ export function initActivityCenter({ router, route }) {
     }
     await handleSDKEventCompleted({
       ...result,
+      eventType: request.eventType,
       taskId: request.taskId,
       task_id: request.taskId,
+      // Current Android SDK callbacks do not include an ad_event_id. Preserve
+      // the ID generated when this serialized request was initiated so the
+      // backend can safely settle the coin-rain boost.
+      coin_rain_ad_event_id: request.coinRainAdEventId || "",
     });
   };
 
@@ -635,7 +663,9 @@ export function initActivityCenter({ router, route }) {
         showAdProcessingToast();
         return;
       }
-      const request = beginAdRequest("reward_ad", "task_coin_rain");
+      const request = beginAdRequest("reward_ad", "task_coin_rain", {
+        coinRainAdEventId: createClientAdEventId("coin-rain"),
+      });
       if (!request) return;
       try {
         coinRainAdInFlight.value = true;
@@ -805,6 +835,7 @@ export function initActivityCenter({ router, route }) {
   });
 
   return function disposeActivityCenter() {
+    adRequestCoordinator.dispose();
     ui.destroyRecentRedemptions();
     ui.destroyCoinRain();
     window.onRewardedAdError = null;

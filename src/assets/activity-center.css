@@ -524,7 +524,7 @@ body {
   color: #f25b18;
 }
 
-.checkin-prompt-day.is-done .checkin-prompt-day-reward { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: #fff; color: #ff6519; font-size: 34px; line-height: 1; }
+.checkin-prompt-day.is-done .checkin-prompt-day-reward { display: grid; width: 19px; height: 19px; place-items: center; border-radius: 50%; background: #fff; color: #ff6519; font-size: 17px; line-height: 1; }
 
 .checkin-prompt-chest-icon {
   display: block;

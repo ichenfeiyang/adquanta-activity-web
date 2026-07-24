@@ -71,6 +71,46 @@ test("shows the chest reward result dialog after the chest ad is settled", async
   }
 });
 
+test("uses the request-scoped event ID when the SDK coin-rain callback omits one", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
+  const calls = [];
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: {
+        coinRain: { session_id: "rain-session", base_coin: 10 },
+        submitCoinRainAction: async (_options, action, payload) => {
+          calls.push({ action, payload });
+          return { ok: true, base_coin: 10, boost_coin: 10 };
+        },
+      },
+      ui: {
+        setCoinRainAdLoading: () => {},
+        showCoinRainBoostSuccess: () => calls.push("success"),
+      },
+      adapter: { trackEvent: () => {} },
+      apiOptions: {},
+      normalizeAdMessage: (message) => message,
+      showDailyAdLimitToast: () => {},
+      coinRainAdInFlight: { value: true },
+    });
+
+    await handler({
+      eventType: "reward",
+      taskId: "task_coin_rain",
+      success: true,
+      coin_rain_ad_event_id: "coin-rain-fallback-id",
+    });
+
+    assert.deepEqual(calls, [
+      { action: "boost", payload: { session_id: "rain-session", ad_event_id: "coin-rain-fallback-id" } },
+      "success",
+    ]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
 test("keeps a chest locked when its reward claim is queued for retry", async () => {
   const originalWindow = globalThis.window;
   globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };

@@ -44,6 +44,10 @@ export function activityLoadFailedMessage() {
   return t("messages.activityLoadFailed");
 }
 
+export function rateLimitMessage() {
+  return t("messages.rateLimited");
+}
+
 export function checkinFailedMessage() {
   return t("messages.checkinFailed");
 }

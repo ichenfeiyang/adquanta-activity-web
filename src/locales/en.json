@@ -188,6 +188,7 @@
     "pageLoadFailedTitle": "Page Load Failed",
     "pageLoadFailed": "{page} failed to load. Please check your network and refresh.",
     "activityLoadFailed": "Failed to load activity data, please try again",
+    "rateLimited": "Too many requests right now. Please wait a moment and try again.",
     "checkinFailed": "Check-in failed",
     "checkinFailedRetry": "Check-in failed, please try again",
     "videoCheckinSuccess": "Video check-in successful",

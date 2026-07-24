@@ -7,6 +7,7 @@ import * as logger from "./activity-logger.js";
 import { fetchWithRetry } from "./fetch-with-retry.js";
 import { buildGaClientIdHeader } from "./ga-client-id.js";
 import { syncGoldCoinsFromActivityInfo } from "./ga-user-properties.js";
+import { rateLimitMessage } from "./activity-messages.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env?.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
@@ -47,6 +48,7 @@ async function readResponseBody(response, { preserveOriginal = false } = {}) {
 }
 
 function getHttpErrorMessage(body, status) {
+  if (status === 429) return rateLimitMessage();
   if (body.kind === "json" && body.value?.message) {
     return body.value.message;
   }

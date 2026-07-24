@@ -63,7 +63,7 @@ async function handleRewardAdEvent(ctx, result) {
       });
       return;
     }
-    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? "";
+    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? result.coin_rain_ad_event_id ?? "";
     const status = business.coinRain;
     const boostResult = await business.submitCoinRainAction(apiOptions, "boost", { session_id: status?.session_id, ad_event_id: adEventId });
     if (boostResult?.ok) ui.showCoinRainBoostSuccess(boostResult);
