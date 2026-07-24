@@ -88,7 +88,6 @@ export function initActivityCenter({ router, route }) {
   let latestCheckinPromptDetail = null;
   let checkinPromptShownForDate = "";
   let newUserBonusVisible = false;
-  let deferredNewUserBonus = null;
   const checkinChestDroppedIds = new Set();
   const checkinChestImpressedIds = new Set();
   const checkinChestSettlingIds = new Set();
@@ -256,18 +255,14 @@ export function initActivityCenter({ router, route }) {
     },
     onNewUserBonusUpdate: (bonus) => {
       newUserBonusVisible = shouldShowNewUserBonus(bonus);
-      if (!isNoviceGuideCompleted()) {
-        // 引导未完成：延迟业务弹窗，直接启动引导
-        deferredNewUserBonus = newUserBonusVisible ? bonus : null;
-        ui.hideCheckinPrompt();
-        ui.hideNewUserBonusDialog();
-        startGuideIfReady();
-      } else if (newUserBonusVisible) {
+      if (newUserBonusVisible) {
         ui.hideCheckinPrompt();
         ui.showNewUserBonusDialog(bonus);
       } else {
         ui.hideNewUserBonusDialog();
         updateCheckinPromptDialog(latestCheckinPrompt, latestCheckinPromptDetail);
+        // 无 Welcome Bonus 弹窗 → 直接启动新手引导
+        startGuideIfReady();
       }
     },
     onCheckinChestUpdate: (chest) => {
@@ -690,14 +685,7 @@ export function initActivityCenter({ router, route }) {
   if (!isNoviceGuideCompleted()) {
     noviceGuide = createNoviceGuide({
       onStepAction: () => {},
-      onComplete: () => {
-        // 引导完成 → 回放被延迟的业务弹窗
-        if (deferredNewUserBonus && shouldShowNewUserBonus(deferredNewUserBonus)) {
-          newUserBonusVisible = true;
-          ui.showNewUserBonusDialog(deferredNewUserBonus);
-          deferredNewUserBonus = null;
-        }
-      },
+      onComplete: () => {},
       onStart: () => {
         adapter.trackEvent('rewards_onboarding_start_click', {
           page_id: '/activity-center',

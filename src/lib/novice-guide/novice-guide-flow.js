@@ -59,7 +59,7 @@ export const SPIN_STEP = {
   guideTextKey: 'novice.step2.text',
   guideSubtextKey: 'novice.step2.subtext',
   guideIcon: '✨',
-  headerBadge: 'Step 2 of 3',
+  guideStepLabelKey: 'novice.step2.stepLabel',
   arrowPosition: 'dynamic',
   highlightGlow: true,
   textPosition: 'above',

@@ -334,7 +334,8 @@
     },
     "step2": {
       "text": "Watch videos to get spin chances!",
-      "subtext": "Spin up to 20 times every day and win Coins!"
+      "subtext": "Spin up to 20 times every day and win Coins!",
+      "stepLabel": "Step 2 of 4"
     },
     "step3": {
       "text": "Tap coins and win rewards!",
