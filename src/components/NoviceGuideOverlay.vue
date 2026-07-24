@@ -70,7 +70,11 @@ function computeCurvePath() {
     const endX = btnCenterX + btnRect.width * 0.4 - boxRect.left;
     const endY = btnRect.top - boxRect.top;
     // 二次贝塞尔：先向右凸出，再向下弯入
-    const midX = Math.max(startX, endX) + 18;
+    const midXRaw = Math.max(startX, endX) + 18;
+    // 约束控制点不超出 text-box 和 viewport 右边界，避免窄屏裁剪
+    const textBoxMaxX = boxRect.width;
+    const vpMaxX = window.innerWidth - boxRect.left - 10;
+    const midX = Math.min(midXRaw, textBoxMaxX + 6, vpMaxX);
     const midY = startY + (endY - startY) * 0.55;
     curvePath.value = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
   });
@@ -231,11 +235,13 @@ function onScroll() {
   scrollRAF = requestAnimationFrame(() => {
     scrollRAF = 0;
     recalc();
+    computeCurvePath();
   });
 }
 
 function onResize() {
   recalc();
+  computeCurvePath();
 }
 
 function addListeners() {
@@ -273,7 +279,7 @@ function unbindShadowCatcher() {
 
 watch(() => props.active, (v) => {
   if (v) {
-    nextTick(() => { recalc(); computeCurvePath(); bindShadowCatcher(); });
+    nextTick(() => { recalc(); bindShadowCatcher(); requestAnimationFrame(() => computeCurvePath()); });
     addListeners();
   } else {
     removeListeners();
@@ -284,7 +290,7 @@ watch(() => props.active, (v) => {
 
 onMounted(() => {
   if (props.active) {
-    nextTick(() => { recalc(); computeCurvePath(); bindShadowCatcher(); });
+    nextTick(() => { recalc(); bindShadowCatcher(); requestAnimationFrame(() => computeCurvePath()); });
     addListeners();
   }
 });
