@@ -400,8 +400,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       <img :src="assetUrl('images/checkin-chest-reward-hero.png')" alt="" class="checkin-chest-result-hero" width="420" height="350">
       <div class="checkin-chest-result-copy">
         <h2 id="checkinChestRewardHeading" class="checkin-chest-result-title"><span aria-hidden="true">🎉</span> {{ t('center.checkinChestCongratulations') }}</h2>
-        <p class="checkin-chest-result-subtitle">{{ t('center.checkinChestYouGot') }}</p>
-        <p class="checkin-chest-result-amount"><strong id="checkinChestRewardCoins">+0</strong> <span>{{ t('common.coins') }}</span></p>
+        <p class="checkin-chest-result-reward"><span>{{ t('center.checkinChestYouGot') }} </span><strong id="checkinChestRewardCoins">+0</strong> <span>{{ t('common.coins') }}</span></p>
       </div>
       <button id="checkinChestRewardClaimBtn" type="button" class="checkin-chest-result-claim">{{ t('center.checkinChestClaim') }}</button>
     </div>

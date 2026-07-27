@@ -1141,22 +1141,15 @@ body {
 
 .checkin-chest-result-title span { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 
-.checkin-chest-result-subtitle {
+.checkin-chest-result-reward {
   margin: 16px 0 0;
   color: #111827;
   font-size: 20px;
   line-height: 1.1;
+  font-weight: 400;
 }
 
-.checkin-chest-result-amount {
-  margin: 12px 0 0;
-  color: #050914;
-  font-size: 42px;
-  line-height: 1;
-  font-weight: 800;
-}
-
-.checkin-chest-result-amount strong { color: #f04405; font-weight: 900; }
+.checkin-chest-result-reward strong { color: #f04405; font-weight: 900; }
 
 .checkin-chest-result-claim {
   width: 100%;
