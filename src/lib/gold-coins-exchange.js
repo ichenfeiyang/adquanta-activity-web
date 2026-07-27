@@ -942,10 +942,6 @@ export class GoldCoinsExchange {
         send_value: sendValue,
         phone_number,
         client_request_id: clientRequestId,
-        product_type: String(selectedCharge.product_type || ""),
-        display_text: String(selectedCharge.display_text || selectedCharge.amount_text || ""),
-        receive_value: Number(selectedCharge.receive_value ?? selectedCharge.amount ?? 0),
-        receive_currency_iso: String(selectedCharge.receive_currency || ""),
       });
       this.retryChargeRequestId = "";
       const msg = res?.data?.message || res?.message || "";
