@@ -236,31 +236,6 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
     </main>
   </div>
 
-  <div id="exchangeModal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">{{ t('redeem.confirmTitle') }}</h2>
-        <button id="modalCloseBtn" type="button" class="modal-close" :aria-label="t('common.close')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="product-preview">
-          <div id="previewIcon" class="preview-icon" />
-          <div class="preview-info">
-            <div id="previewName" class="preview-name" />
-            <div id="previewPoints" class="preview-points" />
-          </div>
-        </div>
-        <div class="modal-message">
-          <p>{{ t('redeem.confirmPrefix') }}<span id="confirmPoints"></span>{{ t('redeem.confirmInfix') }}<span id="confirmName"></span>{{ t('redeem.confirmSuffix') }}</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="cancelBtn" type="button" class="btn-cancel">{{ t('common.cancel') }}</button>
-        <button id="confirmBtn" type="button" class="btn-confirm">{{ t('common.confirm') }}</button>
-      </div>
-    </div>
-  </div>
-
   <div v-if="privacyPolicyOpen" class="redeem-privacy-modal" role="dialog" aria-modal="true" :aria-label="t('redeem.privacyPolicyTitle')" @click.self="privacyPolicyOpen = false">
     <section class="redeem-privacy-modal-card">
       <header class="redeem-privacy-modal-header">

@@ -289,6 +289,7 @@
     "redeemFailed": "রিডেম্পশন ব্যর্থ, অনুগ্রহ করে আবার চেষ্টা করুন",
     "submitFailed": "জমা দেওয়া ব্যর্থ, অনুগ্রহ করে আবার চেষ্টা করুন",
     "submissionPending": "আপনার অর্ডার এখনও প্রক্রিয়াধীন থাকতে পারে। পরে রিডেম্পশন ইতিহাস দেখুন।",
+    "submissionAccepted": "আপনার রিচার্জ অর্ডার জমা দেওয়া হয়েছে এবং প্রক্রিয়াধীন আছে।",
     "missingDistributorRef": "distributor_ref নেই",
     "summarySelected": "{countryCode} {mobile}-এর জন্য {operator} ({label}) {action} করতে {coins} কয়েন ব্যবহার করুন"
   },

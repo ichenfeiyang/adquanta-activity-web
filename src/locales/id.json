@@ -289,6 +289,7 @@
     "redeemFailed": "Penukaran gagal, silakan coba lagi",
     "submitFailed": "Pengiriman gagal, silakan coba lagi",
     "submissionPending": "Pesanan Anda mungkin masih diproses. Silakan periksa Riwayat Penukaran nanti.",
+    "submissionAccepted": "Pesanan isi ulang Anda telah dikirim dan sedang diproses.",
     "missingDistributorRef": "distributor_ref tidak ditemukan",
     "summarySelected": "Gunakan {coins} koin untuk {action} {label} ({operator}) untuk {countryCode} {mobile}"
   },

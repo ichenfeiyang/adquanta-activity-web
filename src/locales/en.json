@@ -289,6 +289,7 @@
     "redeemFailed": "Redemption failed, please try again",
     "submitFailed": "Submit failed, please try again",
     "submissionPending": "Your order may still be processing. Please check Redemption History later.",
+    "submissionAccepted": "Your recharge order has been submitted and is being processed.",
     "missingDistributorRef": "Missing distributor_ref",
     "summarySelected": "Use {coins} coins to {action} {label} ({operator}) for {countryCode} {mobile}"
   },

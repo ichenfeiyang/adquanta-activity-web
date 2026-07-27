@@ -289,6 +289,7 @@
     "redeemFailed": "रिडेम्पशन असफल, कृपया पुनः प्रयास गर्नुहोस्",
     "submitFailed": "पेश गर्न असफल, कृपया पुनः प्रयास गर्नुहोस्",
     "submissionPending": "तपाईंको अर्डर अझै प्रक्रियामा हुन सक्छ। कृपया पछि रिडेम्पशन इतिहास हेर्नुहोस्।",
+    "submissionAccepted": "तपाईंको रिचार्ज अर्डर पेश गरिएको छ र प्रक्रियामा छ।",
     "missingDistributorRef": "distributor_ref छैन",
     "summarySelected": "{countryCode} {mobile} का लागि {operator} ({label}) {action} गर्न {coins} सिक्का प्रयोग गर्नुहोस्"
   },

@@ -795,85 +795,12 @@ export class GoldCoinsExchange {
     };
   }
 
-  /**
-   * 执行兑换
-   */
-  showExchangeConfirmModal({ coins, amountLabel, productType = "topup" }) {
-    const modal = document.getElementById("exchangeModal");
-    if (!modal) {
-      // Fallback: keep behavior safe if modal markup missing.
-      return Promise.resolve(
-        window.confirm(t("redeem.confirmTopupFallback", { coins, name: amountLabel || "-" }))
-      );
-    }
-
-    const previewName = document.getElementById("previewName");
-    const previewPoints = document.getElementById("previewPoints");
-    const confirmPoints = document.getElementById("confirmPoints");
-    const confirmName = document.getElementById("confirmName");
-
-    const closeBtn = document.getElementById("modalCloseBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    const confirmBtn = document.getElementById("confirmBtn");
-
-    if (previewName) {
-      previewName.textContent = formatRedeemProductName({
-        product_type: productType,
-        amount_text: amountLabel,
-        display_text: amountLabel,
-      });
-    }
-    if (previewPoints) previewPoints.textContent = t("redeem.coinsUnit", { count: coins });
-    if (confirmPoints) confirmPoints.textContent = String(coins ?? 0);
-    if (confirmName) confirmName.textContent = String(amountLabel || "-");
-
-    // Show modal.
-    modal.style.display = "flex";
-
-    let resetOverflow = () => {};
-    const cleanup = () => {
-      modal.style.display = "none";
-      if (closeBtn) closeBtn.onclick = null;
-      if (cancelBtn) cancelBtn.onclick = null;
-      if (confirmBtn) confirmBtn.onclick = null;
-      try {
-        resetOverflow();
-      } catch (_) {}
-    };
-
-    return new Promise((resolve) => {
-      if (closeBtn)
-        closeBtn.onclick = () => {
-          cleanup();
-          resolve(false);
-        };
-
-      if (cancelBtn)
-        cancelBtn.onclick = () => {
-          cleanup();
-          resolve(false);
-        };
-
-      if (confirmBtn)
-        confirmBtn.onclick = () => {
-          cleanup();
-          resolve(true);
-        };
-
-      // Prevent background scroll when modal open.
-      try {
-        const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-        resetOverflow = () => {
-          document.body.style.overflow = originalOverflow;
-        };
-      } catch (_) {}
-    });
-  }
-
   async performExchange() {
     const now = Date.now();
-    if (this.exchangeLoading) return;
+    if (this.exchangeLoading) {
+      this.config.onExchangePending(t("redeem.submissionPending"));
+      return;
+    }
     if (now - this.lastSubmitAt < this.submitDebounceMs) return;
     this.lastSubmitAt = now;
 
@@ -886,15 +813,6 @@ export class GoldCoinsExchange {
       this.config.onExchangeFailed(t("redeem.notEnoughCoins"));
       return;
     }
-
-    const selected = this.state.selectedCharge || {};
-    const amountLabel = getRedeemSummaryLabel(selected) || String(this.state.amount ?? "");
-    const confirmed = await this.showExchangeConfirmModal({
-      coins,
-      amountLabel,
-      productType: selected.product_type,
-    });
-    if (!confirmed) return;
 
     let clientRequestId = "";
     try {
@@ -967,15 +885,22 @@ export class GoldCoinsExchange {
       // legitimately leave the order pending for a while.
       void this.pollWalletAfterRedeem(this.userGoldCoins);
 
-      // Submit succeeded and order created: immediately jump to detail page.
-      this.openTopupStatusPage({
-        distributor_ref: distributorRef,
-        status: String(res?.data?.status || "pending").toLowerCase(),
-        amount_label: getRedeemSummaryLabel(this.state.selectedCharge) || String(this.state.amount ?? ""),
-        send_value: sendValue,
-        phone_number,
-        operator: this.state.operator || "",
-      });
+      // The order is durable, but provider delivery is asynchronous. Always
+      // acknowledge acceptance before navigation; otherwise a failed router
+      // transition leaves users on this page with no visible outcome.
+      this.config.onExchangePending(t("redeem.submissionAccepted"));
+      try {
+        await this.openTopupStatusPage({
+          distributor_ref: distributorRef,
+          status: String(res?.data?.status || "pending").toLowerCase(),
+          amount_label: getRedeemSummaryLabel(this.state.selectedCharge) || String(this.state.amount ?? ""),
+          send_value: sendValue,
+          phone_number,
+          operator: this.state.operator || "",
+        });
+      } catch (navigationError) {
+        logger.warn("Recharge order was accepted, but status navigation failed", navigationError);
+      }
       return;
     } catch (error) {
       if (isChargeRedeemTimeoutError(error)) {

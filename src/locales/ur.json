@@ -289,6 +289,7 @@
     "redeemFailed": "ریڈیم ناکام، براہ کرم دوبارہ کوشش کریں",
     "submitFailed": "جمع کرانا ناکام، براہ کرم دوبارہ کوشش کریں",
     "submissionPending": "آپ کا آرڈر ابھی زیرِ عمل ہو سکتا ہے۔ براہ کرم بعد میں ریڈیم کی تاریخ دیکھیں۔",
+    "submissionAccepted": "آپ کا ریچارج آرڈر جمع ہو چکا ہے اور زیرِ عمل ہے۔",
     "missingDistributorRef": "distributor_ref موجود نہیں",
     "summarySelected": "{countryCode} {mobile} کے لیے {operator} ({label}) {action} کرنے کے لیے {coins} سکے استعمال کریں"
   },
