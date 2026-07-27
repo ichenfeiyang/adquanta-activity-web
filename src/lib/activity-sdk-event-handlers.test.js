@@ -71,7 +71,7 @@ test("shows the chest reward result dialog after the chest ad is settled", async
   }
 });
 
-test("uses the request-scoped event ID when the SDK coin-rain callback omits one", async () => {
+test("uses the request-scoped event ID when the SDK coin-rain callback omits or empties one", async () => {
   const originalWindow = globalThis.window;
   globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
   const calls = [];
@@ -99,6 +99,7 @@ test("uses the request-scoped event ID when the SDK coin-rain callback omits one
       eventType: "reward",
       taskId: "task_coin_rain",
       success: true,
+      ad_event_id: "",
       coin_rain_ad_event_id: "coin-rain-fallback-id",
     });
 
@@ -108,6 +109,90 @@ test("uses the request-scoped event ID when the SDK coin-rain callback omits one
     ]);
   } finally {
     globalThis.window = originalWindow;
+  }
+});
+
+test("reconciles a completed coin-rain boost when its response is lost", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
+  const calls = [];
+  const business = {
+    coinRain: { session_id: "rain-session", base_coin: 61, state: "boost_available" },
+    submitCoinRainAction: async () => ({ ok: false, message: "network interrupted" }),
+    loadActivityInfo: async () => {
+      business.coinRain = { session_id: "rain-session", state: "completed", base_coin: 61, boost_coin: 61 };
+      return { ok: true };
+    },
+  };
+  try {
+    const handler = createActivitySdkEventHandler({
+      business,
+      ui: {
+        setCoinRainAdLoading: () => {},
+        showCoinRainBoostSuccess: (result) => calls.push(result),
+      },
+      adapter: { trackEvent: () => {} },
+      apiOptions: {},
+      normalizeAdMessage: (message) => message,
+      showDailyAdLimitToast: () => {},
+      coinRainAdInFlight: { value: true },
+    });
+
+    await handler({
+      eventType: "reward",
+      taskId: "task_coin_rain",
+      success: true,
+      coin_rain_ad_event_id: "coin-rain-fallback-id",
+    });
+
+    assert.deepEqual(calls, [{ ok: true, reconciled: true, session_id: "rain-session", state: "completed", base_coin: 61, boost_coin: 61 }]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
+test("does not reconcile a completed coin-rain session without a matching boost credit", async () => {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  globalThis.window = {
+    ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } },
+    alert: () => {},
+  };
+  globalThis.document = { getElementById: () => null };
+  const calls = [];
+  const business = {
+    coinRain: { session_id: "rain-session", base_coin: 61, state: "boost_available" },
+    submitCoinRainAction: async () => ({ ok: false, message: "network interrupted" }),
+    loadActivityInfo: async () => {
+      business.coinRain = { session_id: "other-session", state: "completed", base_coin: 0, boost_coin: 0 };
+      return { ok: true };
+    },
+  };
+  try {
+    const handler = createActivitySdkEventHandler({
+      business,
+      ui: {
+        setCoinRainAdLoading: (loading) => calls.push(`loading:${loading}`),
+        showCoinRainBoostSuccess: () => calls.push("boost-success"),
+      },
+      adapter: { trackEvent: () => {} },
+      apiOptions: {},
+      normalizeAdMessage: (message) => message,
+      showDailyAdLimitToast: () => {},
+      coinRainAdInFlight: { value: true },
+    });
+
+    await handler({
+      eventType: "reward",
+      taskId: "task_coin_rain",
+      success: true,
+      coin_rain_ad_event_id: "coin-rain-fallback-id",
+    });
+
+    assert.deepEqual(calls, ["loading:false"]);
+  } finally {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
   }
 });
 
@@ -142,6 +227,7 @@ test("uses the request-scoped event ID for a check-in chest when the SDK omits o
       eventType: "reward",
       taskId: "task_checkin_chest",
       success: true,
+      ad_event_id: "",
       request_ad_event_id: "checkin-chest-fallback-id",
     });
 

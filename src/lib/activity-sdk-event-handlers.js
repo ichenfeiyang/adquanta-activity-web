@@ -3,6 +3,14 @@ import { ACTIVITY_CENTER_PAGE_ID } from "./activity-analytics.js";
 import { showToast } from "./activity-alert-ui.js";
 import * as logger from "./activity-logger.js";
 
+function firstNonEmptyString(...values) {
+  for (const value of values) {
+    const normalized = String(value ?? "").trim();
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
 /**
  * @param {{
  *   business: import("./activity-center-business.js").ActivityCenterBusiness,
@@ -63,9 +71,32 @@ async function handleRewardAdEvent(ctx, result) {
       });
       return;
     }
-    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? result.coin_rain_ad_event_id ?? "";
+    const adEventId = firstNonEmptyString(
+      result.ad_event_id,
+      result.adEventId,
+      result.video_id,
+      result.videoId,
+      result.data?.ad_event_id,
+      result.coin_rain_ad_event_id,
+    );
     const status = business.coinRain;
-    const boostResult = await business.submitCoinRainAction(apiOptions, "boost", { session_id: status?.session_id, ad_event_id: adEventId });
+    let boostResult = await business.submitCoinRainAction(apiOptions, "boost", { session_id: status?.session_id, ad_event_id: adEventId });
+    if (!boostResult?.ok) {
+      // A response can be lost after the server has already credited the boost.
+      // Reconcile before leaving the old prompt visible or asking for another ad.
+      const sessionId = String(status?.session_id || "");
+      const refreshed = await business.loadActivityInfo?.(apiOptions, { force: true });
+      const next = business.coinRain;
+      if (
+        refreshed?.ok
+        && sessionId
+        && String(next?.session_id || "") === sessionId
+        && next?.state === "completed"
+        && Number(next?.boost_coin ?? 0) > 0
+      ) {
+        boostResult = { ok: true, reconciled: true, ...next };
+      }
+    }
     if (boostResult?.ok) ui.showCoinRainBoostSuccess(boostResult);
     else {
       ui.setCoinRainAdLoading(false);
@@ -87,15 +118,15 @@ async function handleRewardAdEvent(ctx, result) {
     if (success) {
       if (newUserBonusClaimInFlight.value) return;
       newUserBonusClaimInFlight.value = true;
-      const adEventId =
-        result.ad_event_id ??
-        result.adEventId ??
-        result.video_id ??
-        result.videoId ??
-        result.data?.ad_event_id ??
-        result.data?.video_id ??
-        result.request_ad_event_id ??
-        "";
+      const adEventId = firstNonEmptyString(
+        result.ad_event_id,
+        result.adEventId,
+        result.video_id,
+        result.videoId,
+        result.data?.ad_event_id,
+        result.data?.video_id,
+        result.request_ad_event_id,
+      );
       const claimResult = await business.submitNewUserBonusAction(
         apiOptions,
         "claim_video",
@@ -145,7 +176,14 @@ async function handleRewardAdEvent(ctx, result) {
     if (checkinChestClaimInFlight.value) return;
     checkinChestClaimInFlight.value = true;
     checkinChestSettlingIds.add(Number(chest.id));
-    const adEventId = result.ad_event_id ?? result.adEventId ?? result.video_id ?? result.videoId ?? result.data?.ad_event_id ?? result.request_ad_event_id ?? "";
+    const adEventId = firstNonEmptyString(
+      result.ad_event_id,
+      result.adEventId,
+      result.video_id,
+      result.videoId,
+      result.data?.ad_event_id,
+      result.request_ad_event_id,
+    );
     const claimResult = await business.submitCheckinChestAction(apiOptions, "claim", chest.id, adEventId);
     checkinChestClaimInFlight.value = false;
     ui.setCheckinChestLoading(false);
