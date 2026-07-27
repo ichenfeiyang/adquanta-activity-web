@@ -49,6 +49,7 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
     overlayHighlightGlow: false,
     overlayCardGlow: false,
     overlayCurvePath: '',
+    overlayAllowExit: true,
   });
 
   let currentStep   = null;
@@ -96,6 +97,7 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
     state.overlayHighlightGlow = !!cfg.highlightGlow;
     state.overlayCardGlow = !!cfg.cardGlowSelector;
     state.overlayCurvePath = '';
+    state.overlayAllowExit = (stepKey === GUIDE_STEPS.STEP_BALANCE);
 
     // 动态箭头位置：根据 actionSelector 按钮中心计算相对于气泡的偏移
     state.overlayArrowX = null;
@@ -241,6 +243,8 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
             highlightGlow: state.overlayHighlightGlow,
             cardGlow: state.overlayCardGlow,
             onExit: handleOverlayExit,
+            onClose: handleExit,
+            allowExit: state.overlayAllowExit,
           }),
           h(NoviceGuideComplete, {
             visible: state.showComplete,
@@ -283,9 +287,8 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
   function handleOverlayExit() {
     if (currentStep === GUIDE_STEPS.STEP_BALANCE) {
       handleBalanceDismiss();
-    } else {
-      handleExit();
     }
+    // Steps 1-3: only the action button advances; clicking shadow/bubbles does nothing
   }
 
   // ---------- 签到弹框关闭回调 ----------

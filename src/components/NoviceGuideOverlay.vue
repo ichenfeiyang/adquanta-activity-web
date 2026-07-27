@@ -13,7 +13,7 @@
  *  - bubbles         多气泡模式：[{ mainText, subText, highlightSelector?, offset? }]
  *  - bubblesContainerSelector  双气泡容器锚定的元素选择器
  */
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, nextTick, onMounted, onBeforeUnmount, computed } from 'vue';
 import { assetUrl } from '../lib/asset-url.js';
 
 const props = defineProps({
@@ -34,6 +34,8 @@ const props = defineProps({
   arrowX:           { type: Number, default: null },
   highlightGlow:    { type: Boolean, default: false },
   cardGlow:         { type: Boolean, default: false },
+  allowExit:        { type: Boolean, default: true },
+  onClose:          { type: Function, default: null },
 });
 
 const emit = defineEmits(['exit']);
@@ -50,6 +52,14 @@ const arrowSvgLeft = ref(0);
 const arrowSvgPath = ref('');
 const fingerTargetsPos = ref([]);
 const curvePath = ref('');
+
+const closeBtnStyle = computed(() => {
+  const r = highlightRect.value;
+  return {
+    top: (r.top - 14) + 'px',
+    left: (r.left + r.width - 14) + 'px',
+  };
+});
 
 function computeCurvePath() {
   if (!props.actionSelector || props.textPosition !== 'above') {
@@ -260,6 +270,7 @@ let shadowClickHandler = null;
 
 function bindShadowCatcher() {
   unbindShadowCatcher();
+  if (!props.allowExit) return;
   nextTick(() => {
     const el = document.querySelector('.ng-shadow-catcher');
     if (el) {
@@ -331,12 +342,19 @@ onBeforeUnmount(() => {
         <div class="ng-finger-ripple" />
         <div class="ng-finger-icon ng-finger-icon--tilted">👆</div>
       </div>
+      <button
+        v-if="onClose"
+        class="ng-close-btn"
+        :style="closeBtnStyle"
+        aria-label="Close guide"
+        @click="onClose"
+      >✕</button>
     </div>
   </Teleport>
 
   <!-- 双气泡容器模式：独立白色指引气泡，绝对定位用文档坐标 -->
   <Teleport v-if="active && bubbles && bubblesContainerSelector" to="body">
-    <div class="ng-bubble-container" :style="containerStyle" @click="onExit">
+    <div class="ng-bubble-container" :style="containerStyle" :class="{ 'ng-bubble-container--static': !allowExit }" @click="onExit">
       <!-- SVG 曲线虚线箭头（容器级别，坐标系与容器一致） -->
       <svg
         v-if="arrowSvgPath"
@@ -410,6 +428,7 @@ onBeforeUnmount(() => {
       :class="{
         'ng-text-box--orange-icon': iconStyle === 'orange',
         'ng-text-box--glow': cardGlow,
+        'ng-text-box--static': !allowExit,
       }"
       :style="{ top: textBoxTop + 'px', marginLeft: textBoxMarginLeft ? textBoxMarginLeft + 'px' : undefined }"
       @click="onExit"

@@ -153,6 +153,31 @@
   z-index: 1;
 }
 
+.ng-close-btn {
+  position: absolute;
+  z-index: 10004;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+.ng-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.ng-close-btn:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
 @keyframes ng-finger-bounce {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-8px); }
@@ -536,6 +561,17 @@
   overflow: visible;
   pointer-events: none;
   z-index: 10;
+}
+
+/* Steps 1-3: disable click on shadow and bubbles */
+.ng-text-box--static {
+  pointer-events: none;
+  cursor: default;
+}
+
+.ng-bubble-container--static {
+  pointer-events: none;
+  cursor: default;
 }
 
 /* --- Complete popup --- */
