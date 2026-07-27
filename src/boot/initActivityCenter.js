@@ -727,6 +727,7 @@ export function initActivityCenter({ router, route }) {
   let noviceGuide = null;
   let guideStarted = false;
   let onBeforeUnloadGuide = null;
+  let onPageHideGuide = null;
   let noviceGuideStorageScope = "";
   function ensureNoviceGuide() {
     const storageScope = getUserTipStorageScope();
@@ -755,6 +756,10 @@ export function initActivityCenter({ router, route }) {
       if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted(noviceGuideStorageScope);
     };
     window.addEventListener('beforeunload', onBeforeUnloadGuide);
+    onPageHideGuide = () => {
+      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted(noviceGuideStorageScope);
+    };
+    window.addEventListener('pagehide', onPageHideGuide);
   }
 
   // 新手引导启动前需要等待关闭的业务弹窗
@@ -863,6 +868,9 @@ export function initActivityCenter({ router, route }) {
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
     if (onBeforeUnloadGuide) {
       window.removeEventListener('beforeunload', onBeforeUnloadGuide);
+    }
+    if (onPageHideGuide) {
+      window.removeEventListener('pagehide', onPageHideGuide);
     }
     noviceGuide?.dispose();
   };

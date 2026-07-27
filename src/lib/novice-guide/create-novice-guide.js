@@ -192,6 +192,7 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
     state.showWelcome  = false;
     state.showOverlay  = false;
     state.showComplete = true;
+    markNoviceGuideCompleted(storageScope);
   }
 
   // ---------- 内部：彻底关闭并清理 ----------
@@ -257,6 +258,9 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
   }
 
   function dispose() {
+    if (isGuideActive) {
+      markNoviceGuideCompleted(storageScope);
+    }
     if (app) {
       app.unmount();
       app = null;
