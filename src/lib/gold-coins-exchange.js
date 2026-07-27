@@ -41,6 +41,13 @@ function isChargeRedeemTimeoutError(error) {
   return error?.name === "AbortError";
 }
 
+function createRechargeRequestId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
 function formatRedeemCountryLabel(country) {
   const fallback = country?.name || country?.iso || "";
   if (!country?.nameKey) return fallback;
@@ -105,9 +112,10 @@ export class GoldCoinsExchange {
 
     // Redeem request lock (prevent multi-click / multi-request)
     this.exchangeLoading = false;
-    // A timed-out request may already have reached the server. Keep this page
-    // non-submittable until it is reopened to prevent a duplicate order.
-    this.exchangeSubmissionUncertain = false;
+    // Kept only after a client timeout. The next tap reuses it so a delayed
+    // successful server write resolves to the existing order instead of
+    // freezing coins twice.
+    this.retryChargeRequestId = "";
     this.lastSubmitAt = 0;
     this.submitDebounceMs = 800;
 
@@ -719,12 +727,10 @@ export class GoldCoinsExchange {
     const hasSelectedProduct = Boolean(this.state.selectedCharge?.charges_id);
     const canAfford = goldCoins > 0 && this.userGoldCoins >= goldCoins;
 
-    if (this.exchangeLoading || this.exchangeSubmissionUncertain) {
+    if (this.exchangeLoading) {
       this.$.btnRedeem.disabled = true;
       this.$.btnRedeem.classList.add("redeem-primary-btn--disabled");
-      this.$.redeemSummary.textContent = this.exchangeSubmissionUncertain
-        ? t("redeem.submissionPending")
-        : t("common.processing");
+      this.$.redeemSummary.textContent = t("common.processing");
       return;
     }
 
@@ -890,6 +896,7 @@ export class GoldCoinsExchange {
     });
     if (!confirmed) return;
 
+    let clientRequestId = "";
     try {
       this.exchangeLoading = true;
       if (this.$.btnRedeem) {
@@ -928,11 +935,19 @@ export class GoldCoinsExchange {
       }
 
       // Backend requires sku_code + send_value (instead of charges_id).
+      clientRequestId = this.retryChargeRequestId || createRechargeRequestId();
+      const selectedCharge = this.state.selectedCharge || {};
       const res = await postChargeRedeem(this.config.apiOptions, {
         sku_code: String(chargesId),
         send_value: sendValue,
         phone_number,
+        client_request_id: clientRequestId,
+        product_type: String(selectedCharge.product_type || ""),
+        display_text: String(selectedCharge.display_text || selectedCharge.amount_text || ""),
+        receive_value: Number(selectedCharge.receive_value ?? selectedCharge.amount ?? 0),
+        receive_currency_iso: String(selectedCharge.receive_currency || ""),
       });
+      this.retryChargeRequestId = "";
       const msg = res?.data?.message || res?.message || "";
       if (res?.code !== 200) {
         this.config.onExchangeFailed(msg || t("redeem.redeemFailed"));
@@ -968,8 +983,12 @@ export class GoldCoinsExchange {
       return;
     } catch (error) {
       if (isChargeRedeemTimeoutError(error)) {
-        this.exchangeSubmissionUncertain = true;
-        logger.warn("Redeem top-up request timed out; order state is uncertain");
+        // A timeout must never leave the exchange screen permanently locked.
+        // The server persists recharge orders without calling DingConnect, so
+        // a normal submit returns quickly; refresh server state and let the
+        // user retry if no order appears.
+        logger.warn("Redeem top-up request timed out; refreshing order state");
+        this.retryChargeRequestId = clientRequestId;
         this.config.onExchangePending(t("redeem.submissionPending"));
         void Promise.all([
           this.loadActivityInfo({ force: true }),
@@ -977,6 +996,7 @@ export class GoldCoinsExchange {
         ]);
         return;
       }
+      this.retryChargeRequestId = "";
       logger.error("Redeem top-up failed", error);
       this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {

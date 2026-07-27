@@ -2683,9 +2683,11 @@ body {
   align-items: center;
   justify-content: center;
   padding: 6px 6px;
+  border: 0;
   border-radius: 8px;
   background: linear-gradient(180deg, #ff5b05 0%, #f24700 100%);
   color: #ffffff;
+  cursor: pointer;
   font-size: 10.5px;
   font-weight: 800;
   line-height: 1.2;

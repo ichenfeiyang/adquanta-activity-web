@@ -24,6 +24,9 @@ export class ActivityCenterAdapter {
 
     this.sdk = null;
     this.isSDKReady = false;
+    this.eventCompletedCallback = (result) => {
+      this.config.onEventCompleted(result);
+    };
   }
 
   /**
@@ -33,7 +36,7 @@ export class ActivityCenterAdapter {
     // 等待原生 SDK 注入
     await this.waitForSDK();
 
-    // SDK 就绪后再次确保事件回调已注册（避免注入时序导致回调未挂上）
+    // SDK 就绪后确保事件回调已注册。
     this.setupEventCallback();
 
     // 初始化活动会话
@@ -109,11 +112,26 @@ export class ActivityCenterAdapter {
    * 设置事件完成回调
    */
   setupEventCallback() {
-    const onCompleted = window.ActivityBridgeHelper?.onActivityEventCompleted;
-    if (typeof onCompleted !== "function") return;
-    onCompleted((result) => {
-      this.config.onEventCompleted(result);
-    });
+    /*
+     * Do not retain the callback only in the SDK shim's local callback list.
+     * The Android WebView injects that shim on every page finish; a later
+     * injection recreates its list and silently drops listeners registered by
+     * the H5 page. This is particularly easy to hit after a locale switch,
+     * which reloads the whole activity page.
+     *
+     * The shim dispatches every native result to this page-level callback as
+     * well. Keeping the handler here makes it survive shim reinjection in the
+     * same document. The request coordinator consumes duplicate native
+     * deliveries atomically, so SDK versions that also invoke this global
+     * directly remain safe.
+     */
+    window.onActivityEventCompleted = this.eventCompletedCallback;
+  }
+
+  dispose() {
+    if (window.onActivityEventCompleted === this.eventCompletedCallback) {
+      window.onActivityEventCompleted = null;
+    }
   }
 
   /**

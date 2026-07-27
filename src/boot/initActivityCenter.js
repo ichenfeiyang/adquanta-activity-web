@@ -865,6 +865,7 @@ export function initActivityCenter({ router, route }) {
     ui.destroyRecentRedemptions();
     ui.destroyCoinRain();
     window.onRewardedAdError = null;
+    adapter?.dispose?.();
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
     if (onBeforeUnloadGuide) {
       window.removeEventListener('beforeunload', onBeforeUnloadGuide);

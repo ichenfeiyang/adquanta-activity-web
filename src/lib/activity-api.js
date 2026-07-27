@@ -11,7 +11,11 @@ import { rateLimitMessage } from "./activity-messages.js";
 
 /** API host from VITE_ACTIVITY_API_BASE_URL (.env.local), no trailing slash */
 export const BaseApiUrl = String(import.meta.env?.VITE_ACTIVITY_API_BASE_URL || "").replace(/\/$/, "");
-export const CHARGE_REDEEM_TIMEOUT_MS = 15_000;
+// The submit API only writes a local order and must return promptly.  A short
+// client deadline avoids trapping a user on the exchange page if a gateway or
+// network request stalls.
+export const CHARGE_REDEEM_TIMEOUT_MS = 5_000;
+export const CHARGE_OPTIONS_TIMEOUT_MS = 5_000;
 
 function buildAuthHeaders(options = {}) {
   const token = options.token ?? "";
@@ -258,6 +262,7 @@ export async function postActivityFeedback(options = {}, body = {}) {
     body: JSON.stringify({
       content: String(body.content || ""),
       client_request_id: String(body.clientRequestId || ""),
+      contact_email: String(body.contactEmail || ""),
       locale: String(body.locale || ""),
     }),
     timeoutMs: 15_000,
@@ -284,6 +289,7 @@ export async function getCharges(options = {}, params = {}) {
   return fetchApi("getCharges", url, {
     method: "GET",
     headers: { ...buildAuthHeaders(options) },
+    timeoutMs: CHARGE_OPTIONS_TIMEOUT_MS,
   });
 }
 
@@ -291,7 +297,7 @@ export async function getCharges(options = {}, params = {}) {
  * 充值下单（兑换话费）
  * POST /api/v1/ops/activity/charges
  * @param {Object} options - { baseUrl?, token? }
- * @param {{ sku_code: string, send_value: number|string, phone_number: string }} body
+ * @param {{ sku_code: string, send_value: number|string, phone_number: string, client_request_id?: string, product_type?: string, display_text?: string, receive_value?: number, receive_currency_iso?: string }} body
  * @returns {Promise<{ code: number, data?: any, message?: string }>}
  */
 export async function postChargeRedeem(options = {}, body = {}) {
@@ -304,6 +310,11 @@ export async function postChargeRedeem(options = {}, body = {}) {
       sku_code: body.sku_code ?? "",
       send_value: body.send_value ?? "",
       phone_number: body.phone_number ?? "",
+      client_request_id: body.client_request_id ?? "",
+      product_type: body.product_type ?? "",
+      display_text: body.display_text ?? "",
+      receive_value: body.receive_value ?? 0,
+      receive_currency_iso: body.receive_currency_iso ?? "",
     }),
     timeoutMs: CHARGE_REDEEM_TIMEOUT_MS,
   });

@@ -40,7 +40,7 @@ function clearCoinRainRecovery() {
 
 export const coinRainUiMixin = {
   bindCoinRainEvents() {
-    this.elements.coinRainEntry?.addEventListener("click", () => this.config.onCoinRainEntryClick(this._coinRainStatus));
+    this.elements.coinRainEntryAction?.addEventListener("click", () => this.config.onCoinRainEntryClick(this._coinRainStatus));
     this.elements.coinRainLeave?.addEventListener("click", () => this.leaveCoinRain());
     this.elements.coinRainLeaveClose?.addEventListener("click", () => this.hideCoinRainLeaveDialog());
     this.elements.coinRainContinue?.addEventListener("click", () => this.hideCoinRainLeaveDialog());

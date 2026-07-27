@@ -15,6 +15,8 @@ const router = useRouter();
 const { t } = useI18n();
 const session = requireActivitySession(route, { router });
 const content = ref("");
+const contactEmail = ref("");
+const emailError = ref("");
 const submitting = ref(false);
 const error = ref("");
 const remaining = computed(() => Math.max(0, 300 - [...content.value].length));
@@ -28,6 +30,13 @@ function newRequestId() {
 }
 // Reuse one request id until success so retries stay idempotent.
 const clientRequestId = ref(newRequestId());
+const contactEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateContactEmail() {
+  const value = contactEmail.value.trim();
+  emailError.value = value && !contactEmailPattern.test(value) ? t("feedback.emailInvalid") : "";
+  return !emailError.value;
+}
 
 function track(event, data = {}) {
   window.ActivityBridgeHelper?.trackEvent?.(event, { page_id: FEEDBACK_PAGE_ID, ...data });
@@ -46,6 +55,15 @@ async function submit() {
     });
     return;
   }
+  const normalizedEmail = contactEmail.value.trim();
+  if (!validateContactEmail()) {
+    error.value = emailError.value;
+    track("rewards_feedback_submit_fail", {
+      element_id: "submit_feedback_button",
+      reason: "invalid_contact_email",
+    });
+    return;
+  }
   if (!session || submitting.value) return;
   track("rewards_feedback_submit_click", {
     element_id: "submit_feedback_button",
@@ -56,6 +74,7 @@ async function submit() {
   try {
     const result = await postActivityFeedback(session.apiOptions, {
       content: value,
+      contactEmail: normalizedEmail,
       locale: getActivityLocale(),
       clientRequestId: clientRequestId.value,
     });
@@ -118,6 +137,34 @@ onMounted(() => track("page_view"));
             :placeholder="t('feedback.placeholder')"
           />
           <p class="feedback-counter">{{ 300 - remaining }} / 300</p>
+        </section>
+
+        <section class="feedback-card feedback-email-card">
+          <label class="feedback-email-label" for="feedback-contact-email">
+            <span>{{ t("feedback.contactEmail") }}</span>
+            <span class="feedback-email-optional">({{ t("feedback.optional") }})</span>
+          </label>
+          <div class="feedback-email-field" :class="{ 'feedback-email-field--error': emailError }">
+            <svg class="feedback-email-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="1.5" stroke="currentColor" stroke-width="1.8" />
+              <path d="m4.5 6.5 7.5 6 7.5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          <input
+            id="feedback-contact-email"
+            v-model="contactEmail"
+            class="feedback-email-input"
+            :class="{ 'feedback-email-input--error': emailError }"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            maxlength="254"
+            :placeholder="t('feedback.contactEmailPlaceholder')"
+            @blur="validateContactEmail"
+            @input="emailError && validateContactEmail()"
+          >
+          </div>
+          <p class="feedback-email-hint">{{ t("feedback.contactEmailHint") }}</p>
+          <p v-if="emailError" class="feedback-email-error">{{ emailError }}</p>
         </section>
 
         <p v-if="error" class="feedback-error">{{ error }}</p>

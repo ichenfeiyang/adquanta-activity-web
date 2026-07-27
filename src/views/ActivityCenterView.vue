@@ -148,7 +148,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       </section>
 
       <section id="tc-coin-rain-section" class="tc-section" style="display:none;">
-        <button id="tc-coin-rain-entry" type="button" class="tc-coin-rain-banner">
+        <div id="tc-coin-rain-entry" class="tc-coin-rain-banner">
           <span class="tc-coin-rain-visual" aria-hidden="true">
             <img :src="assetUrl('images/coin-rain-card-art.png')" alt="" width="148" height="156" loading="lazy" decoding="async">
           </span>
@@ -159,8 +159,8 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
               <span id="tc-coin-rain-desc" class="tc-coin-rain-max-copy">{{ t('center.coinRainDescMax', { count: 400 }) }}</span>
             </span>
           </span>
-          <span id="tc-coin-rain-entry-action" class="tc-coin-rain-entry-action">{{ t('center.coinRainPlay') }}</span>
-        </button>
+          <button id="tc-coin-rain-entry-action" type="button" class="tc-coin-rain-entry-action">{{ t('center.coinRainPlay') }}</button>
+        </div>
       </section>
 
       <section id="tc-recent-redemptions-section" class="tc-section" style="display:none;">

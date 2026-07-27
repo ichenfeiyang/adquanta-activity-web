@@ -69,7 +69,7 @@ export const SPIN_STEP = {
 export const COINRAIN_STEP = {
   step: GUIDE_STEPS.STEP_COINRAIN,
   highlightSelector: '#tc-coin-rain-section',
-  actionSelector: '#tc-coin-rain-entry',
+  actionSelector: '#tc-coin-rain-entry-action',
   guideTextKey: 'novice.step3.text',
   guideSubtextKey: 'novice.step3.subtext',
   guideExtraKey: 'novice.step3.extra',

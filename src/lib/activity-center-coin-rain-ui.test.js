@@ -20,6 +20,36 @@ function classList() {
   };
 }
 
+function clickable() {
+  const listeners = new Map();
+  return {
+    addEventListener(type, callback) {
+      listeners.set(type, callback);
+    },
+    click() {
+      listeners.get("click")?.();
+    },
+  };
+}
+
+test("coin rain only starts from the Play Now action", () => {
+  const entry = clickable();
+  const action = clickable();
+  let starts = 0;
+  const ui = {
+    ...coinRainUiMixin,
+    _coinRainStatus: { enabled: true, state: "available" },
+    elements: { coinRainEntry: entry, coinRainEntryAction: action },
+    config: { onCoinRainEntryClick: () => { starts += 1; } },
+  };
+
+  ui.bindCoinRainEvents();
+  entry.click();
+  assert.equal(starts, 0);
+  action.click();
+  assert.equal(starts, 1);
+});
+
 test("leave dialog pauses rendering without extending the server deadline", () => {
   const overlay = { classList: classList() };
   const leaveDialog = { style: { display: "none" } };
