@@ -97,7 +97,7 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
     state.overlayHighlightGlow = !!cfg.highlightGlow;
     state.overlayCardGlow = !!cfg.cardGlowSelector;
     state.overlayCurvePath = '';
-    state.overlayAllowExit = (stepKey === GUIDE_STEPS.STEP_BALANCE);
+    state.overlayAllowExit = false;
 
     // 动态箭头位置：根据 actionSelector 按钮中心计算相对于气泡的偏移
     state.overlayArrowX = null;
