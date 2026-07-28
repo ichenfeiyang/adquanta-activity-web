@@ -9,6 +9,10 @@ import {
   dailyAdLimitMessage,
 } from "./activity-messages.js";
 import { t } from "./i18n/activity-locale.js";
+
+/** After this wait, a second tap unlocks and retries instead of only showing Processing. */
+export const SPIN_AD_WAIT_STALE_MS = 8_000;
+
 export const spinUiMixin = {
   isSpinWheelVisible() {
     return this.elements.spinWheelModal?.style.display === "flex";
@@ -304,9 +308,20 @@ export const spinUiMixin = {
     return this._waitingAdForSpin;
   },
 
-  async handleRewardAdCompletedForSpin() {
-    if (!this._waitingAdForSpin) return;
+  clearWaitingAdForSpin() {
     this._waitingAdForSpin = false;
+    this._waitingAdForSpinAt = 0;
+  },
+
+  beginWaitingAdForSpin() {
+    this._waitingAdForSpin = true;
+    this._waitingAdForSpinAt = Date.now();
+  },
+
+  async handleRewardAdCompletedForSpin() {
+    // Always clear waiting: after locale reload the callback can arrive after waiting
+    // was recovered/stale-cleared, but the ad still succeeded and must unlock Spin Now.
+    this.clearWaitingAdForSpin();
     if (this.config.isDailyAdLimitReached?.()) {
       const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
       this.handleRewardAdFailedForSpin(message);
@@ -314,31 +329,58 @@ export const spinUiMixin = {
       return;
     }
     this.addSpinChance(1);
-    // After watching ad successfully, user must click Spin Now manually.
+    this.enterSpinReadyMode();
+  },
+
+  enterSpinReadyMode() {
     this._turntableNeedsWatch = false;
     this.setSpinWheelBottomButton({ label: t("center.spinNow"), disabled: false });
     this.updateSpinWheelSubtitle();
   },
 
   handleRewardAdFailedForSpin(message = adFailedMessage(), { showFailureToast = true } = {}) {
-    this._waitingAdForSpin = false;
+    this.clearWaitingAdForSpin();
     this.enterSpinWatchAgainMode();
     if (showFailureToast) showToast(message, "warning");
   },
 
   cancelPendingSpinAd() {
-    this._waitingAdForSpin = false;
+    this.clearWaitingAdForSpin();
     this.enterSpinWatchAgainMode();
+  },
+
+  recoverStaleSpinAdWait() {
+    this.clearWaitingAdForSpin();
+    this.config.onSpinAdWaitRecover?.();
   },
 
   handleSpinWheelBottomClick() {
     const btn = this.elements.spinWheelSpinBtn;
     if (btn?.disabled) return;
 
+    // Chance may exist while needsWatch is still true (locale reload, or callback
+    // after waiting was cleared). Align to Spin Now first; do not auto-spin on a
+    // tap that still looked like "Watch".
+    if (this.currentSpinAvailable > 0) {
+      this.clearWaitingAdForSpin();
+      if (this._turntableNeedsWatch) {
+        this.enterSpinReadyMode();
+        return;
+      }
+      this.setSpinWheelBottomButton({ disabled: true });
+      this.spinWheel();
+      return;
+    }
+
     if (this._turntableNeedsWatch) {
       if (this._waitingAdForSpin) {
-        showToast(t("common.processing"), "info");
-        return;
+        const waitedMs = Date.now() - Number(this._waitingAdForSpinAt || 0);
+        if (Number.isFinite(waitedMs) && waitedMs < SPIN_AD_WAIT_STALE_MS) {
+          showToast(t("common.processing"), "info");
+          return;
+        }
+        // Lost native callback after locale reload / WebView reinjection: unlock and retry.
+        this.recoverStaleSpinAdWait();
       }
       if (this.config.isDailyAdLimitReached?.()) {
         const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
@@ -346,7 +388,7 @@ export const spinUiMixin = {
         this.refreshAdTaskStats();
         return;
       }
-      this._waitingAdForSpin = true;
+      this.beginWaitingAdForSpin();
       this.config.onWatchAdClick();
       return;
     }
@@ -376,6 +418,10 @@ export const spinUiMixin = {
     if (forceDailyFirst) {
       this.markTodayTurntableDailyFirstShown();
       this._turntableNeedsWatch = true;
+    } else if (this.currentSpinAvailable > 0) {
+      // After locale reload, chance survives in localStorage but needsWatch resets
+      // to true. Open directly in Spin Now so the button matches available chances.
+      this.enterSpinReadyMode();
     }
 
     this.setSpinWheelBottomButton({
@@ -387,11 +433,28 @@ export const spinUiMixin = {
       await this.config.onSpinWheelOpen();
     } catch (_) {}
 
+    // After /info refresh, chance may be clamped — keep the button in sync.
+    if (!forceDailyFirst) {
+      if (this.currentSpinAvailable > 0) {
+        this.enterSpinReadyMode();
+      } else {
+        this._turntableNeedsWatch = true;
+        this.setSpinWheelBottomButton({
+          label: this.getSpinWheelBottomButtonLabel(false),
+          disabled: false,
+        });
+      }
+    }
+
     this.updateSpinWheelSubtitle();
     this.setSpinWheelVisible(true);
   },
 
   hideSpinWheel() {
+    if (this._waitingAdForSpin) {
+      this.cancelPendingSpinAd();
+      this.config.onSpinAdWaitRecover?.();
+    }
     this.setSpinWheelVisible(false);
   },
 
@@ -406,7 +469,7 @@ export const spinUiMixin = {
       }
       // Safety fallback: no spin chances locally, go back to watch mode.
       this._turntableNeedsWatch = true;
-      this._waitingAdForSpin = true;
+      this.beginWaitingAdForSpin();
       this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: false });
       this.config.onWatchAdClick();
       return;
@@ -420,6 +483,7 @@ export const spinUiMixin = {
       const result = await this.config.onSpinRequest();
       if (!result?.ok) {
         this._spinInFlight = false;
+        this.setSpinWheelBottomButton({ disabled: false });
         return;
       }
       prize = Number(result.coin ?? 0);
@@ -428,6 +492,7 @@ export const spinUiMixin = {
       }
     } catch (_) {
       this._spinInFlight = false;
+      this.setSpinWheelBottomButton({ disabled: false });
       return;
     }
     this.consumeSpinChance(1);

@@ -9,12 +9,18 @@ if (typeof window !== 'undefined') {
   window.__activityLocaleDebug = getActivityLocaleDiagnostics
 }
 
-function mountApp() {
+/**
+ * Resolve post-locale-reload route before the first page mount so ActivityCenter
+ * (and its ad callback registration) is not created twice.
+ */
+async function mountApp() {
   const pendingPath = readPostReloadPath()
-  createApp(App).use(router).mount('#app')
-  if (pendingPath) {
-    void router.replace(pendingPath)
+  const app = createApp(App).use(router)
+  await router.isReady()
+  if (pendingPath && router.currentRoute.value.fullPath !== pendingPath) {
+    await router.replace(pendingPath)
   }
+  app.mount('#app')
 }
 
 async function bootstrap() {
@@ -24,7 +30,7 @@ async function bootstrap() {
   } catch (error) {
     console.error('[ADActivityWeb] Failed to initialize locale', error)
   }
-  mountApp()
+  await mountApp()
 }
 
 void bootstrap()

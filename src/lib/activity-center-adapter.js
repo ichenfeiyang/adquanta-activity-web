@@ -38,6 +38,7 @@ export class ActivityCenterAdapter {
 
     // SDK 就绪后确保事件回调已注册。
     this.setupEventCallback();
+    this.bindBridgeRecovery();
 
     // 初始化活动会话
     if (window.ActivityBridgeHelper && window.ActivityBridgeHelper.initActivity) {
@@ -113,22 +114,55 @@ export class ActivityCenterAdapter {
    */
   setupEventCallback() {
     /*
-     * Do not retain the callback only in the SDK shim's local callback list.
-     * The Android WebView injects that shim on every page finish; a later
-     * injection recreates its list and silently drops listeners registered by
-     * the H5 page. This is particularly easy to hit after a locale switch,
-     * which reloads the whole activity page.
+     * Keep both the page-level global and the SDK shim listener list.
+     * Android reinjects the shim on every page finish (common after a locale
+     * reload), which recreates an empty listener array. The global survives
+     * that reinjection; re-registering against a new shim function covers
+     * older hosts that only dispatch through the shim list.
      *
-     * The shim dispatches every native result to this page-level callback as
-     * well. Keeping the handler here makes it survive shim reinjection in the
-     * same document. The request coordinator consumes duplicate native
-     * deliveries atomically, so SDK versions that also invoke this global
-     * directly remain safe.
+     * Duplicate deliveries are safe: the request coordinator consumes the
+     * first matching callback atomically.
      */
     window.onActivityEventCompleted = this.eventCompletedCallback;
+    this.registerShimEventListener();
+  }
+
+  registerShimEventListener() {
+    const bridge = window.ActivityBridgeHelper;
+    const register = bridge?.onActivityEventCompleted;
+    if (typeof register !== "function") return;
+    // Skip when this exact shim registration function already accepted us.
+    if (this._shimRegisterFn === register) return;
+    this._shimRegisterFn = register;
+    try {
+      register(this.eventCompletedCallback);
+    } catch (error) {
+      logger.warn("Failed to register ActivityBridgeHelper event callback", error?.message || error);
+    }
+  }
+
+  bindBridgeRecovery() {
+    if (this._bridgeRecoveryBound) return;
+    this._onPageShow = () => {
+      this.setupEventCallback();
+    };
+    this._onVisibilityChange = () => {
+      if (document.visibilityState === "visible") this.setupEventCallback();
+    };
+    window.addEventListener("pageshow", this._onPageShow);
+    document.addEventListener("visibilitychange", this._onVisibilityChange);
+    this._bridgeRecoveryBound = true;
   }
 
   dispose() {
+    if (this._bridgeRecoveryBound) {
+      if (this._onPageShow) window.removeEventListener("pageshow", this._onPageShow);
+      if (this._onVisibilityChange) document.removeEventListener("visibilitychange", this._onVisibilityChange);
+      this._onPageShow = null;
+      this._onVisibilityChange = null;
+      this._bridgeRecoveryBound = false;
+    }
+    this._shimRegisterFn = null;
     if (window.onActivityEventCompleted === this.eventCompletedCallback) {
       window.onActivityEventCompleted = null;
     }

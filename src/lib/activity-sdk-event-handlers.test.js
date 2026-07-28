@@ -354,3 +354,32 @@ test("new-user bonus success claims the reward without disabling the dialog", as
     globalThis.window = originalWindow;
   }
 });
+
+test("watch-ad success unlocks spin even when the UI is no longer waiting", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
+  const calls = [];
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: { isDailyAdLimitReached: () => false },
+      ui: {
+        isWaitingAdForSpin: () => false,
+        handleRewardAdCompletedForSpin: async () => calls.push("grant-spin"),
+        handleRewardAdFailedForSpin: () => calls.push("fail"),
+      },
+      adapter: {
+        getPlatform: () => "android",
+        trackEvent: (name) => calls.push(name),
+      },
+      apiOptions: {},
+      normalizeAdMessage: (message) => message,
+      showDailyAdLimitToast: () => {},
+    });
+
+    await handler({ eventType: "reward", taskId: "task_watch_ad", success: true });
+
+    assert.deepEqual(calls, ["grant-spin", "daily_video_completed"]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});

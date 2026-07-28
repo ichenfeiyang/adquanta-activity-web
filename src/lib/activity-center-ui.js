@@ -172,6 +172,7 @@ export class ActivityCenterUI {
     this.spinRotation = 0;
     this._spinInFlight = false;
     this._waitingAdForSpin = false;
+    this._waitingAdForSpinAt = 0;
     this._signinVideoCompleted = false;
     this._signinTotalCoin = 0;
     this._lastGoldCoins = null;

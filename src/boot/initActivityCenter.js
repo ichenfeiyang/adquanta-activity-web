@@ -27,6 +27,7 @@ import {
 } from "../lib/checkin-chest.js";
 import { dismissCheckinPrompt, shouldShowCheckinPrompt } from "../lib/checkin-prompt.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
+import { SPIN_AD_WAIT_STALE_MS } from "../lib/activity-center-spin-ui.js";
 import * as logger from "../lib/activity-logger.js";
 import { isNoviceGuideCompleted, markNoviceGuideCompleted } from "../lib/novice-guide/novice-guide-state.js";
 import { createNoviceGuide } from "../lib/novice-guide/create-novice-guide.js";
@@ -114,7 +115,11 @@ export function initActivityCenter({ router, route }) {
   }
 
   function beginAdRequest(eventType, taskId, metadata = {}) {
-    const request = adRequestCoordinator.begin(eventType, taskId, metadata);
+    let request = adRequestCoordinator.begin(eventType, taskId, metadata);
+    if (!request && adRequestCoordinator.cancelActiveIfStale(SPIN_AD_WAIT_STALE_MS)) {
+      // Locale reload / lost native callback can leave a zombie in-flight request.
+      request = adRequestCoordinator.begin(eventType, taskId, metadata);
+    }
     if (!request) showAdProcessingToast();
     return request;
   }
@@ -377,6 +382,7 @@ export function initActivityCenter({ router, route }) {
     onWatchAdClick: async () => {
       if (business.isDailyAdLimitReached()) {
         showDailyAdLimitToast();
+        ui.cancelPendingSpinAd();
         return false;
       }
       const request = beginAdRequest("reward_ad", "task_watch_ad");
@@ -401,6 +407,9 @@ export function initActivityCenter({ router, route }) {
         noviceGuide?.handleSpinDismiss();
         return false;
       }
+    },
+    onSpinAdWaitRecover: () => {
+      adRequestCoordinator.cancelActive();
     },
     onSpinWheelOpen: async () => {
       const token = apiOptions.token || "";

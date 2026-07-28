@@ -232,10 +232,9 @@ async function handleRewardAdEvent(ctx, result) {
     }
     if (ui.isWaitingAdForSpin()) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      await ui.handleRewardAdCompletedForSpin();
-    } else if (!business.isDailyAdLimitReached()) {
-      ui.addSpinChance(1);
     }
+    // Grant Spin Now even when waiting was cleared (stale recover / modal close race).
+    await ui.handleRewardAdCompletedForSpin();
     adapter.trackEvent("daily_video_completed", {
       taskId: "task_watch_ad",
       success: true,

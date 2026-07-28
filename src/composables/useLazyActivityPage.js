@@ -20,18 +20,27 @@ export function useLazyActivityPage(routeName, { logTag, loadModule, bootstrap }
   const route = useRoute();
   const router = useRouter();
   let dispose = null;
+  let bootGeneration = 0;
   const modulePromise = loadModule();
 
   onMounted(async () => {
-    dispose = await runLazyPageBoot({
+    const generation = ++bootGeneration;
+    const nextDispose = await runLazyPageBoot({
       pageLabel: pageTitle(routeName),
       logTag,
       loadModule: () => modulePromise,
       init: (module) => bootstrap(module, { router, route }),
     });
+    // Unmounted (or remounted) while async boot was in flight: tear down the orphan.
+    if (generation !== bootGeneration) {
+      if (typeof nextDispose === "function") nextDispose();
+      return;
+    }
+    dispose = nextDispose;
   });
 
   onUnmounted(() => {
+    bootGeneration += 1;
     if (typeof dispose === "function") {
       dispose();
     }

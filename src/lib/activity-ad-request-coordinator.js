@@ -24,7 +24,12 @@ export class ActivityAdRequestCoordinator {
 
   begin(eventType, taskId, metadata = {}) {
     if (this.activeRequest) return null;
-    const request = { eventType: normalizeActivityAdEventType(eventType), taskId, ...metadata };
+    const request = {
+      eventType: normalizeActivityAdEventType(eventType),
+      taskId,
+      startedAt: Date.now(),
+      ...metadata,
+    };
     this.activeRequest = request;
     if (this.timeoutMs > 0) {
       this.timeoutId = globalThis.setTimeout(() => {
@@ -56,6 +61,26 @@ export class ActivityAdRequestCoordinator {
     if (this.activeRequest !== request) return;
     this.activeRequest = null;
     this.clearTimeout();
+  }
+
+  /** Drop the in-flight request so a retry can begin (lost/stale native callbacks). */
+  cancelActive() {
+    if (!this.activeRequest) return false;
+    this.activeRequest = null;
+    this.clearTimeout();
+    return true;
+  }
+
+  /**
+   * @param {number} staleMs
+   * @returns {boolean} true when an active request older than staleMs was cancelled
+   */
+  cancelActiveIfStale(staleMs) {
+    if (!this.activeRequest) return false;
+    const startedAt = Number(this.activeRequest.startedAt || 0);
+    const age = Date.now() - startedAt;
+    if (!Number.isFinite(staleMs) || staleMs < 0 || age < staleMs) return false;
+    return this.cancelActive();
   }
 
   clearTimeout() {
