@@ -54,7 +54,7 @@ body {
 }
 
 .redeem-back-btn {
-  grid-column: 3;
+  grid-column: 1;
   width: 32px;
   height: 32px;
   border-radius: 999px;
