@@ -74,3 +74,9 @@ coverage/
 # 忽略 docs/myplans 文件夹
 docs/myplans/
 test-results/
+
+# Claude Code
+.claude/
+.playwright-mcp/
+AGENTS.md
+CLAUDE.md

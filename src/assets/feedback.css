@@ -70,7 +70,7 @@
   align-items: center;
   justify-content: space-between;
   min-height: 184px;
-  padding: 20px 14px 20px 20px;
+  padding: 15px 14px 15px 20px;
   box-sizing: border-box;
   overflow: hidden;
   border: 1px solid #ffe2d4;
@@ -190,7 +190,7 @@
 
 .feedback-email-card {
   margin-top: 14px;
-  padding: 26px 34px 25px;
+  padding: 15px 34px 15px;
   border-color: #ffeadf;
   border-radius: 14px;
   box-shadow: 0 9px 30px rgba(65, 40, 29, 0.02);
@@ -362,7 +362,7 @@
   }
 
   .feedback-card {
-    padding: 18px 16px;
+    padding: 15px 16px;
   }
 
   .feedback-label {
