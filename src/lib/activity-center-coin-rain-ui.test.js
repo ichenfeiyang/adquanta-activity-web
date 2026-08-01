@@ -375,6 +375,57 @@ test("background leave opens confirm dialog instead of abandoning", async () => 
   assert.match(leaveDesc.textContent, /cannot join Coin Rain again today/i);
 });
 
+test("backgrounding the preparation countdown never starts a coin-rain session", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  let countdownTick = null;
+  let visibilityHandler = null;
+  const overlay = { classList: classList(), style: {} };
+  const leaveDialog = { style: { display: "none" } };
+  globalThis.window = {
+    setInterval(callback) { countdownTick = callback; return 1; },
+    clearInterval() {},
+  };
+  globalThis.document = {
+    hidden: false,
+    body: { style: {} },
+    addEventListener(type, callback) { if (type === "visibilitychange") visibilityHandler = callback; },
+    removeEventListener() {},
+  };
+  let starts = 0;
+  const ui = {
+    ...coinRainUiMixin,
+    elements: {
+      coinRainOverlay: overlay,
+      coinRainCountdown: { style: {} },
+      coinRainStage: { replaceChildren() {} },
+      coinRainCollected: { textContent: "" },
+      coinRainMultiplier: { classList: classList(), offsetWidth: 1 },
+      coinRainMultiplierValue: { textContent: "" },
+      coinRainTime: { textContent: "" },
+      coinRainGameProgress: { style: {} },
+      coinRainLeaveDialog: leaveDialog,
+      coinRainLeaveDesc: { textContent: "" },
+    },
+  };
+  try {
+    assert.equal(ui.startCoinRainPreparation({ base_max_coin: 200, display_max_coin: 400 }, () => { starts += 1; }), true);
+    assert.equal(typeof visibilityHandler, "function");
+    globalThis.document.hidden = true;
+    visibilityHandler();
+    countdownTick();
+
+    assert.equal(starts, 0);
+    assert.equal(ui._coinRainSession.paused, true);
+    assert.equal(leaveDialog.style.display, "flex");
+  } finally {
+    ui.destroyCoinRain();
+    globalThis.window = previousWindow;
+    globalThis.document = previousDocument;
+  }
+});
+
 test("already-joined dialog matches PRD copy", async () => {
   await initActivityLocale({ locale: "en", force: true });
   const dialog = { style: { display: "none" } };

@@ -1,4 +1,5 @@
 import { assetUrl } from "./asset-url.js";
+import { loadDeferredImage } from "./activity-center-ui-helpers.js";
 import { t } from "./i18n/activity-locale.js";
 
 function setText(el, value) {
@@ -32,6 +33,7 @@ export const newUserBonusUiMixin = {
   showNewUserBonusDialog(bonus) {
     this.updateNewUserBonusDialog(bonus);
     if (!this.elements.newUserBonusModal) return;
+    loadDeferredImage(this.elements.newUserBonusHero);
     this.elements.newUserBonusModal.style.display = "flex";
     this.syncBodyScrollLock();
   },

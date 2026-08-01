@@ -259,7 +259,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
     <div id="tc-coin-rain-leave-dialog" class="tc-coin-rain-leave-dialog" style="display:none;">
       <div class="tc-coin-rain-leave-card">
         <button id="tc-coin-rain-leave-close" type="button" class="tc-coin-rain-dialog-close" :aria-label="t('common.close')">×</button>
-        <img :src="assetUrl('images/coin-rain-leave-art.png')" alt="" class="tc-coin-rain-leave-art" width="174" height="104">
+        <img id="tc-coin-rain-leave-art" :data-src="assetUrl('images/coin-rain-leave-art.png')" alt="" class="tc-coin-rain-leave-art" width="174" height="104">
         <h2>{{ t('center.coinRainLeaveTitle') }}</h2>
         <p id="tc-coin-rain-leave-desc">{{ t('center.coinRainLeaveDesc') }}</p>
         <button id="tc-coin-rain-continue" type="button" class="tc-coin-rain-dialog-primary">{{ t('center.coinRainContinue') }}</button>
@@ -272,7 +272,8 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
     <div class="tc-coin-rain-joined-card">
       <button id="tc-coin-rain-joined-close" type="button" class="tc-coin-rain-dialog-close" :aria-label="t('common.close')">×</button>
       <img
-        :src="assetUrl('images/coin-rain-leave-art.png')"
+        :data-src="assetUrl('images/coin-rain-leave-art.png')"
+        id="tc-coin-rain-joined-art"
         alt=""
         class="tc-coin-rain-joined-art"
         width="168"
@@ -290,7 +291,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       <div class="tc-coin-rain-result-hero">
         <img
           id="tc-coin-rain-result-hero-img"
-          :src="assetUrl('images/coin-rain-reward-art.png')"
+          :data-src="assetUrl('images/coin-rain-reward-art.png')"
           alt=""
           width="220"
           height="140"
@@ -355,7 +356,8 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       <div class="new-user-bonus-badge" id="newUserBonusTitle">{{ t('center.newUserBonusTitle') }}</div>
       <div class="new-user-bonus-art" aria-hidden="true">
         <img
-          :src="assetUrl('images/new-user-bonus-hero.png')"
+          id="newUserBonusHero"
+          :data-src="assetUrl('images/new-user-bonus-hero.png')"
           alt=""
           class="new-user-bonus-hero"
           width="650"
@@ -382,7 +384,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
 
   <div id="checkinChestModal" class="checkin-chest-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="checkinChestHeading">
     <div class="checkin-chest-card">
-      <img :src="assetUrl('images/checkin-chest-hero.png')" alt="" class="checkin-chest-hero" width="450" height="304">
+      <img id="checkinChestHero" :data-src="assetUrl('images/checkin-chest-hero.png')" alt="" class="checkin-chest-hero" width="450" height="304">
       <div class="checkin-chest-copy">
         <h2 id="checkinChestHeading" class="checkin-chest-headline">{{ t('center.checkinChestDropped') }}</h2>
         <p class="checkin-chest-desc">{{ t('center.checkinChestDescLine1') }}<br>{{ t('center.checkinChestDescLine2') }}</p>
@@ -397,7 +399,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
   <div id="checkinChestRewardModal" class="checkin-chest-result-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="checkinChestRewardHeading">
     <div class="checkin-chest-result-card">
       <button id="checkinChestRewardClose" type="button" class="checkin-chest-result-close" :aria-label="t('common.close')">×</button>
-      <img :src="assetUrl('images/checkin-chest-reward-hero.png')" alt="" class="checkin-chest-result-hero" width="420" height="350">
+      <img id="checkinChestRewardHero" :data-src="assetUrl('images/checkin-chest-reward-hero.png')" alt="" class="checkin-chest-result-hero" width="420" height="350">
       <div class="checkin-chest-result-copy">
         <h2 id="checkinChestRewardHeading" class="checkin-chest-result-title"><span aria-hidden="true">🎉</span> {{ t('center.checkinChestCongratulations') }}</h2>
         <p class="checkin-chest-result-reward"><span>{{ t('center.checkinChestYouGot') }} </span><strong id="checkinChestRewardCoins">+0</strong> <span>{{ t('common.coins') }}</span></p>
@@ -425,7 +427,7 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       </div>
       <div id="checkinPromptDays" class="checkin-prompt-days" />
       <div id="checkinPromptChestTip" class="checkin-prompt-chest-tip" style="display:none;">
-        <img :src="assetUrl('images/checkin-prompt-lucky-chest.png')" alt="" width="30" height="30">
+        <img id="checkinPromptChestTipImg" :data-src="assetUrl('images/checkin-prompt-lucky-chest.png')" alt="" width="30" height="30">
         <span id="checkinPromptChestTipText" />
       </div>
       <button id="checkinPromptClaim" type="button" class="checkin-prompt-claim">

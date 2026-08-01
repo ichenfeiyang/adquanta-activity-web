@@ -1,5 +1,6 @@
 import { showToast } from "./activity-alert-ui.js";
 import { assetUrl } from "./asset-url.js";
+import { loadDeferredImage } from "./activity-center-ui-helpers.js";
 import { t } from "./i18n/activity-locale.js";
 
 function clearTimer(timer) {
@@ -61,6 +62,22 @@ export const coinRainUiMixin = {
 
   hasPendingCoinRainSettlement() {
     return !!this._coinRainSession?.settlementPending;
+  },
+
+  bindCoinRainVisibilityHandler() {
+    if (this._coinRainVisibilityHandler || typeof document === "undefined") return;
+    this._coinRainVisibilityHandler = () => {
+      // Backgrounding during either countdown must pause before a session is
+      // started. The user can then explicitly continue or give up.
+      if (document.hidden && this._coinRainSession) this.leaveCoinRain();
+    };
+    document.addEventListener("visibilitychange", this._coinRainVisibilityHandler);
+  },
+
+  unbindCoinRainVisibilityHandler() {
+    if (!this._coinRainVisibilityHandler || typeof document === "undefined") return;
+    document.removeEventListener("visibilitychange", this._coinRainVisibilityHandler);
+    this._coinRainVisibilityHandler = null;
   },
 
   updateCoinRainGameProgress(remainingMs, durationMs) {
@@ -149,7 +166,7 @@ export const coinRainUiMixin = {
     this._coinRainCountdownTimer = this._coinRainSpawnTimer = this._coinRainGameTimer = 0;
   },
 
-  startCoinRainSession(result, { resume = false, skipCountdown = false } = {}) {
+  startCoinRainSession(result, { resume = false, skipCountdown = false, startPaused = false } = {}) {
     if (!result?.session_id || !this.elements.coinRainOverlay) return;
     const baseMaxCoin = Number(result.base_max_coin);
     const displayMaxCoin = Number(result.display_max_coin ?? this._coinRainStatus?.display_max_coin);
@@ -171,7 +188,7 @@ export const coinRainUiMixin = {
       duration: Math.max(10, Number(result.duration_seconds ?? 30) || 30),
       clicked: Math.min(baseMaxCoin, recoveredClicked),
       running: false,
-      paused: false,
+      paused: !!startPaused,
       settling: false,
       settlementPending: false,
       pauseStartedAt: 0,
@@ -193,13 +210,8 @@ export const coinRainUiMixin = {
     this.elements.coinRainOverlay.style.display = "block";
     writeCoinRainRecovery(this._coinRainSession);
     if (typeof document !== "undefined" && document.body) document.body.style.overflow = "hidden";
-    if (!this._coinRainVisibilityHandler) {
-      this._coinRainVisibilityHandler = () => {
-        // PRD: leaving/background during prep or play should confirm via Leave dialog.
-        if (document.hidden && this._coinRainSession) this.leaveCoinRain();
-      };
-      document.addEventListener("visibilitychange", this._coinRainVisibilityHandler);
-    }
+    this.bindCoinRainVisibilityHandler();
+    if (startPaused) this.leaveCoinRain();
     if (resume || skipCountdown) {
       this.elements.coinRainCountdown.style.display = "none";
       this.runCoinRain();
@@ -258,13 +270,20 @@ export const coinRainUiMixin = {
     this.hideCoinRainLeaveDialog(false);
     this.elements.coinRainOverlay.style.display = "block";
     if (typeof document !== "undefined" && document.body) document.body.style.overflow = "hidden";
+    this.bindCoinRainVisibilityHandler();
 
     let count = 3;
     this.setCoinRainCountdownValue(count);
     this.clearCoinRainLocalTimers();
     this._coinRainCountdownTimer = window.setInterval(() => {
       const session = this._coinRainSession;
-      if (!session || !session.preparing || session.paused) return;
+      if (!session || !session.preparing) return;
+      // WebView timers may resume after backgrounding. Do not issue a start
+      // request unless this countdown is still actively visible.
+      if ((typeof document !== "undefined" && document.hidden) || session.paused) {
+        this.leaveCoinRain();
+        return;
+      }
       count -= 1;
       if (count > 0) {
         this.setCoinRainCountdownValue(count);
@@ -283,11 +302,16 @@ export const coinRainUiMixin = {
     return this._coinRainSession?.preparing === true;
   },
 
+  isCoinRainPreparationPaused() {
+    return this._coinRainSession?.preparing === true && this._coinRainSession?.paused === true;
+  },
+
   cancelCoinRainPreparation() {
     const session = this._coinRainSession;
     if (!session?.preparing) return;
     this.clearCoinRainLocalTimers();
     this._coinRainSession = null;
+    this.unbindCoinRainVisibilityHandler();
     this.elements.coinRainStage?.replaceChildren();
     if (this.elements.coinRainOverlay) {
       this.elements.coinRainOverlay.style.display = "none";
@@ -415,6 +439,7 @@ export const coinRainUiMixin = {
     }
     clearCoinRainRecovery();
     this._coinRainSession = null;
+    this.unbindCoinRainVisibilityHandler();
     this.showCoinRainResult(result);
   },
 
@@ -434,6 +459,7 @@ export const coinRainUiMixin = {
     session.paused = true;
     session.pauseStartedAt = Date.now();
     this.elements.coinRainOverlay.classList.add("is-paused");
+    loadDeferredImage(this.elements.coinRainLeaveArt);
     if (this.elements.coinRainLeaveDesc) {
       this.elements.coinRainLeaveDesc.textContent = session.running
         ? t("center.coinRainLeaveDesc")
@@ -503,6 +529,7 @@ export const coinRainUiMixin = {
     }
     clearCoinRainRecovery();
     this._coinRainSession = null;
+    this.unbindCoinRainVisibilityHandler();
   },
 
   setCoinRainResultHero(kind = "reward") {
@@ -558,6 +585,7 @@ export const coinRainUiMixin = {
   },
 
   showCoinRainAlreadyJoined() {
+    loadDeferredImage(this.elements.coinRainJoinedArt);
     if (this.elements.coinRainJoinedDialog) this.elements.coinRainJoinedDialog.style.display = "flex";
   },
 
@@ -608,9 +636,6 @@ export const coinRainUiMixin = {
     this.hideCoinRainLeaveDialog(false);
     this.hideCoinRainAlreadyJoined();
     if (typeof document !== "undefined" && document.body) document.body.style.overflow = "";
-    if (this._coinRainVisibilityHandler && typeof document !== "undefined") {
-      document.removeEventListener("visibilitychange", this._coinRainVisibilityHandler);
-      this._coinRainVisibilityHandler = null;
-    }
+    this.unbindCoinRainVisibilityHandler();
   },
 };

@@ -1,6 +1,6 @@
 import { assetUrl } from "./asset-url.js";
 import { normalizeCheckinChestEligibleDays } from "./checkin-chest.js";
-import { resolveSigninRewardCoins } from "./activity-center-ui-helpers.js";
+import { loadDeferredImage, resolveSigninRewardCoins } from "./activity-center-ui-helpers.js";
 import { t } from "./i18n/activity-locale.js";
 
 function ensureCheckinDayGrid(container, cache) {
@@ -87,6 +87,7 @@ function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isChestDay, h
 export const checkinUiMixin = {
   showCheckinPrompt(detail, prompt) {
     if (!detail || !Array.isArray(detail.days) || !this.elements.checkinPromptModal) return;
+    loadDeferredImage(this.elements.checkinPromptChestTipImg);
     const days = detail.days.slice(0, 7);
     const current = days.find((day) => day.current === true) || days.find((day) => day.received !== true) || days[0];
     const coin = Number(current?.coin || 0);

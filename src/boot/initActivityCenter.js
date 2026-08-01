@@ -629,6 +629,9 @@ export function initActivityCenter({ router, route }) {
         return;
       }
       ui.startCoinRainPreparation(status, async () => {
+        // A countdown can be paused by the visibility handler just before its
+        // final tick. Do not spend a start request until the user continues.
+        if (!ui.isCoinRainPreparationActive() || ui.isCoinRainPreparationPaused()) return;
         coinRainStartInFlight.value = true;
         try {
           const result = await business.submitCoinRainAction(apiOptions, "start");
@@ -638,7 +641,13 @@ export function initActivityCenter({ router, route }) {
               return;
             }
             trackActivityEvent("coin_rain_start");
-            ui.startCoinRainSession(result, { skipCountdown: true });
+            // If backgrounding raced with the API response, retain the server
+            // session in the paused leave state instead of silently starting
+            // gameplay or forfeiting the day on the user's behalf.
+            ui.startCoinRainSession(result, {
+              skipCountdown: true,
+              startPaused: ui.isCoinRainPreparationPaused(),
+            });
           } else if (result?.ok) {
             ui.cancelCoinRainPreparation();
             ui.showCoinRainAlreadyJoined();
@@ -735,10 +744,12 @@ export function initActivityCenter({ router, route }) {
   // ── 新手引导 ──
   let noviceGuide = null;
   let guideStarted = false;
+  let activityCenterDisposed = false;
   let onBeforeUnloadGuide = null;
   let onPageHideGuide = null;
   let noviceGuideStorageScope = "";
   function ensureNoviceGuide() {
+    if (activityCenterDisposed) return;
     const storageScope = getUserTipStorageScope();
     if (!storageScope || noviceGuide || isNoviceGuideCompleted(storageScope)) return;
     noviceGuideStorageScope = storageScope;
@@ -788,19 +799,38 @@ export function initActivityCenter({ router, route }) {
 
   let guideWaitObserver = null;
   let guideWaitTimer = null;
+  let guideInitialCheckTimer = null;
+
+  function clearGuideStartWait() {
+    if (guideWaitObserver) {
+      guideWaitObserver.disconnect();
+      guideWaitObserver = null;
+    }
+    if (guideWaitTimer) {
+      clearTimeout(guideWaitTimer);
+      guideWaitTimer = null;
+    }
+    if (guideInitialCheckTimer) {
+      clearTimeout(guideInitialCheckTimer);
+      guideInitialCheckTimer = null;
+    }
+  }
+
+  function startNoviceGuide() {
+    if (activityCenterDisposed || guideStarted || !noviceGuide) return false;
+    guideStarted = true;
+    clearGuideStartWait();
+    noviceGuide.start();
+    return true;
+  }
 
   function waitForModalsThenStart() {
-    if (guideWaitObserver) { guideWaitObserver.disconnect(); }
-    if (guideWaitTimer) { clearTimeout(guideWaitTimer); }
+    if (activityCenterDisposed || guideStarted || !noviceGuide) return;
+    clearGuideStartWait();
 
     guideWaitObserver = new MutationObserver(() => {
       if (!hasVisibleBlockingModal()) {
-        guideWaitObserver.disconnect();
-        guideWaitObserver = null;
-        if (!guideStarted && noviceGuide) {
-          guideStarted = true;
-          noviceGuide.start();
-        }
+        startNoviceGuide();
       }
     });
 
@@ -813,16 +843,12 @@ export function initActivityCenter({ router, route }) {
 
     // 兜底超时
     guideWaitTimer = setTimeout(() => {
-      if (guideWaitObserver) { guideWaitObserver.disconnect(); guideWaitObserver = null; }
-      if (!guideStarted && noviceGuide) {
-        guideStarted = true;
-        noviceGuide.start();
-      }
+      startNoviceGuide();
     }, 10000);
   }
 
   function startGuideIfReady() {
-    if (guideStarted || !noviceGuide) return;
+    if (activityCenterDisposed || guideStarted || !noviceGuide) return;
 
     // 情况1：当前有业务弹窗在显示 → 等它关闭
     if (hasVisibleBlockingModal()) {
@@ -832,23 +858,20 @@ export function initActivityCenter({ router, route }) {
 
     // 情况2：当前无弹窗，但签到提示数据可能还没到
     // 等待一小段时间，看是否有弹窗出现
-    const checkTimer = setTimeout(() => {
-      if (guideStarted) return;
+    clearGuideStartWait();
+    guideInitialCheckTimer = setTimeout(() => {
+      guideInitialCheckTimer = null;
+      if (activityCenterDisposed || guideStarted) return;
       if (hasVisibleBlockingModal()) {
         waitForModalsThenStart();
       } else {
-        guideStarted = true;
-        noviceGuide.start();
+        startNoviceGuide();
       }
     }, 300);
 
     // 兜底超时：防止任何情况导致引导不启动
     guideWaitTimer = setTimeout(() => {
-      clearTimeout(checkTimer);
-      if (!guideStarted && noviceGuide) {
-        guideStarted = true;
-        noviceGuide.start();
-      }
+      startNoviceGuide();
     }, 5000);
   }
 
@@ -870,6 +893,8 @@ export function initActivityCenter({ router, route }) {
   });
 
   return function disposeActivityCenter() {
+    activityCenterDisposed = true;
+    clearGuideStartWait();
     adRequestCoordinator.dispose();
     ui.destroyRecentRedemptions();
     ui.destroyCoinRain();

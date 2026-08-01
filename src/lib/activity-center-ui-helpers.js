@@ -30,3 +30,14 @@ export function resolveSigninRewardCoins(reward) {
   const totalCoin = doubledCoin > 0 ? doubledCoin : baseCoin * 2;
   return { baseCoin, totalCoin };
 }
+
+/**
+ * Defers a modal illustration request until the modal is actually opened.
+ * Public image URLs are stored in data-src by the Vue shell to keep them out
+ * of the activity centre's cold-start resource queue.
+ */
+export function loadDeferredImage(image) {
+  const source = String(image?.dataset?.src || "");
+  if (!source || image?.getAttribute?.("src") === source) return;
+  image.src = source;
+}

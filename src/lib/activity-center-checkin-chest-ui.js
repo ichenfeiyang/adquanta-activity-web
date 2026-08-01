@@ -1,3 +1,5 @@
+import { loadDeferredImage } from "./activity-center-ui-helpers.js";
+
 export const checkinChestUiMixin = {
   isCheckinChestVisible() {
     return this.elements.checkinChestModal?.style.display === "flex";
@@ -10,6 +12,7 @@ export const checkinChestUiMixin = {
   showCheckinChestDialog(chest) {
     this._checkinChest = chest || null;
     if (!chest || !this.elements.checkinChestModal) return;
+    loadDeferredImage(this.elements.checkinChestHero);
     this.elements.checkinChestModal.style.display = "flex";
     this.syncBodyScrollLock?.();
   },
@@ -24,7 +27,10 @@ export const checkinChestUiMixin = {
     if (this.elements.checkinChestRewardCoins) {
       this.elements.checkinChestRewardCoins.textContent = `+${Math.max(0, Number(coin) || 0)}`;
     }
-    if (this.elements.checkinChestRewardModal) this.elements.checkinChestRewardModal.style.display = "flex";
+    if (this.elements.checkinChestRewardModal) {
+      loadDeferredImage(this.elements.checkinChestRewardHero);
+      this.elements.checkinChestRewardModal.style.display = "flex";
+    }
     this.syncBodyScrollLock?.();
   },
 

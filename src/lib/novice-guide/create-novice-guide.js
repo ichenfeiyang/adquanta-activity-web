@@ -57,6 +57,7 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
   let stepAdvanceTimer = null;
   let stepActionCleanup = null;
   let highlightClickCleanup = null;
+  let disposed = false;
 
   function clearStepTimers() {
     if (stepAdvanceTimer) {
@@ -258,6 +259,10 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
   }
 
   function dispose() {
+    if (disposed) return;
+    disposed = true;
+    clearStepTimers();
+    removeCardGlow();
     if (isGuideActive) {
       markNoviceGuideCompleted(storageScope);
     }
@@ -369,7 +374,12 @@ export function createNoviceGuide({ onStepAction, onComplete, onStart, onSkip, s
   }
 
   return {
-    start() { mount(); state.showWelcome = true; },
+    start() {
+      if (disposed || app || container) return false;
+      mount();
+      state.showWelcome = true;
+      return true;
+    },
     handleSigninDismiss,
     handleSpinDismiss,
     handleCoinRainDismiss,
