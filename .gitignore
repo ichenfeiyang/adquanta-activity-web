@@ -70,3 +70,7 @@ coverage/
 *.min.js
 *.min.css
 .codex
+
+# 忽略 docs/myplans 文件夹
+docs/myplans/
+test-results/

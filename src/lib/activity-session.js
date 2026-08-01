@@ -3,6 +3,17 @@ import { resolveAndStripEntryToken } from "./activity-auth.js";
 import { resolveActivityRouteContext } from "./activity-context.js";
 import { showToast } from "./activity-alert-ui.js";
 import { authFailedMessage } from "./activity-messages.js";
+import { DEFAULT_REDEEM_COUNTRY, resolveRedeemCountry } from "./redeem-country.js";
+
+function resolveCountryCode(routeQuery = {}) {
+  const raw =
+    routeQuery.country_code ||
+    routeQuery.countryCode ||
+    routeQuery.country ||
+    routeQuery.region ||
+    DEFAULT_REDEEM_COUNTRY.iso;
+  return resolveRedeemCountry(raw).iso;
+}
 
 /**
  * Resolve route context and bearer token for an activity page.
@@ -30,6 +41,7 @@ export function requireActivitySession(route, options = {}) {
       token,
       activityId,
       code,
+      countryCode: resolveCountryCode(routeQuery),
     },
   };
 }

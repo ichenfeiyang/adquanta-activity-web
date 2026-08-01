@@ -23,6 +23,12 @@ export function fingerprintActivityInfo(data) {
     userId: data?.user_info?.user_id ?? null,
     checkin,
     video,
+    newUserBonus: data?.new_user_bonus ?? null,
+    redeemGap: data?.redeem_gap ?? null,
+    redeemRewards: data?.redeem_rewards ?? null,
+    recentRedemptions: data?.recent_redemptions ?? [],
+    coinRain: data?.coin_rain ?? null,
+    checkinPrompt: data?.checkin_prompt ?? null,
   });
 }
 

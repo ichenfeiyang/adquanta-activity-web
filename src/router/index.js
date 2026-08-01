@@ -36,6 +36,18 @@ const router = createRouter({
       meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.TOPUP_STATUS] },
       component: TopupStatusView,
     },
+    {
+      path: '/feedback',
+      name: ROUTE_NAMES.FEEDBACK,
+      meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.FEEDBACK] },
+      component: () => import('../views/FeedbackView.vue'),
+    },
+    {
+      path: '/feedback/success',
+      name: ROUTE_NAMES.FEEDBACK_SUCCESS,
+      meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.FEEDBACK_SUCCESS] },
+      component: () => import('../views/FeedbackSuccessView.vue'),
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (from.name) {

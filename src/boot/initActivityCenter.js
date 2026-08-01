@@ -11,15 +11,49 @@ import {
   adFailedMessage,
   alreadyCheckedInMessage,
   adNotAvailableMessage,
+  authFailedMessage,
   initializationFailedMessage,
   videoCheckinAlreadyMessage,
 } from "../lib/activity-messages.js";
-import { ensureActivityLocaleFromSession } from "../lib/i18n/activity-locale.js";
+import { ensureActivityLocaleFromSession, t } from "../lib/i18n/activity-locale.js";
 import { reloadActivityPage } from "../lib/reload-activity-page.js";
-import { createAdCallbackTimeout } from "../lib/ad-callback-timeout.js";
+import { ActivityAdRequestCoordinator } from "../lib/activity-ad-request-coordinator.js";
 import { createActivitySdkEventHandler } from "../lib/activity-sdk-event-handlers.js";
 import { getActivityInfoCache, isActivityInfoCacheFresh } from "../lib/activity-page-cache.js";
+import {
+  clearCheckinChestSoftClosed,
+  markCheckinChestSoftClosed,
+  readSoftClosedCheckinChestIds,
+} from "../lib/checkin-chest.js";
+import { dismissCheckinPrompt, shouldShowCheckinPrompt } from "../lib/checkin-prompt.js";
+import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
+import { SPIN_AD_WAIT_STALE_MS } from "../lib/activity-center-spin-ui.js";
 import * as logger from "../lib/activity-logger.js";
+import { isNoviceGuideCompleted, markNoviceGuideCompleted } from "../lib/novice-guide/novice-guide-state.js";
+import { createNoviceGuide } from "../lib/novice-guide/create-novice-guide.js";
+import "../assets/novice-guide.css";
+
+function renderUnauthenticatedActivityCenterPreview() {
+  const showAuthRequired = () => showToast(authFailedMessage(), "error");
+  const ui = new ActivityCenterUI({
+    onWatchAdClick: showAuthRequired,
+    onSpinWheelOpen: showAuthRequired,
+    onSpinRequest: async () => {
+      showAuthRequired();
+      return { ok: false };
+    },
+    onWithdrawClick: showAuthRequired,
+    onSigninClick: showAuthRequired,
+    onSigninWatchVideoClick: showAuthRequired,
+    onNewUserBonusVideoClick: showAuthRequired,
+    onNewUserBonusDismissClick: showAuthRequired,
+    onCheckinChestWatchClick: showAuthRequired,
+    onCheckinChestDismissClick: showAuthRequired,
+    onCheckinChestDayClick: showAuthRequired,
+  });
+  ui.bindEvents();
+  ui.renderInitialShell();
+}
 
 /**
  * @param {{ router: import('vue-router').Router, route: import('vue-router').RouteLocationNormalizedLoaded }} ctx
@@ -32,25 +66,205 @@ export function initActivityCenter({ router, route }) {
   });
   if (!session) {
     logger.error("Missing token. Web auth disabled; open from app.");
+    renderUnauthenticatedActivityCenterPreview();
     return;
   }
 
   const { code, activityId, apiOptions } = session;
 
-  let lastRewardAdTaskId = "task_watch_ad";
-  let lastInterstitialAdTaskId = "task_checkin";
+  const adRequestCoordinator = new ActivityAdRequestCoordinator({
+    onTimeout: (request) => {
+      logger.warn("Native ad callback timed out", { eventType: request.eventType, taskId: request.taskId });
+      showToast(adNotAvailableMessage(), "warning");
+      adapter?.trackEvent("ad_callback_timeout", {
+        page_id: ACTIVITY_CENTER_PAGE_ID,
+        task_id: request.taskId,
+        ad_event_type: request.eventType,
+      });
+      void handleSDKEventCompleted({
+        eventType: request.eventType,
+        taskId: request.taskId,
+        task_id: request.taskId,
+        success: false,
+        message: adNotAvailableMessage(),
+      });
+    },
+  });
   const checkinWatchAdInFlight = { value: false };
   const checkinVideoClaimInFlight = { value: false };
-  const AD_CALLBACK_TIMEOUT_MS = 60000;
+  const newUserBonusAdInFlight = { value: false };
+  const newUserBonusClaimInFlight = { value: false };
+  const checkinChestAdInFlight = { value: false };
+  const checkinChestClaimInFlight = { value: false };
+  const coinRainAdInFlight = { value: false };
+  const coinRainStartInFlight = { value: false };
   let ui;
   let adapter;
-  let rewardAdTimeout;
-  let interstitialAdTimeout;
+  let deferCheckinChestDialog = false;
+  let deferredCheckinChest = null;
+  let latestCheckinPrompt = null;
+  let latestCheckinPromptDetail = null;
+  let checkinPromptShownForDate = "";
+  let newUserBonusVisible = false;
+  const checkinChestDroppedIds = new Set();
+  const checkinChestImpressedIds = new Set();
+  const checkinChestSettlingIds = new Set();
+
+  function showAdProcessingToast() {
+    showToast(t("common.processing"), "info");
+  }
+
+  function beginAdRequest(eventType, taskId, metadata = {}) {
+    let request = adRequestCoordinator.begin(eventType, taskId, metadata);
+    if (!request && adRequestCoordinator.cancelActiveIfStale(SPIN_AD_WAIT_STALE_MS)) {
+      // Locale reload / lost native callback can leave a zombie in-flight request.
+      request = adRequestCoordinator.begin(eventType, taskId, metadata);
+    }
+    if (!request) showAdProcessingToast();
+    return request;
+  }
+
+  function createClientAdEventId(prefix) {
+    const uuid = globalThis.crypto?.randomUUID?.();
+    if (uuid) return `${prefix}-${uuid}`;
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  }
+
+  async function triggerNativeAd(request, eventData) {
+    try {
+      if (request.eventType === "interstitial_ad") {
+        await adapter.triggerInterstitialAd(eventData);
+      } else {
+        await adapter.triggerRewardAd(eventData);
+      }
+    } catch (error) {
+      adRequestCoordinator.cancel(request);
+      throw error;
+    }
+  }
+
+  function isCheckinChestSoftClosed(chestId) {
+    return readSoftClosedCheckinChestIds().has(Number(chestId));
+  }
+
+  function trackActivityEvent(eventType, eventData = {}) {
+    return adapter?.trackEvent(eventType, { page_id: ACTIVITY_CENTER_PAGE_ID, ...eventData });
+  }
+
+  function updateCheckinChestDialog(chest, { force = false } = {}) {
+    deferredCheckinChest = chest?.status === "pending" ? chest : null;
+    if (!deferredCheckinChest) {
+      checkinChestSettlingIds.clear();
+      ui.hideCheckinChestDialog();
+      return;
+    }
+    if (deferCheckinChestDialog) return;
+    const chestId = Number(deferredCheckinChest.id);
+    if (checkinChestSettlingIds.has(chestId)) {
+      ui.hideCheckinChestDialog();
+      return;
+    }
+    // Always re-read sessionStorage so refresh / multi-path updates stay consistent.
+    if (!force && isCheckinChestSoftClosed(chestId)) {
+      ui.hideCheckinChestDialog();
+      return;
+    }
+    if (force) clearCheckinChestSoftClosed(chestId);
+    if (Number.isSafeInteger(chestId) && chestId > 0 && !checkinChestDroppedIds.has(chestId)) {
+      checkinChestDroppedIds.add(chestId);
+      trackActivityEvent("checkin_chest_dropped", { task_id: "task_checkin_chest", chest_id: chestId });
+    }
+    ui.showCheckinChestDialog(deferredCheckinChest);
+    if (Number.isSafeInteger(chestId) && chestId > 0 && !checkinChestImpressedIds.has(chestId)) {
+      checkinChestImpressedIds.add(chestId);
+      trackActivityEvent("checkin_chest_impression", { task_id: "task_checkin_chest", chest_id: chestId });
+    }
+  }
+
+  function beginCheckinChestDeferral() {
+    deferCheckinChestDialog = true;
+  }
+
+  function revealDeferredCheckinChest() {
+    deferCheckinChestDialog = false;
+    // First reveal after check-in; if user already tapped No thanks, stay closed.
+    updateCheckinChestDialog(deferredCheckinChest);
+  }
 
   function resetCheckinAdState() {
     checkinWatchAdInFlight.value = false;
     checkinVideoClaimInFlight.value = false;
     ui.setSigninWatchLoading(false);
+  }
+
+  function shouldShowNewUserBonus(bonus) {
+    return bonus?.eligible === true && bonus?.show === true && bonus?.status === "pending";
+  }
+
+  function getUserTipStorageScope() {
+    const userId = String(business?.getUserId?.() || "").trim();
+    return userId ? `${activityId}:${userId}` : "";
+  }
+
+  function updateCheckinPromptDialog(prompt, detail, { fromCache = false } = {}) {
+    latestCheckinPrompt = prompt;
+    latestCheckinPromptDetail = detail;
+    const chestBlocksPrompt = !!deferredCheckinChest?.id
+      && !isCheckinChestSoftClosed(deferredCheckinChest.id);
+    const storageScope = getUserTipStorageScope();
+    if (fromCache || !storageScope || newUserBonusVisible || chestBlocksPrompt || !shouldShowCheckinPrompt(prompt, storageScope)) {
+      ui.hideCheckinPrompt();
+      return;
+    }
+    const serverDate = String(prompt?.server_date || "");
+    if (checkinPromptShownForDate === serverDate) return;
+    checkinPromptShownForDate = serverDate;
+    ui.showCheckinPrompt(detail, prompt);
+    trackActivityEvent("checkin_prompt_impression", { server_date: serverDate });
+  }
+
+  async function claimTodayCheckin(source = "card") {
+    resetCheckinAdState();
+
+    const today = business.getTodayCheckinDay();
+    const received = !!today?.received;
+    const videoReceived = !!today?.video_received;
+
+    if (!received) {
+      beginCheckinChestDeferral();
+      const result = await business.doCheckin(apiOptions);
+      if (result.ok) {
+        ui.showSigninDialog(result);
+        trackActivityEvent("checkin_success", { source });
+        return true;
+      }
+      trackActivityEvent("checkin_fail", { source, reason: result?.message || "checkin_failed" });
+      revealDeferredCheckinChest();
+      return false;
+    }
+
+    if (received && !videoReceived) {
+      beginCheckinChestDeferral();
+      const coin = Number(today?.coin ?? 0);
+      const video_coin = Number(today?.video_coin ?? 0);
+      const multiplier = coin > 0 ? Math.floor(video_coin / coin) : 0;
+      ui.showSigninDialog({
+        coinFromCheckin: coin,
+        video_coin,
+        multiplier,
+        alreadyChecked: true,
+      });
+      return true;
+    }
+
+    const pendingChest = business.checkinChests?.[0];
+    if (pendingChest?.id) {
+      updateCheckinChestDialog(pendingChest, { force: true });
+      return false;
+    }
+
+    showToast(alreadyCheckedInMessage(), "info");
+    return false;
   }
 
   function normalizeAdMessage(message, fallback = adFailedMessage()) {
@@ -67,6 +281,36 @@ export function initActivityCenter({ router, route }) {
     onTaskUpdate: (tasks) => ui.updateTasks(tasks),
     onCheckinUpdate: (detail) => ui.updateCheckin(detail),
     onFeatureVisibilityUpdate: (visibility) => ui.updateFeatureVisibility(visibility),
+    onRedeemGapUpdate: (gap) => ui.updateRedeemGap(gap),
+    onRedeemRewardsUpdate: (rewards) => ui.updateRedeemRewards(rewards),
+    onRecentRedemptionsUpdate: (items) => ui.updateRecentRedemptions(items),
+    onCoinRainUpdate: (status) => {
+      ui.updateCoinRain(status);
+    },
+    onNewUserBonusUpdate: (bonus) => {
+      ensureNoviceGuide();
+      newUserBonusVisible = shouldShowNewUserBonus(bonus);
+      if (newUserBonusVisible) {
+        ui.hideCheckinPrompt();
+        ui.showNewUserBonusDialog(bonus);
+      } else {
+        ui.hideNewUserBonusDialog();
+        updateCheckinPromptDialog(latestCheckinPrompt, latestCheckinPromptDetail);
+        // 无 Welcome Bonus 弹窗 → 直接启动新手引导
+        startGuideIfReady();
+      }
+    },
+    onCheckinChestUpdate: (chest) => {
+      updateCheckinChestDialog(chest);
+    },
+    onCheckinPromptUpdate: (prompt, detail, metadata) => {
+      // 引导未完成时静默忽略签到提示（让位给新手引导）
+      ensureNoviceGuide();
+      if (!isNoviceGuideCompleted(getUserTipStorageScope()) && !guideStarted && !noviceGuide?.isGuideRunning()) {
+        return;
+      }
+      updateCheckinPromptDialog(prompt, detail, metadata);
+    },
   });
 
   const handleSDKEventCompleted = createActivitySdkEventHandler({
@@ -78,19 +322,43 @@ export function initActivityCenter({ router, route }) {
       return adapter;
     },
     apiOptions,
-    getLastRewardAdTaskId: () => lastRewardAdTaskId,
-    getLastInterstitialAdTaskId: () => lastInterstitialAdTaskId,
-    get rewardAdTimeout() {
-      return rewardAdTimeout;
-    },
-    get interstitialAdTimeout() {
-      return interstitialAdTimeout;
-    },
     normalizeAdMessage,
     showDailyAdLimitToast,
     checkinVideoClaimInFlight,
     checkinWatchAdInFlight,
+    newUserBonusAdInFlight,
+    newUserBonusClaimInFlight,
+    checkinChestAdInFlight,
+    checkinChestClaimInFlight,
+    checkinChestSettlingIds,
+    coinRainAdInFlight,
+    onCheckinVideoRewardClaimed: () => {
+      ui.hideSigninDialog();
+      revealDeferredCheckinChest();
+    },
+    getCheckinChest: () => ui._checkinChest,
   });
+
+  const handleSerializedSdkEvent = async (result) => {
+    const request = adRequestCoordinator.take(result?.eventType);
+    if (!request) {
+      logger.warn("Ignoring duplicate or stale SDK ad callback", result);
+      return;
+    }
+    await handleSDKEventCompleted({
+      ...result,
+      eventType: request.eventType,
+      taskId: request.taskId,
+      task_id: request.taskId,
+      // Current Android SDK callbacks do not include an ad_event_id. Preserve
+      // the ID generated when this serialized request was initiated so the
+      // backend can safely settle the coin-rain boost.
+      coin_rain_ad_event_id: request.coinRainAdEventId || "",
+      // Reused by reward flows whose backend records an ad event for
+      // idempotency/audit but whose current SDK callback omits that ID.
+      request_ad_event_id: request.rewardAdEventId || "",
+    });
+  };
 
   adapter = new ActivityCenterAdapter({
     activityId,
@@ -104,7 +372,7 @@ export function initActivityCenter({ router, route }) {
       }
       logger.log("SDK 初始化完成:", session);
     },
-    onEventCompleted: handleSDKEventCompleted,
+    onEventCompleted: handleSerializedSdkEvent,
   });
 
   ui = new ActivityCenterUI({
@@ -114,23 +382,34 @@ export function initActivityCenter({ router, route }) {
     onWatchAdClick: async () => {
       if (business.isDailyAdLimitReached()) {
         showDailyAdLimitToast();
-        return;
+        ui.cancelPendingSpinAd();
+        return false;
+      }
+      const request = beginAdRequest("reward_ad", "task_watch_ad");
+      if (!request) {
+        ui.cancelPendingSpinAd();
+        return false;
       }
       try {
         const adTaskStatus = business.getAdTaskStatus();
-        lastRewardAdTaskId = "task_watch_ad";
-        rewardAdTimeout?.start();
-        await adapter.triggerRewardAd({ taskId: "task_watch_ad", reward: adTaskStatus.reward });
+        await triggerNativeAd(request, { taskId: "task_watch_ad", reward: adTaskStatus.reward });
+        return true;
       } catch (error) {
-        rewardAdTimeout?.clear();
         const message = normalizeAdMessage(error?.message, adNotAvailableMessage());
         logger.error("[Ad trigger failed] reward_ad task_watch_ad", error);
-        ui.handleRewardAdFailedForSpin(message);
+        ui.handleRewardAdFailedForSpin(message, { showFailureToast: false });
         adapter.trackEvent("ad_watch_error", {
           taskId: "task_watch_ad",
           error: error?.message || String(error),
         });
+        // 广告未接入时：关闭转盘弹窗，推进新手引导
+        ui.hideSpinWheel();
+        noviceGuide?.handleSpinDismiss();
+        return false;
       }
+    },
+    onSpinAdWaitRecover: () => {
+      adRequestCoordinator.cancelActive();
     },
     onSpinWheelOpen: async () => {
       const token = apiOptions.token || "";
@@ -152,113 +431,459 @@ export function initActivityCenter({ router, route }) {
         refreshAfterSpin: () => business.loadActivityInfo(apiOptions, { force: true }),
       };
     },
-    onWithdrawClick: () => {
-      goToGoldCoinsExchange(router, activityId);
+    onWithdrawClick: (category) => {
+      if (!category) {
+        goToGoldCoinsExchange(router, activityId);
+        return;
+      }
+      goToGoldCoinsExchange(router, activityId, {
+        tab: category === "gift_cards" ? "gift" : "topup",
+      });
     },
     onSigninClick: async () => {
-      resetCheckinAdState();
-
-      const today = business.getTodayCheckinDay();
-      const received = !!today?.received;
-      const videoReceived = !!today?.video_received;
-
-      if (!received) {
-        const result = await business.doCheckin(apiOptions);
-        if (result.ok) ui.showSigninDialog(result);
-        return;
+      const success = await claimTodayCheckin("card");
+      if (!success) noviceGuide?.handleSigninDismiss();
+    },
+    onCheckinPromptClaim: async ({ prompt } = {}) => {
+      const serverDate = String(prompt?.server_date || "");
+      ui.hideCheckinPrompt();
+      trackActivityEvent("checkin_prompt_claim_click", { server_date: serverDate });
+      const success = await claimTodayCheckin("prompt");
+      if (!success && shouldShowCheckinPrompt(prompt, getUserTipStorageScope())) {
+        checkinPromptShownForDate = "";
+        updateCheckinPromptDialog(prompt, latestCheckinPromptDetail);
       }
-
-      if (received && !videoReceived) {
-        const coin = Number(today?.coin ?? 0);
-        const video_coin = Number(today?.video_coin ?? 0);
-        const multiplier = coin > 0 ? Math.floor(video_coin / coin) : 0;
-        ui.showSigninDialog({
-          coinFromCheckin: coin,
-          video_coin,
-          multiplier,
-          alreadyChecked: true,
-        });
-        return;
-      }
-
-      showToast(alreadyCheckedInMessage(), "info");
+    },
+    onCheckinPromptClose: ({ prompt } = {}) => {
+      const serverDate = String(prompt?.server_date || "");
+      dismissCheckinPrompt(serverDate, getUserTipStorageScope());
+      ui.hideCheckinPrompt();
+      trackActivityEvent("checkin_prompt_close", { server_date: serverDate });
     },
     onSigninWatchVideoClick: async () => {
       if (ui.isSigninVideoCompleted()) {
         showToast(videoCheckinAlreadyMessage(), "info");
         return;
       }
-      if (checkinWatchAdInFlight.value) return;
+      if (checkinWatchAdInFlight.value) {
+        showAdProcessingToast();
+        return;
+      }
+      const request = beginAdRequest("interstitial_ad", "task_checkin");
+      if (!request) return;
       try {
         checkinWatchAdInFlight.value = true;
         ui.setSigninWatchLoading(true);
-        lastInterstitialAdTaskId = "task_checkin";
         const today = business.getTodayCheckinDay();
         logger.log("[签到弹框看视频] triggerInterstitialAd", {
           taskId: "task_checkin",
           reward: today?.video_coin,
           hasToday: !!today,
         });
-        interstitialAdTimeout?.start();
-        await adapter.triggerInterstitialAd({ taskId: "task_checkin", reward: today?.video_coin });
+        await triggerNativeAd(request, { taskId: "task_checkin", reward: today?.video_coin });
       } catch (e) {
-        interstitialAdTimeout?.clear();
         checkinWatchAdInFlight.value = false;
         ui.setSigninWatchLoading(false);
         const message = normalizeAdMessage(e?.message, adNotAvailableMessage());
         logger.error("[Ad trigger failed] interstitial_ad task_checkin", e);
-        showToast(message, "error");
         adapter.trackEvent("checkin_video_error", {
           taskId: "task_checkin",
+          reason: message,
           error: e?.message || String(e),
+        });
+        // 广告未接入时：关闭签到弹窗，推进新手引导
+        ui.hideSigninDialog();
+        noviceGuide?.handleSigninDismiss();
+      }
+    },
+    onSigninDialogDismiss: () => {
+      if (noviceGuide?.handleSigninDismiss()) return;
+      revealDeferredCheckinChest();
+    },
+    onSpinWheelDismiss: () => {
+      noviceGuide?.handleSpinDismiss();
+    },
+    onNewUserBonusVideoClick: async (bonus) => {
+      if (newUserBonusAdInFlight.value || newUserBonusClaimInFlight.value) {
+        showAdProcessingToast();
+        return;
+      }
+      const request = beginAdRequest("reward_ad", "task_new_user_bonus", {
+        rewardAdEventId: createClientAdEventId("new-user-bonus"),
+      });
+      if (!request) return;
+      try {
+        newUserBonusAdInFlight.value = true;
+        await triggerNativeAd(request, {
+          taskId: "task_new_user_bonus",
+          reward: bonus?.video_coin,
+        });
+      } catch (error) {
+        newUserBonusAdInFlight.value = false;
+        const message = normalizeAdMessage(error?.message, adNotAvailableMessage());
+        logger.error("[Ad trigger failed] reward_ad task_new_user_bonus", error);
+        adapter.trackEvent("new_user_bonus_video_error", {
+          taskId: "task_new_user_bonus",
+          reason: message,
+          error: error?.message || String(error),
         });
       }
     },
-  });
-
-  rewardAdTimeout = createAdCallbackTimeout({
-    ms: AD_CALLBACK_TIMEOUT_MS,
-    isActive: () => ui.isWaitingAdForSpin(),
-    onTimeout: () => {
-      logger.warn("[Ad timeout] reward_ad task_watch_ad");
-      ui.handleRewardAdFailedForSpin(rewardAdTimeout.message);
-      adapter.trackEvent("ad_watch_timeout", { taskId: "task_watch_ad" });
+    onNewUserBonusDismissClick: async () => {
+      if (newUserBonusClaimInFlight.value) return;
+      newUserBonusClaimInFlight.value = true;
+      ui.setNewUserBonusLoading(true, "dismiss");
+      try {
+        const result = await business.submitNewUserBonusAction(apiOptions, "dismiss");
+        if (result?.ok) {
+          ui.hideNewUserBonusDialog();
+          // Welcome Bonus 弹窗已关闭 → 启动新手引导
+          startGuideIfReady();
+        } else {
+          ui.setNewUserBonusLoading(false);
+        }
+      } finally {
+        newUserBonusClaimInFlight.value = false;
+      }
     },
-  });
-
-  interstitialAdTimeout = createAdCallbackTimeout({
-    ms: AD_CALLBACK_TIMEOUT_MS,
-    isActive: () => checkinWatchAdInFlight.value,
-    onTimeout: () => {
-      logger.warn("[Ad timeout] interstitial_ad task_checkin");
-      checkinWatchAdInFlight.value = false;
-      ui.setSigninWatchLoading(false);
-      showToast(interstitialAdTimeout.message, "warning");
-      adapter.trackEvent("checkin_video_timeout", { taskId: "task_checkin" });
+    onCheckinChestWatchClick: async (chest) => {
+      if (!chest?.id) return;
+      if (checkinChestAdInFlight.value || checkinChestClaimInFlight.value) {
+        showAdProcessingToast();
+        return;
+      }
+      const request = beginAdRequest("reward_ad", "task_checkin_chest", {
+        rewardAdEventId: createClientAdEventId("checkin-chest"),
+      });
+      if (!request) return;
+      try {
+        checkinChestAdInFlight.value = true;
+        ui.setCheckinChestLoading(true);
+        // H5 owns this click event; Native should not emit the same name to avoid double counting.
+        adapter.trackEvent("checkin_chest_watch_video_click", {
+          page_id: ACTIVITY_CENTER_PAGE_ID,
+          task_id: "task_checkin_chest",
+          chest_id: chest.id,
+        });
+        await triggerNativeAd(request, { taskId: "task_checkin_chest", reward: 0 });
+      } catch (error) {
+        checkinChestAdInFlight.value = false;
+        ui.setCheckinChestLoading(false);
+        const reason = normalizeAdMessage(error?.message, adNotAvailableMessage());
+        trackActivityEvent("checkin_chest_ad_failed", {
+          task_id: "task_checkin_chest",
+          chest_id: chest?.id,
+          reason,
+        });
+      }
+    },
+    onCheckinChestDismissClick: async (chest) => {
+      // Soft-close only: keep pending, suppress auto-popup across refresh, allow reopen from day node.
+      if (chest?.id) {
+        markCheckinChestSoftClosed(chest.id);
+        checkinChestImpressedIds.delete(Number(chest.id));
+        trackActivityEvent("checkin_chest_dismiss", {
+          task_id: "task_checkin_chest",
+          chest_id: chest.id,
+        });
+      }
+      ui.hideCheckinChestDialog();
+    },
+    onCheckinChestDayClick: (chest) => {
+      if (!chest?.id || checkinChestAdInFlight.value || checkinChestClaimInFlight.value) return;
+      if (checkinChestSettlingIds.has(Number(chest.id))) {
+        showToast(t("center.checkinChestProcessing"), "info");
+        return;
+      }
+      updateCheckinChestDialog(chest, { force: true });
+    },
+    onCoinRainEntryClick: async (status) => {
+      if (coinRainStartInFlight.value) return;
+      if (ui.hasPendingCoinRainSettlement()) {
+        ui.retryCoinRainSettlement();
+        return;
+      }
+      if (ui.hasActiveCoinRainSession()) return;
+      if (status?.state === "boost_available") {
+        ui.showCoinRainBoostPrompt(status);
+        return;
+      }
+      if (status?.state === "playing" && status?.session_id && !ui.hasActiveCoinRainSession()) {
+        trackActivityEvent("coin_rain_resume");
+        ui.startCoinRainSession(status, { resume: true });
+        return;
+      }
+      if (status?.state === "settle_pending" && status?.session_id) {
+        // Only a locally preserved session may settle here. Never recreate the
+        // game after its deadline, otherwise its click count would be zero.
+        if (ui.restoreCoinRainSettlement(status)) ui.retryCoinRainSettlement();
+        else showToast(t("center.coinRainSettleFailed"), "error");
+        return;
+      }
+      if (status?.state === "completed") {
+        ui.showCoinRainAlreadyJoined();
+        return;
+      }
+      if (status?.state !== "available") {
+        ui.showCoinRainAlreadyJoined();
+        return;
+      }
+      ui.startCoinRainPreparation(status, async () => {
+        // A countdown can be paused by the visibility handler just before its
+        // final tick. Do not spend a start request until the user continues.
+        if (!ui.isCoinRainPreparationActive() || ui.isCoinRainPreparationPaused()) return;
+        coinRainStartInFlight.value = true;
+        try {
+          const result = await business.submitCoinRainAction(apiOptions, "start");
+          if (result?.ok && result?.state === "playing" && result?.session_id) {
+            if (!ui.isCoinRainPreparationActive()) {
+              await business.submitCoinRainAction(apiOptions, "abandon", { session_id: result.session_id });
+              return;
+            }
+            trackActivityEvent("coin_rain_start");
+            // If backgrounding raced with the API response, retain the server
+            // session in the paused leave state instead of silently starting
+            // gameplay or forfeiting the day on the user's behalf.
+            ui.startCoinRainSession(result, {
+              skipCountdown: true,
+              startPaused: ui.isCoinRainPreparationPaused(),
+            });
+          } else if (result?.ok) {
+            ui.cancelCoinRainPreparation();
+            ui.showCoinRainAlreadyJoined();
+          } else {
+            ui.cancelCoinRainPreparation();
+            showToast(result?.message || t("center.coinRainUnavailable"), "error");
+          }
+        } finally {
+          coinRainStartInFlight.value = false;
+        }
+      });
+    },
+    onCoinRainSettle: async ({ sessionId, clickedCount }) => {
+      let result = await business.submitCoinRainAction(apiOptions, "settle", { session_id: sessionId, clicked_count: clickedCount });
+      let reconciled = false;
+      if (!result?.ok) {
+        const refreshed = await business.loadActivityInfo(apiOptions, { force: true });
+        const status = business.coinRain;
+        // Treat any terminal settle state as success, including legitimate 0-coin
+        // finishes. Requiring coin > 0 falsely retried settled zero-click sessions.
+        if (
+          refreshed?.ok
+          && status
+          && (status.state === "boost_available" || status.state === "completed")
+        ) {
+          reconciled = true;
+          result = { ok: true, reconciled: true, ...status };
+        }
+      }
+      trackActivityEvent("coin_rain_finish", {
+        clicked_count: clickedCount,
+        success: !!result?.ok,
+        base_coin: Number(result?.base_coin ?? 0),
+        reconciled,
+      });
+      return result;
+    },
+    onCoinRainAbandon: async ({ sessionId }) => {
+      const result = await business.submitCoinRainAction(apiOptions, "abandon", { session_id: sessionId });
+      trackActivityEvent("coin_rain_abandon", { success: !!result?.ok });
+      return result;
+    },
+    onCoinRainWatchAd: async (status) => {
+      if (!status?.session_id) return;
+      if (coinRainAdInFlight.value) {
+        showAdProcessingToast();
+        return;
+      }
+      const request = beginAdRequest("reward_ad", "task_coin_rain", {
+        coinRainAdEventId: createClientAdEventId("coin-rain"),
+      });
+      if (!request) return;
+      try {
+        coinRainAdInFlight.value = true;
+        ui.setCoinRainAdLoading(true);
+        trackActivityEvent("coin_rain_boost_click", {
+          task_id: "task_coin_rain",
+          session_id: status.session_id,
+          base_coin: Number(status.base_coin ?? 0),
+        });
+        await triggerNativeAd(request, { taskId: "task_coin_rain", reward: Number(status.base_coin ?? 0) });
+      } catch (error) {
+        coinRainAdInFlight.value = false;
+        ui.setCoinRainAdLoading(false);
+        const reason = normalizeAdMessage(error?.message, adNotAvailableMessage());
+        trackActivityEvent("coin_rain_ad_failed", { task_id: "task_coin_rain", reason });
+        // 广告未接入时：关闭金币雨结果弹窗，推进新手引导
+        ui.hideCoinRainResult();
+        noviceGuide?.handleCoinRainDismiss();
+      }
+    },
+    onCoinRainResultDismiss: () => {
+      noviceGuide?.handleCoinRainDismiss();
     },
   });
 
   window.onRewardedAdError = function (error) {
-    rewardAdTimeout?.clear();
     logger.error("广告播放错误:", error);
-    ui.handleRewardAdFailedForSpin(
-      normalizeAdMessage(error?.message, adFailedMessage()),
-    );
-    adapter.trackEvent("ad_watch_error", {
-      taskId: "task_watch_ad",
-      error: error?.message || String(error),
+    const request = adRequestCoordinator.take("reward_ad");
+    if (!request) return;
+    void handleSDKEventCompleted({
+      eventType: "reward_ad",
+      taskId: request.taskId,
+      task_id: request.taskId,
+      success: false,
+      message: error?.message || adFailedMessage(),
+      adStatusCode: error?.code,
     });
   };
 
   ui.bindEvents();
   ui.renderInitialShell();
 
-  const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
-  if (cachedActivityInfo) {
-    business.applyActivityInfoData(cachedActivityInfo);
+  // ── 新手引导 ──
+  let noviceGuide = null;
+  let guideStarted = false;
+  let activityCenterDisposed = false;
+  let onBeforeUnloadGuide = null;
+  let onPageHideGuide = null;
+  let noviceGuideStorageScope = "";
+  function ensureNoviceGuide() {
+    if (activityCenterDisposed) return;
+    const storageScope = getUserTipStorageScope();
+    if (!storageScope || noviceGuide || isNoviceGuideCompleted(storageScope)) return;
+    noviceGuideStorageScope = storageScope;
+    noviceGuide = createNoviceGuide({
+      storageScope,
+      onStepAction: () => {},
+      onComplete: () => {},
+      onStart: () => {
+        adapter.trackEvent('rewards_onboarding_start_click', {
+          page_id: '/activity-center',
+          element_id: 'OK_button',
+          element_name: '点击开始引导',
+        });
+      },
+      onSkip: () => {
+        adapter.trackEvent('rewards_onboarding_skip_click', {
+          page_id: '/activity-center',
+          element_id: 'Skip_button',
+          element_name: '点击跳过引导',
+        });
+      },
+    });
+    onBeforeUnloadGuide = () => {
+      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted(noviceGuideStorageScope);
+    };
+    window.addEventListener('beforeunload', onBeforeUnloadGuide);
+    onPageHideGuide = () => {
+      if (noviceGuide?.isGuideRunning()) markNoviceGuideCompleted(noviceGuideStorageScope);
+    };
+    window.addEventListener('pagehide', onPageHideGuide);
   }
 
-  void business.loadActivityInfo(apiOptions);
+  // 新手引导启动前需要等待关闭的业务弹窗
+  // 这些弹窗始终在 DOM 中，通过 style.display 控制显隐
+  const GUIDE_BLOCKING_MODALS = [
+    '#checkinPromptModal',
+    '#newUserBonusModal',
+    '#checkinChestModal',
+  ];
+
+  function hasVisibleBlockingModal() {
+    return GUIDE_BLOCKING_MODALS.some(sel => {
+      const el = document.querySelector(sel);
+      return el && el.style.display !== 'none';
+    });
+  }
+
+  let guideWaitObserver = null;
+  let guideWaitTimer = null;
+  let guideInitialCheckTimer = null;
+
+  function clearGuideStartWait() {
+    if (guideWaitObserver) {
+      guideWaitObserver.disconnect();
+      guideWaitObserver = null;
+    }
+    if (guideWaitTimer) {
+      clearTimeout(guideWaitTimer);
+      guideWaitTimer = null;
+    }
+    if (guideInitialCheckTimer) {
+      clearTimeout(guideInitialCheckTimer);
+      guideInitialCheckTimer = null;
+    }
+  }
+
+  function startNoviceGuide() {
+    if (activityCenterDisposed || guideStarted || !noviceGuide) return false;
+    guideStarted = true;
+    clearGuideStartWait();
+    noviceGuide.start();
+    return true;
+  }
+
+  function waitForModalsThenStart() {
+    if (activityCenterDisposed || guideStarted || !noviceGuide) return;
+    clearGuideStartWait();
+
+    guideWaitObserver = new MutationObserver(() => {
+      if (!hasVisibleBlockingModal()) {
+        startNoviceGuide();
+      }
+    });
+
+    guideWaitObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+
+    // 兜底超时
+    guideWaitTimer = setTimeout(() => {
+      startNoviceGuide();
+    }, 10000);
+  }
+
+  function startGuideIfReady() {
+    if (activityCenterDisposed || guideStarted || !noviceGuide) return;
+
+    // 情况1：当前有业务弹窗在显示 → 等它关闭
+    if (hasVisibleBlockingModal()) {
+      waitForModalsThenStart();
+      return;
+    }
+
+    // 情况2：当前无弹窗，但签到提示数据可能还没到
+    // 等待一小段时间，看是否有弹窗出现
+    clearGuideStartWait();
+    guideInitialCheckTimer = setTimeout(() => {
+      guideInitialCheckTimer = null;
+      if (activityCenterDisposed || guideStarted) return;
+      if (hasVisibleBlockingModal()) {
+        waitForModalsThenStart();
+      } else {
+        startNoviceGuide();
+      }
+    }, 300);
+
+    // 兜底超时：防止任何情况导致引导不启动
+    guideWaitTimer = setTimeout(() => {
+      startNoviceGuide();
+    }, 5000);
+  }
+
+  const cachedActivityInfo = getActivityInfoCache(apiOptions.token);
+  if (cachedActivityInfo) {
+    business.applyActivityInfoData(cachedActivityInfo, { fromCache: true });
+    ensureNoviceGuide();
+  }
+
+  // The prompt must use a fresh server decision so a cached pre-midnight state
+  // cannot incorrectly surface (or hide) today's check-in reminder.
+  void business.loadActivityInfo(apiOptions, { force: true });
 
   scheduleGoldCoinsExchangePrefetch();
 
@@ -268,10 +893,21 @@ export function initActivityCenter({ router, route }) {
   });
 
   return function disposeActivityCenter() {
-    rewardAdTimeout?.clear();
-    interstitialAdTimeout?.clear();
+    activityCenterDisposed = true;
+    clearGuideStartWait();
+    adRequestCoordinator.dispose();
+    ui.destroyRecentRedemptions();
+    ui.destroyCoinRain();
     window.onRewardedAdError = null;
+    adapter?.dispose?.();
     window.ActivityBridgeHelper?.clearActivityEventCompleted?.();
+    if (onBeforeUnloadGuide) {
+      window.removeEventListener('beforeunload', onBeforeUnloadGuide);
+    }
+    if (onPageHideGuide) {
+      window.removeEventListener('pagehide', onPageHideGuide);
+    }
+    noviceGuide?.dispose();
   };
 }
 

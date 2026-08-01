@@ -188,6 +188,54 @@ test("t returns localized strings with interpolation", async () => {
   assert.equal(t("center.progressSpins", { used: 2, limit: 5 }), "2 / 5 Putaran");
 });
 
+test("check-in chest dialogs provide copy for every supported locale", async () => {
+  const keys = [
+    "center.checkinChestDropped",
+    "center.checkinChestDescLine1",
+    "center.checkinChestDescLine2",
+    "center.checkinChestWatchVideo",
+    "center.checkinChestDismiss",
+    "center.checkinChestCongratulations",
+    "center.checkinChestYouGot",
+    "center.checkinChestClaim",
+  ];
+  for (const locale of ["en", "id", "ur", "bn", "ne"]) {
+    await initActivityLocale({ locale, force: true });
+    for (const key of keys) {
+      assert.notEqual(t(key), key, `${locale} is missing ${key}`);
+      assert.notEqual(t(key).trim(), "", `${locale} has empty ${key}`);
+    }
+  }
+});
+
+test("coin rain flow provides PRD dialog copy for every supported locale", async () => {
+  const keys = [
+    "center.coinRainUpTo",
+    "center.coinRainLeaveTitle",
+    "center.coinRainLeaveDesc",
+    "center.coinRainLeaveBeforeStartDesc",
+    "center.coinRainContinue",
+    "center.coinRainLeave",
+    "center.coinRainWatchShortVideo",
+    "center.coinRainGetInstead",
+    "center.coinRainClaimAmount",
+    "center.coinRainAlreadyGot",
+    "center.coinRainWatchMore",
+    "center.coinRainWatchVideo",
+    "center.coinRainLater",
+    "center.coinRainAlreadyJoinedTitle",
+    "center.coinRainAlreadyJoinedDesc",
+    "center.coinRainOk",
+  ];
+  for (const locale of ["en", "id", "ur", "bn", "ne"]) {
+    await initActivityLocale({ locale, force: true });
+    for (const key of keys) {
+      assert.notEqual(t(key, { count: 16 }), key, `${locale} is missing ${key}`);
+      assert.notEqual(t(key, { count: 16 }).trim(), "", `${locale} has empty ${key}`);
+    }
+  }
+});
+
 test("initActivityLocale sets document lang and dir", async () => {
   __resetUserLocaleStorageForTests();
   const originalDocument = globalThis.document;

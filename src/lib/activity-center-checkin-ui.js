@@ -1,5 +1,6 @@
 import { assetUrl } from "./asset-url.js";
-import { resolveSigninRewardCoins } from "./activity-center-ui-helpers.js";
+import { normalizeCheckinChestEligibleDays } from "./checkin-chest.js";
+import { loadDeferredImage, resolveSigninRewardCoins } from "./activity-center-ui-helpers.js";
 import { t } from "./i18n/activity-locale.js";
 
 function ensureCheckinDayGrid(container, cache) {
@@ -25,35 +26,49 @@ function ensureCheckinDayGrid(container, cache) {
   return nodes;
 }
 
-function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
+function paintCheckinDayNode(node, { day, coin, isDone, isCurrent, isChestDay, hasPendingChest }) {
   const { dayEl, dotEl, labelEl } = node;
   dayEl.dataset.day = String(day);
 
   let dayClass = "tc-checkin-day";
   let labelClass = "tc-checkin-label";
-  if (isDay7) {
-    dayClass += " tc-checkin-day--super";
-    labelClass += " tc-checkin-label--super";
+  // Pending = already dropped (deeper style). Eligible-only = future preview (lighter).
+  const showChestMarker = hasPendingChest || (!isDone && isChestDay);
+  if (hasPendingChest) {
+    dayClass += " tc-checkin-day--chest tc-checkin-day--pending-chest";
+    labelClass += " tc-checkin-label--chest tc-checkin-label--pending-chest";
   } else if (isDone) {
     dayClass += " tc-checkin-day--done";
+  } else if (isChestDay) {
+    dayClass += " tc-checkin-day--chest tc-checkin-day--eligible-chest";
+    labelClass += " tc-checkin-label--chest";
+  }
+  if (isCurrent && !isDone && !showChestMarker) {
+    dayClass += " tc-checkin-day--current";
+    labelClass += " tc-checkin-label--current";
   }
   dayEl.className = dayClass;
   labelEl.className = labelClass;
   labelEl.textContent = t("common.day", { day });
 
   dotEl.replaceChildren();
-  if (isDay7) {
-    dotEl.className = "tc-checkin-dot tc-checkin-dot--super";
-    const amount = isDone ? coin : superReward;
+  if (hasPendingChest) {
+    dotEl.className = "tc-checkin-dot tc-checkin-dot--chest tc-checkin-dot--pending-chest";
     const img = document.createElement("img");
     img.src = assetUrl("icons/card_giftcard.svg");
-    img.alt = "gift";
-    img.className = "tc-checkin-super-icon-img";
-    const reward = document.createElement("span");
-    reward.className = "tc-checkin-super-reward";
-    reward.textContent = `+${amount}`;
+    img.alt = "";
+    img.className = "tc-checkin-chest-icon-img";
     dotEl.appendChild(img);
-    dotEl.appendChild(reward);
+    return;
+  }
+
+  if (!isDone && isChestDay) {
+    dotEl.className = "tc-checkin-dot tc-checkin-dot--chest tc-checkin-dot--eligible-chest";
+    const img = document.createElement("img");
+    img.src = assetUrl("icons/card_giftcard.svg");
+    img.alt = "";
+    img.className = "tc-checkin-chest-icon-img";
+    dotEl.appendChild(img);
     return;
   }
 
@@ -61,10 +76,7 @@ function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
     dotEl.className = "tc-checkin-dot";
     const mark = document.createElement("span");
     mark.textContent = "✓";
-    const amount = document.createElement("span");
-    amount.textContent = `+${coin}`;
     dotEl.appendChild(mark);
-    dotEl.appendChild(amount);
     return;
   }
 
@@ -73,6 +85,108 @@ function paintCheckinDayNode(node, { day, coin, isDone, isDay7, superReward }) {
 }
 
 export const checkinUiMixin = {
+  showCheckinPrompt(detail, prompt) {
+    if (!detail || !Array.isArray(detail.days) || !this.elements.checkinPromptModal) return;
+    loadDeferredImage(this.elements.checkinPromptChestTipImg);
+    const days = detail.days.slice(0, 7);
+    const current = days.find((day) => day.current === true) || days.find((day) => day.received !== true) || days[0];
+    const coin = Number(current?.coin || 0);
+    this._checkinPrompt = { detail, prompt };
+
+    if (this.elements.checkinPromptTitle) {
+      const title = t("center.checkinPromptTitle", { coin });
+      const coinText = String(coin);
+      const coinOffset = title.indexOf(coinText);
+      if (coinOffset < 0) {
+        this.elements.checkinPromptTitle.textContent = title;
+      } else {
+        const highlightedCoin = document.createElement("span");
+        highlightedCoin.className = "checkin-prompt-title-coin";
+        highlightedCoin.textContent = coinText;
+        this.elements.checkinPromptTitle.replaceChildren(
+          title.slice(0, coinOffset),
+          highlightedCoin,
+          title.slice(coinOffset + coinText.length),
+        );
+      }
+    }
+    const daysContainer = this.elements.checkinPromptDays;
+    if (daysContainer) {
+      daysContainer.replaceChildren();
+      const chestDays = new Set(normalizeCheckinChestEligibleDays(detail.chest_eligible_days));
+      const formattedChestDays = [...chestDays]
+        .sort((left, right) => left - right)
+        .map((day) => t("common.day", { day }))
+        .join(", ");
+      if (this.elements.checkinPromptChestTip && this.elements.checkinPromptChestTipText) {
+        const hasChestDays = formattedChestDays.length > 0;
+        this.elements.checkinPromptChestTip.style.display = hasChestDays ? "flex" : "none";
+        if (!hasChestDays) {
+          this.elements.checkinPromptChestTipText.replaceChildren();
+        } else {
+          const template = t("center.checkinPromptChestTip", { days: "{days}" });
+          const [prefix = "", suffix = ""] = template.split("{days}");
+          const highlightedDays = document.createElement("span");
+          highlightedDays.className = "checkin-prompt-chest-tip-days";
+          highlightedDays.textContent = formattedChestDays;
+          // Keep configured chest days on their own line in the compact dialog.
+          this.elements.checkinPromptChestTipText.replaceChildren(prefix, document.createElement("br"), highlightedDays, suffix);
+        }
+      }
+      const pendingChestDays = new Set(
+        (Array.isArray(detail.chests) ? detail.chests : [])
+          .filter((chest) => chest?.status === "pending")
+          .map((chest) => Number(chest.continuous_day)),
+      );
+      days.forEach((day) => {
+        const item = document.createElement("div");
+        const isCurrent = day.day === current?.day;
+        const hasChest = !day.received && (chestDays.has(Number(day.day)) || pendingChestDays.has(Number(day.day)));
+        item.className = `checkin-prompt-day${day.received ? " is-done" : ""}${isCurrent ? " is-current" : ""}${hasChest ? " is-chest" : ""}`;
+        const chestSlot = document.createElement("div");
+        chestSlot.className = "checkin-prompt-day-chest-slot";
+        const label = document.createElement("span");
+        label.className = "checkin-prompt-day-label";
+        label.textContent = t("common.day", { day: day.day });
+        if (hasChest) {
+          const chestIcon = document.createElement("img");
+          chestIcon.src = assetUrl("images/checkin-prompt-lucky-chest.png");
+          chestIcon.alt = "";
+          chestIcon.className = "checkin-prompt-chest-icon";
+          chestSlot.appendChild(chestIcon);
+        }
+        const reward = document.createElement("strong");
+        reward.className = "checkin-prompt-day-reward";
+        reward.textContent = day.received ? "✓" : `+${Number(day.coin || 0)}`;
+        const unit = document.createElement("span");
+        unit.className = "checkin-prompt-day-unit";
+        unit.textContent = t("common.coins");
+        // Every card keeps this slot so chest badges sit above the day label
+        // without shifting labels or rewards in the other cards.
+        item.appendChild(chestSlot);
+        item.appendChild(label);
+        item.appendChild(reward);
+        // Always render this slot so completed days keep the same reward layout
+        // as pending days. Its content is visually hidden for completed days.
+        item.appendChild(unit);
+        daysContainer.appendChild(item);
+      });
+    }
+    this.elements.checkinPromptModal.style.display = "flex";
+  },
+
+  hideCheckinPrompt() {
+    if (this.elements.checkinPromptModal) {
+      this.elements.checkinPromptModal.style.display = "none";
+    }
+  },
+
+  updateCheckinVideoTip(totalCoin = 20) {
+    if (this.elements.checkinVideoTip) {
+      this.elements.checkinVideoTip.textContent = t("center.checkinVideoTip", { totalCoin });
+    }
+  },
+
   showSigninDialog(reward) {
     const alreadyChecked = !!reward?.alreadyChecked;
     const { baseCoin, totalCoin } = resolveSigninRewardCoins(reward);
@@ -115,6 +229,8 @@ export const checkinUiMixin = {
       ? JSON.stringify({
           continuous_days: detail.continuous_days,
           days: detail.days,
+          chest_eligible_days: detail.chest_eligible_days,
+          chests: detail.chests,
         })
       : "empty";
     if (fingerprint === this._lastCheckinFingerprint) return;
@@ -140,8 +256,9 @@ export const checkinUiMixin = {
           day,
           coin: 0,
           isDone: false,
-          isDay7: day === 7,
-          superReward: 0,
+          isCurrent: false,
+          isChestDay: false,
+          hasPendingChest: false,
         });
       }
       if (this.elements.signinTimerBtn) {
@@ -151,23 +268,46 @@ export const checkinUiMixin = {
         if (span) span.textContent = t("center.checkinNow");
       }
       this._signinVideoCompleted = false;
+      this.updateCheckinVideoTip();
       return;
     }
 
-    const superReward = detail.days[6]?.coin ?? 0;
+    const eligibleChestDays = new Set(normalizeCheckinChestEligibleDays(detail.chest_eligible_days));
+    const pendingChests = (Array.isArray(detail.chests) ? detail.chests : []).filter(
+      (chest) => chest?.status === "pending",
+    );
+    const pendingChestByDay = new Map(
+      pendingChests.map((chest) => [Number(chest.continuous_day), chest]),
+    );
     const daysList = detail.days.slice(0, 7);
     const nodes = ensureCheckinDayGrid(container, this._checkinGridCache);
 
     daysList.forEach((dayInfo, idx) => {
-      const isDay7 = dayInfo.day === 7 || idx === 6;
+      const dayNumber = Number(dayInfo.day);
+      const pendingChest = pendingChestByDay.get(dayNumber) || null;
+      const hasPendingChest = !!pendingChest;
+      const isChestDay = eligibleChestDays.has(dayNumber) || hasPendingChest;
       const isDone = dayInfo.day <= continuousDays;
       paintCheckinDayNode(nodes[idx], {
         day: dayInfo.day,
         coin: dayInfo.coin,
         isDone,
-        isDay7,
-        superReward,
+        isCurrent: dayInfo.current === true,
+        isChestDay,
+        hasPendingChest,
       });
+      const dayEl = nodes[idx]?.dayEl;
+      if (dayEl) {
+        if (hasPendingChest) {
+          dayEl.setAttribute("role", "button");
+          dayEl.tabIndex = 0;
+          dayEl.onclick = () => this.config.onCheckinChestDayClick?.(pendingChest);
+        } else {
+          dayEl.removeAttribute("role");
+          dayEl.removeAttribute("tabindex");
+          dayEl.onclick = null;
+        }
+      }
     });
 
     for (let idx = daysList.length; idx < 7; idx += 1) {
@@ -175,19 +315,31 @@ export const checkinUiMixin = {
         day: idx + 1,
         coin: 0,
         isDone: false,
-        isDay7: idx === 6,
-        superReward,
+        isCurrent: false,
+        isChestDay: false,
+        hasPendingChest: false,
       });
+      if (nodes[idx]?.dayEl) {
+        nodes[idx].dayEl.removeAttribute("role");
+        nodes[idx].dayEl.removeAttribute("tabindex");
+        nodes[idx].dayEl.onclick = null;
+      }
     }
 
     const signinBtn = this.elements.signinTimerBtn;
+    const today = daysList.find((d) => d.current === true);
+    const { totalCoin } = resolveSigninRewardCoins({
+      coin: today?.coin,
+      video_coin: today?.video_coin,
+    });
+    this.updateCheckinVideoTip(totalCoin || 20);
     if (signinBtn) {
-      const today = daysList.find((d) => d.current === true);
       const received = !!today?.received;
       const videoReceived = !!today?.video_received;
       this._signinVideoCompleted = videoReceived;
-      const allCompleted = received && videoReceived;
-      const canCheckin = !allCompleted;
+      const hasPendingChest = pendingChestByDay.has(Number(today?.day));
+      const checkinFlowDone = received && videoReceived;
+      const allCompleted = checkinFlowDone && !hasPendingChest;
       signinBtn.disabled = false;
       signinBtn.removeAttribute("aria-disabled");
       if (allCompleted) {
@@ -198,7 +350,9 @@ export const checkinUiMixin = {
       }
       const span = signinBtn.querySelector("span");
       if (span) {
-        span.textContent = canCheckin ? t("center.checkinNow") : t("common.completed");
+        if (allCompleted) span.textContent = t("common.completed");
+        else if (checkinFlowDone && hasPendingChest) span.textContent = t("center.checkinChestWatchVideo");
+        else span.textContent = t("center.checkinNow");
       }
     }
     this.updateSigninDialogVideoButtonState();
@@ -251,12 +405,7 @@ export const checkinUiMixin = {
       this.updateSigninDialogVideoButtonState();
       return;
     }
-    this.elements.signinDialogWatchBtn.disabled = !!loading;
-    if (loading) {
-      this.elements.signinDialogWatchBtn.classList.add("tc-signin-watch-loading");
-    } else {
-      this.elements.signinDialogWatchBtn.classList.remove("tc-signin-watch-loading");
-    }
+    this.elements.signinDialogWatchBtn.setAttribute("aria-busy", String(!!loading));
   },
 
 };

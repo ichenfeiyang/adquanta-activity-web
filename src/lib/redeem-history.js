@@ -169,11 +169,11 @@ export const redeemHistoryMethods = {
 
   openTopupStatusPage(payload = {}) {
     const router = this.config.router;
-    if (!router) return;
-    goToTopupStatus(router, {
+    if (!router) return Promise.resolve(false);
+    return Promise.resolve(goToTopupStatus(router, {
       ...payload,
       activity_id: this.config.apiOptions?.activityId || "",
-    });
+    })).then(() => true);
   },
 
   initHistory() {

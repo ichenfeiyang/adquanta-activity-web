@@ -37,6 +37,24 @@ import {
 } from "./redeem-country.js";
 import { shouldApplyLookupResult } from "./redeem-request-guard.js";
 
+function isChargeRedeemTimeoutError(error) {
+  return error?.name === "AbortError";
+}
+
+function createRechargeRequestId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
+function formatRedeemCountryLabel(country) {
+  const fallback = country?.name || country?.iso || "";
+  if (!country?.nameKey) return fallback;
+  const translated = t(country.nameKey);
+  return !translated || translated === country.nameKey ? fallback : translated;
+}
+
 function buildAmountButtonHtml(item, { showTypeBadge = false, uniformLayout = false } = {}) {
   const typeBadgeHtml = showTypeBadge
     ? `<span class="redeem-amount-type-badge">${escapeHtml(getProductTypeLabel(item.product_type))}</span>`
@@ -70,6 +88,7 @@ export class GoldCoinsExchange {
     this.config = {
       router: config.router || null,
       onExchangeFailed: config.onExchangeFailed || (() => {}),
+      onExchangePending: config.onExchangePending || config.onExchangeFailed || (() => {}),
       apiOptions: config.apiOptions || {},
       initialTab: config.initialTab || "",
     };
@@ -93,6 +112,10 @@ export class GoldCoinsExchange {
 
     // Redeem request lock (prevent multi-click / multi-request)
     this.exchangeLoading = false;
+    // Kept only after a client timeout. The next tap reuses it so a delayed
+    // successful server write resolves to the existing order instead of
+    // freezing coins twice.
+    this.retryChargeRequestId = "";
     this.lastSubmitAt = 0;
     this.submitDebounceMs = 800;
 
@@ -125,6 +148,11 @@ export class GoldCoinsExchange {
       tabMobileTopup: "tabMobileTopup",
       giftCardPanel: "giftCardPanel",
       mobileTopupPanel: "mobileTopupPanel",
+      giftCountryBtn: "giftCountryBtn",
+      giftCountryDropdown: "giftCountryDropdown",
+      giftCurrencyField: "giftCurrencyField",
+      giftCurrencyBtn: "giftCurrencyBtn",
+      giftCurrencyDropdown: "giftCurrencyDropdown",
       giftBrandGrid: "giftBrandGrid",
       giftAmountSection: "giftAmountSection",
       giftAmountGrid: "giftAmountGrid",
@@ -203,7 +231,9 @@ export class GoldCoinsExchange {
 
   refreshCountryCodeUI() {
     this.updateCountryCodeBtnView();
+    this.updateGiftCountryBtnView();
     this.renderCountryCodeDropdown(this.$.countryCodeDropdown);
+    this.renderCountryCodeDropdown(this.$.giftCountryDropdown);
   }
 
   getChargesLookupKey(mobile) {
@@ -214,11 +244,18 @@ export class GoldCoinsExchange {
     this._countryDropdownOpen = isOpen;
     this._countryDropdownTarget = isOpen ? target : null;
     const mobileOpen = isOpen && target === "mobile";
+    const giftOpen = isOpen && target === "gift";
     if (this.$.countryCodeDropdown) {
       this.$.countryCodeDropdown.hidden = !mobileOpen;
     }
     if (this.$.countryCodeBtn) {
       this.$.countryCodeBtn.setAttribute("aria-expanded", mobileOpen ? "true" : "false");
+    }
+    if (this.$.giftCountryDropdown) {
+      this.$.giftCountryDropdown.hidden = !giftOpen;
+    }
+    if (this.$.giftCountryBtn) {
+      this.$.giftCountryBtn.setAttribute("aria-expanded", giftOpen ? "true" : "false");
     }
   }
 
@@ -242,6 +279,20 @@ export class GoldCoinsExchange {
     }
   }
 
+  updateGiftCountryBtnView() {
+    const country = resolveRedeemCountry(this.state.countryCodeEnum);
+    if (!this.$.giftCountryBtn) return;
+    this.$.giftCountryBtn.innerHTML = `
+      <span class="redeem-countrycode-flag" aria-hidden="true">${country.flag}</span>
+      <span class="redeem-gift-country-name">${escapeHtml(formatRedeemCountryLabel(country))}</span>
+      <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+    `;
+    this.$.giftCountryBtn.setAttribute(
+      "aria-expanded",
+      this._countryDropdownOpen && this._countryDropdownTarget === "gift" ? "true" : "false",
+    );
+  }
+
   renderCountryCodeDropdown(dropdownEl) {
     if (!dropdownEl) return;
     dropdownEl.innerHTML = SUPPORTED_REDEEM_COUNTRIES.map((country) => {
@@ -255,7 +306,7 @@ export class GoldCoinsExchange {
       >
         <span class="redeem-countrycode-item-flag" aria-hidden="true">${country.flag}</span>
         <span class="redeem-countrycode-item-main">
-          <span class="redeem-countrycode-item-name">${escapeHtml(country.name)}</span>
+          <span class="redeem-countrycode-item-name">${escapeHtml(formatRedeemCountryLabel(country))}</span>
           <span class="redeem-countrycode-item-dial">${escapeHtml(country.dialCode)}</span>
         </span>
       </button>`;
@@ -270,6 +321,15 @@ export class GoldCoinsExchange {
     this.setCountryDropdownOpen(true, "mobile");
   }
 
+  toggleGiftCountryDropdown() {
+    this.closeGiftCurrencyDropdown?.();
+    if (this._countryDropdownOpen && this._countryDropdownTarget === "gift") {
+      this.closeCountryCodeDropdown();
+      return;
+    }
+    this.setCountryDropdownOpen(true, "gift");
+  }
+
   closeCountryCodeDropdown() {
     this.setCountryDropdownOpen(false);
   }
@@ -277,9 +337,10 @@ export class GoldCoinsExchange {
   selectCountry(iso) {
     this.setCountryState(saveRedeemCountry(iso));
     this.closeCountryCodeDropdown();
+    this.closeGiftCurrencyDropdown?.();
     this.refreshCountryCodeUI();
     this.resetChargesUI();
-    this.resetGiftCatalog?.();
+    this.resetGiftCatalog?.({ resetCurrency: true });
     this.maybeLoadChargesForMobile(this.state.mobile);
     this.updateRedeemState();
     this.updateGiftRedeemState?.();
@@ -734,85 +795,12 @@ export class GoldCoinsExchange {
     };
   }
 
-  /**
-   * 执行兑换
-   */
-  showExchangeConfirmModal({ coins, amountLabel, productType = "topup" }) {
-    const modal = document.getElementById("exchangeModal");
-    if (!modal) {
-      // Fallback: keep behavior safe if modal markup missing.
-      return Promise.resolve(
-        window.confirm(t("redeem.confirmTopupFallback", { coins, name: amountLabel || "-" }))
-      );
-    }
-
-    const previewName = document.getElementById("previewName");
-    const previewPoints = document.getElementById("previewPoints");
-    const confirmPoints = document.getElementById("confirmPoints");
-    const confirmName = document.getElementById("confirmName");
-
-    const closeBtn = document.getElementById("modalCloseBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    const confirmBtn = document.getElementById("confirmBtn");
-
-    if (previewName) {
-      previewName.textContent = formatRedeemProductName({
-        product_type: productType,
-        amount_text: amountLabel,
-        display_text: amountLabel,
-      });
-    }
-    if (previewPoints) previewPoints.textContent = t("redeem.coinsUnit", { count: coins });
-    if (confirmPoints) confirmPoints.textContent = String(coins ?? 0);
-    if (confirmName) confirmName.textContent = String(amountLabel || "-");
-
-    // Show modal.
-    modal.style.display = "flex";
-
-    let resetOverflow = () => {};
-    const cleanup = () => {
-      modal.style.display = "none";
-      if (closeBtn) closeBtn.onclick = null;
-      if (cancelBtn) cancelBtn.onclick = null;
-      if (confirmBtn) confirmBtn.onclick = null;
-      try {
-        resetOverflow();
-      } catch (_) {}
-    };
-
-    return new Promise((resolve) => {
-      if (closeBtn)
-        closeBtn.onclick = () => {
-          cleanup();
-          resolve(false);
-        };
-
-      if (cancelBtn)
-        cancelBtn.onclick = () => {
-          cleanup();
-          resolve(false);
-        };
-
-      if (confirmBtn)
-        confirmBtn.onclick = () => {
-          cleanup();
-          resolve(true);
-        };
-
-      // Prevent background scroll when modal open.
-      try {
-        const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-        resetOverflow = () => {
-          document.body.style.overflow = originalOverflow;
-        };
-      } catch (_) {}
-    });
-  }
-
   async performExchange() {
     const now = Date.now();
-    if (this.exchangeLoading) return;
+    if (this.exchangeLoading) {
+      this.config.onExchangePending(t("redeem.submissionPending"));
+      return;
+    }
     if (now - this.lastSubmitAt < this.submitDebounceMs) return;
     this.lastSubmitAt = now;
 
@@ -826,15 +814,7 @@ export class GoldCoinsExchange {
       return;
     }
 
-    const selected = this.state.selectedCharge || {};
-    const amountLabel = getRedeemSummaryLabel(selected) || String(this.state.amount ?? "");
-    const confirmed = await this.showExchangeConfirmModal({
-      coins,
-      amountLabel,
-      productType: selected.product_type,
-    });
-    if (!confirmed) return;
-
+    let clientRequestId = "";
     try {
       this.exchangeLoading = true;
       if (this.$.btnRedeem) {
@@ -873,11 +853,15 @@ export class GoldCoinsExchange {
       }
 
       // Backend requires sku_code + send_value (instead of charges_id).
+      clientRequestId = this.retryChargeRequestId || createRechargeRequestId();
+      const selectedCharge = this.state.selectedCharge || {};
       const res = await postChargeRedeem(this.config.apiOptions, {
         sku_code: String(chargesId),
         send_value: sendValue,
         phone_number,
+        client_request_id: clientRequestId,
       });
+      this.retryChargeRequestId = "";
       const msg = res?.data?.message || res?.message || "";
       if (res?.code !== 200) {
         this.config.onExchangeFailed(msg || t("redeem.redeemFailed"));
@@ -896,21 +880,44 @@ export class GoldCoinsExchange {
 
       invalidateChargeRecordsCache(this.config.apiOptions?.token || "");
 
-      // Refresh wallet coin after redeem submit:
-      // poll every 3 seconds, max 4 times, stop once coin decreases.
-      await this.pollWalletAfterRedeem(this.userGoldCoins);
+      // The order reference is already durable at this point. Do not hold the
+      // user on this page while waiting for a wallet refresh: a provider may
+      // legitimately leave the order pending for a while.
+      void this.pollWalletAfterRedeem(this.userGoldCoins);
 
-      // Submit succeeded and order created: jump to detail page.
-      this.openTopupStatusPage({
-        distributor_ref: distributorRef,
-        status: String(res?.data?.status || "pending").toLowerCase(),
-        amount_label: getRedeemSummaryLabel(this.state.selectedCharge) || String(this.state.amount ?? ""),
-        send_value: sendValue,
-        phone_number,
-        operator: this.state.operator || "",
-      });
+      // The order is durable, but provider delivery is asynchronous. Always
+      // acknowledge acceptance before navigation; otherwise a failed router
+      // transition leaves users on this page with no visible outcome.
+      this.config.onExchangePending(t("redeem.submissionAccepted"));
+      try {
+        await this.openTopupStatusPage({
+          distributor_ref: distributorRef,
+          status: String(res?.data?.status || "pending").toLowerCase(),
+          amount_label: getRedeemSummaryLabel(this.state.selectedCharge) || String(this.state.amount ?? ""),
+          send_value: sendValue,
+          phone_number,
+          operator: this.state.operator || "",
+        });
+      } catch (navigationError) {
+        logger.warn("Recharge order was accepted, but status navigation failed", navigationError);
+      }
       return;
     } catch (error) {
+      if (isChargeRedeemTimeoutError(error)) {
+        // A timeout must never leave the exchange screen permanently locked.
+        // The server persists recharge orders without calling DingConnect, so
+        // a normal submit returns quickly; refresh server state and let the
+        // user retry if no order appears.
+        logger.warn("Redeem top-up request timed out; refreshing order state");
+        this.retryChargeRequestId = clientRequestId;
+        this.config.onExchangePending(t("redeem.submissionPending"));
+        void Promise.all([
+          this.loadActivityInfo({ force: true }),
+          this.loadRecords({ force: true }),
+        ]);
+        return;
+      }
+      this.retryChargeRequestId = "";
       logger.error("Redeem top-up failed", error);
       this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {
@@ -928,6 +935,22 @@ export class GoldCoinsExchange {
    * 绑定事件
    */
   bindCountryCodeEvents() {
+    if (this.$.giftCountryBtn) {
+      this._addDomListener(this.$.giftCountryBtn, "click", (e) => {
+        e.stopPropagation();
+        this.toggleGiftCountryDropdown();
+      });
+    }
+
+    if (this.$.giftCountryDropdown) {
+      this._addDomListener(this.$.giftCountryDropdown, "click", (e) => {
+        const item = e.target.closest("[data-country-iso]");
+        if (!item) return;
+        e.stopPropagation();
+        this.selectCountry(item.getAttribute("data-country-iso"));
+      });
+    }
+
     if (this.$.countryCodeBtn) {
       this._addDomListener(this.$.countryCodeBtn, "click", (e) => {
         e.stopPropagation();

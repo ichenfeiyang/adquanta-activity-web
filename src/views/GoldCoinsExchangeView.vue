@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from "vue";
 import "../assets/gold-coins-exchange.css";
 import { assetUrl } from "../lib/asset-url.js";
 import { ROUTE_NAMES } from "../lib/activity-pages.js";
@@ -8,6 +9,7 @@ import { useI18n } from "../composables/useI18n.js";
 
 const { t } = useI18n();
 const { returnToActivityCenter } = useActivityBackNavigation();
+const privacyPolicyOpen = ref(false);
 
 useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
   logTag: "GoldCoinsExchange",
@@ -34,7 +36,6 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
             <span id="userGoldCoins" class="redeem-wallet-value">0</span>
             <span class="redeem-wallet-unit">{{ t('common.goldCoins') }}</span>
           </div>
-          <div id="walletLocalHint" class="redeem-wallet-local">{{ t('redeem.localCurrencyHint', { amount: '—' }) }}</div>
         </div>
       </section>
 
@@ -64,6 +65,42 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
       </section>
 
       <section id="giftCardPanel" class="redeem-tab-panel" role="tabpanel" aria-labelledby="tabGiftCards">
+        <div class="redeem-field redeem-gift-country-field">
+          <label class="redeem-label">{{ t('redeem.selectCountry') }}</label>
+          <div class="redeem-gift-country-wrapper">
+            <button
+              id="giftCountryBtn"
+              type="button"
+              class="redeem-gift-country-btn"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span class="redeem-countrycode-flag" aria-hidden="true">🇮🇳</span>
+              <span class="redeem-gift-country-name">{{ t('redeem.countryIN') }}</span>
+              <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="giftCountryDropdown" class="redeem-countrycode-dropdown redeem-gift-country-dropdown" role="listbox" hidden />
+          </div>
+        </div>
+
+        <div id="giftCurrencyField" class="redeem-field redeem-gift-currency-field" hidden>
+          <label class="redeem-label">{{ t('redeem.selectCurrency') }}</label>
+          <div class="redeem-gift-country-wrapper">
+            <button
+              id="giftCurrencyBtn"
+              type="button"
+              class="redeem-gift-country-btn"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span class="redeem-gift-currency-symbol" aria-hidden="true">₹</span>
+              <span class="redeem-gift-country-name">INR - Indian Rupee</span>
+              <span class="redeem-gift-country-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="giftCurrencyDropdown" class="redeem-countrycode-dropdown redeem-gift-country-dropdown" role="listbox" hidden />
+          </div>
+        </div>
+
         <div class="redeem-featured-head">
           <span class="redeem-featured-icon" aria-hidden="true">★</span>
           <h2 class="redeem-section-title">{{ t('redeem.featuredRewards') }}</h2>
@@ -82,6 +119,10 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
         <div id="giftRecipientSection" class="redeem-field">
           <div id="giftRecipientSkeleton" class="redeem-gift-recipient-skeleton" hidden />
           <div id="giftRecipientForm">
+            <div class="redeem-recipient-title-row">
+              <span class="redeem-recipient-title-icon" aria-hidden="true"></span>
+              <h2 class="redeem-section-title">{{ t('redeem.recipientInformation') }}</h2>
+            </div>
             <label class="redeem-label" for="inputGiftRecipientName">{{ t('redeem.recipientName') }}</label>
             <input
               id="inputGiftRecipientName"
@@ -91,11 +132,10 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               maxlength="80"
               :placeholder="t('redeem.recipientNamePlaceholder')"
             />
-            <p id="giftRecipientNameError" class="redeem-field-error" hidden>
-              {{ t('redeem.recipientNameTooLong', { max: 80 }) }}
+            <p id="giftRecipientNameError" class="redeem-field-error">
+              {{ t('redeem.recipientNameRequired') }}
             </p>
 
-            <p class="redeem-field-hint">{{ t('redeem.giftDeliveryHint') }}</p>
             <label class="redeem-label redeem-label--spaced" for="inputGiftRecipientEmail">{{ t('redeem.recipientEmail') }}</label>
             <input
               id="inputGiftRecipientEmail"
@@ -106,14 +146,14 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
               maxlength="50"
               :placeholder="t('redeem.recipientEmailPlaceholder')"
             />
-            <p id="giftRecipientEmailError" class="redeem-field-error" hidden>
-              {{ t('redeem.recipientEmailTooLong', { max: 50 }) }}
+            <p id="giftRecipientEmailError" class="redeem-field-error">
+              {{ t('redeem.recipientEmailRequired') }}
+            </p>
+            <p class="redeem-field-hint">
+              {{ t('redeem.giftDeliveryHint') }} {{ t('redeem.giftDeliveryCompliancePrefix') }}
+              <button type="button" class="redeem-privacy-policy-link" @click="privacyPolicyOpen = true">{{ t('redeem.privacyPolicyLink') }}</button>
             </p>
           </div>
-        </div>
-
-        <div id="giftRedeemSummary" class="redeem-summary">
-          {{ t('redeem.giftSummaryDefault') }}
         </div>
 
         <button id="btnGiftRedeem" type="button" class="redeem-primary-btn redeem-primary-btn--disabled" disabled>
@@ -196,28 +236,15 @@ useLazyActivityPage(ROUTE_NAMES.GOLD_COINS_EXCHANGE, {
     </main>
   </div>
 
-  <div id="exchangeModal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">{{ t('redeem.confirmTitle') }}</h2>
-        <button id="modalCloseBtn" type="button" class="modal-close" :aria-label="t('common.close')">✕</button>
+  <div v-if="privacyPolicyOpen" class="redeem-privacy-modal" role="dialog" aria-modal="true" :aria-label="t('redeem.privacyPolicyTitle')" @click.self="privacyPolicyOpen = false">
+    <section class="redeem-privacy-modal-card">
+      <header class="redeem-privacy-modal-header">
+        <h2>{{ t('redeem.privacyPolicyTitle') }}</h2>
+        <button type="button" class="redeem-privacy-modal-close" :aria-label="t('common.close')" @click="privacyPolicyOpen = false">×</button>
+      </header>
+      <div class="redeem-privacy-modal-scroll" tabindex="0">
+        <p class="redeem-privacy-modal-content">{{ t('redeem.privacyPolicyContent') }}</p>
       </div>
-      <div class="modal-body">
-        <div class="product-preview">
-          <div id="previewIcon" class="preview-icon" />
-          <div class="preview-info">
-            <div id="previewName" class="preview-name" />
-            <div id="previewPoints" class="preview-points" />
-          </div>
-        </div>
-        <div class="modal-message">
-          <p>{{ t('redeem.confirmPrefix') }}<span id="confirmPoints"></span>{{ t('redeem.confirmInfix') }}<span id="confirmName"></span>{{ t('redeem.confirmSuffix') }}</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="cancelBtn" type="button" class="btn-cancel">{{ t('common.cancel') }}</button>
-        <button id="confirmBtn" type="button" class="btn-confirm">{{ t('common.confirm') }}</button>
-      </div>
-    </div>
+    </section>
   </div>
 </template>

@@ -1,10 +1,18 @@
 import { showToast } from "./activity-alert-ui.js";
-import { formatLuckySpinDesc, maxRouletteCoin } from "./activity-center-ui-helpers.js";
+import {
+  formatLuckySpinDesc,
+  LUCKY_SPIN_PROMO_MAX_COIN,
+  resolveCompletedVideoCount,
+} from "./activity-center-ui-helpers.js";
 import {
   adFailedMessage,
   dailyAdLimitMessage,
 } from "./activity-messages.js";
 import { t } from "./i18n/activity-locale.js";
+
+/** After this wait, a second tap unlocks and retries instead of only showing Processing. */
+export const SPIN_AD_WAIT_STALE_MS = 8_000;
+
 export const spinUiMixin = {
   isSpinWheelVisible() {
     return this.elements.spinWheelModal?.style.display === "flex";
@@ -14,7 +22,10 @@ export const spinUiMixin = {
     const btn = this.elements.btnWatchAd;
     if (!btn) return;
     btn.classList.remove("can-claim", "is-completed");
-    this.setWatchSpinButtonLabel(t("center.watchAndSpin"));
+    this.setWatchSpinButtonLabel([
+      t("center.watchVideoToSpinLine1"),
+      t("center.watchVideoToSpinLine2"),
+    ]);
     btn.disabled = false;
   },
 
@@ -43,7 +54,7 @@ export const spinUiMixin = {
   },
 
   isScrollLockOverlayOpen() {
-    return this.isSpinWheelVisible() || this.isSpinRewardVisible();
+    return this.isSpinWheelVisible() || this.isSpinRewardVisible() || this.isNewUserBonusVisible?.() || this.isCheckinChestVisible?.() || this.isCheckinChestRewardVisible?.();
   },
 
   syncBodyScrollLock() {
@@ -97,6 +108,16 @@ export const spinUiMixin = {
   setWatchSpinButtonLabel(label) {
     const btn = this.elements.btnWatchAd;
     if (!btn) return;
+    if (Array.isArray(label)) {
+      btn.replaceChildren(
+        ...label.map((text) => {
+          const span = document.createElement("span");
+          span.textContent = text;
+          return span;
+        }),
+      );
+      return;
+    }
     const span = btn.querySelector("span");
     if (span) {
       span.textContent = label;
@@ -185,19 +206,29 @@ export const spinUiMixin = {
     this.saveSpinAvailableState();
   },
 
-  renderTurntableFromCoins(rouletteCoins = []) {
-    const list = Array.isArray(rouletteCoins) ? rouletteCoins.slice(0, 8) : [];
-    while (list.length < 8) list.push(0);
-    this.spinPrizePool = list.map((v) => {
+  normalizeRouletteCoins(rouletteCoins) {
+    if (!Array.isArray(rouletteCoins) || rouletteCoins.length === 0) return null;
+    const list = rouletteCoins.slice(0, 8).map((v) => {
       const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
+      return Number.isFinite(n) && n > 0 ? n : 0;
     });
+    if (!list.some((n) => n > 0)) return null;
+    while (list.length < 8) list.push(0);
+    return list;
+  },
+
+  renderTurntableFromCoins(rouletteCoins = []) {
+    const nextPool = this.normalizeRouletteCoins(rouletteCoins);
+    if (!nextPool) return;
+    this.spinPrizePool = nextPool;
     const poolKey = this.spinPrizePool.join(",");
     if (poolKey === this._lastSpinPoolKey) return;
     this._lastSpinPoolKey = poolKey;
     for (let i = 0; i < 8; i += 1) {
       const el = this.spinLabels[i];
       if (el) el.textContent = String(this.spinPrizePool[i] ?? 0);
+      const cardEl = this.spinCardLabels?.[i];
+      if (cardEl) cardEl.textContent = String(this.spinPrizePool[i] ?? 0);
     }
   },
 
@@ -217,10 +248,15 @@ export const spinUiMixin = {
     this.saveSpinAvailableState();
   },
 
-  setAdTaskDescription(rouletteCoins) {
-    if (!this.elements.adTaskDesc) return;
-    const coins = Array.isArray(rouletteCoins) && rouletteCoins.length ? rouletteCoins : this.spinPrizePool;
-    this.elements.adTaskDesc.textContent = formatLuckySpinDesc(maxRouletteCoin(coins));
+  setAdTaskDescription(_rouletteCoins, dailyMaxCoins) {
+    const configuredMax = Number(dailyMaxCoins);
+    const maxCoin = Number.isSafeInteger(configuredMax) && configuredMax > 0 ? configuredMax : LUCKY_SPIN_PROMO_MAX_COIN;
+    if (this.elements.adMaxCoin) {
+      this.elements.adMaxCoin.textContent = t("center.luckySpinMaxCoins", { maxCoin });
+    }
+    if (this.elements.adTaskDesc && !this.elements.adMaxCoin) {
+      this.elements.adTaskDesc.textContent = formatLuckySpinDesc(maxCoin);
+    }
   },
 
   syncAdTaskProgressFromTask(task) {
@@ -235,19 +271,18 @@ export const spinUiMixin = {
       task.reward ?? 0,
       dailyLimit,
       remainCount,
+      Number(roulette?.total_coins ?? 0),
     );
   },
 
-  renderAdTaskProgress(completed, earnedPool, taskReward = 0, dailyLimit = 0, remainCount = null) {
+  renderAdTaskProgress(completed, earnedPool, taskReward = 0, dailyLimit = 0, remainCount = null, totalCoinLimit = 0) {
     const limit = dailyLimit > 0 ? dailyLimit : this.dailySpinLimit;
-    let used;
-    if (remainCount != null && limit > 0) {
-      used = Math.max(0, Math.min(limit, limit - Number(remainCount)));
-    } else {
-      used = Math.max(0, Number(completed) - Number(this.currentSpinAvailable || 0));
-    }
+    const used = resolveCompletedVideoCount(completed, limit, remainCount);
     if (this.elements.adProgressVideos) {
-      this.elements.adProgressVideos.textContent = t("center.progressSpins", { used, limit });
+      this.elements.adProgressVideos.textContent = t("center.spinChanceProgress", {
+        used,
+        limit,
+      });
     }
     if (this.elements.adProgressBarFill) {
       const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
@@ -255,7 +290,11 @@ export const spinUiMixin = {
     }
     if (this.elements.adEarnedText) {
       const earnedCoins = earnedPool != null ? earnedPool : completed * taskReward;
-      this.elements.adEarnedText.textContent = t("center.earnedCoins", { count: earnedCoins });
+      const totalCoins = Number(totalCoinLimit ?? 0);
+      this.elements.adEarnedText.textContent = t("center.coinLimitProgress", {
+        earned: Math.max(0, Number(earnedCoins) || 0),
+        total: totalCoins > 0 ? totalCoins : Math.max(0, Number(earnedCoins) || 0),
+      });
     }
   },
 
@@ -269,9 +308,20 @@ export const spinUiMixin = {
     return this._waitingAdForSpin;
   },
 
-  async handleRewardAdCompletedForSpin() {
-    if (!this._waitingAdForSpin) return;
+  clearWaitingAdForSpin() {
     this._waitingAdForSpin = false;
+    this._waitingAdForSpinAt = 0;
+  },
+
+  beginWaitingAdForSpin() {
+    this._waitingAdForSpin = true;
+    this._waitingAdForSpinAt = Date.now();
+  },
+
+  async handleRewardAdCompletedForSpin() {
+    // Always clear waiting: after locale reload the callback can arrive after waiting
+    // was recovered/stale-cleared, but the ad still succeeded and must unlock Spin Now.
+    this.clearWaitingAdForSpin();
     if (this.config.isDailyAdLimitReached?.()) {
       const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
       this.handleRewardAdFailedForSpin(message);
@@ -279,32 +329,66 @@ export const spinUiMixin = {
       return;
     }
     this.addSpinChance(1);
-    // After watching ad successfully, user must click Spin Now manually.
+    this.enterSpinReadyMode();
+  },
+
+  enterSpinReadyMode() {
     this._turntableNeedsWatch = false;
     this.setSpinWheelBottomButton({ label: t("center.spinNow"), disabled: false });
     this.updateSpinWheelSubtitle();
   },
 
-  handleRewardAdFailedForSpin(message = adFailedMessage()) {
-    this._waitingAdForSpin = false;
+  handleRewardAdFailedForSpin(message = adFailedMessage(), { showFailureToast = true } = {}) {
+    this.clearWaitingAdForSpin();
     this.enterSpinWatchAgainMode();
-    showToast(message, "warning");
+    if (showFailureToast) showToast(message, "warning");
+  },
+
+  cancelPendingSpinAd() {
+    this.clearWaitingAdForSpin();
+    this.enterSpinWatchAgainMode();
+  },
+
+  recoverStaleSpinAdWait() {
+    this.clearWaitingAdForSpin();
+    this.config.onSpinAdWaitRecover?.();
   },
 
   handleSpinWheelBottomClick() {
     const btn = this.elements.spinWheelSpinBtn;
     if (btn?.disabled) return;
 
+    // Chance may exist while needsWatch is still true (locale reload, or callback
+    // after waiting was cleared). Align to Spin Now first; do not auto-spin on a
+    // tap that still looked like "Watch".
+    if (this.currentSpinAvailable > 0) {
+      this.clearWaitingAdForSpin();
+      if (this._turntableNeedsWatch) {
+        this.enterSpinReadyMode();
+        return;
+      }
+      this.setSpinWheelBottomButton({ disabled: true });
+      this.spinWheel();
+      return;
+    }
+
     if (this._turntableNeedsWatch) {
-      if (this._waitingAdForSpin) return;
+      if (this._waitingAdForSpin) {
+        const waitedMs = Date.now() - Number(this._waitingAdForSpinAt || 0);
+        if (Number.isFinite(waitedMs) && waitedMs < SPIN_AD_WAIT_STALE_MS) {
+          showToast(t("common.processing"), "info");
+          return;
+        }
+        // Lost native callback after locale reload / WebView reinjection: unlock and retry.
+        this.recoverStaleSpinAdWait();
+      }
       if (this.config.isDailyAdLimitReached?.()) {
         const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
         this.handleRewardAdFailedForSpin(message);
         this.refreshAdTaskStats();
         return;
       }
-      this._waitingAdForSpin = true;
-      this.setSpinWheelBottomButton({ disabled: true });
+      this.beginWaitingAdForSpin();
       this.config.onWatchAdClick();
       return;
     }
@@ -334,6 +418,10 @@ export const spinUiMixin = {
     if (forceDailyFirst) {
       this.markTodayTurntableDailyFirstShown();
       this._turntableNeedsWatch = true;
+    } else if (this.currentSpinAvailable > 0) {
+      // After locale reload, chance survives in localStorage but needsWatch resets
+      // to true. Open directly in Spin Now so the button matches available chances.
+      this.enterSpinReadyMode();
     }
 
     this.setSpinWheelBottomButton({
@@ -345,11 +433,28 @@ export const spinUiMixin = {
       await this.config.onSpinWheelOpen();
     } catch (_) {}
 
+    // After /info refresh, chance may be clamped — keep the button in sync.
+    if (!forceDailyFirst) {
+      if (this.currentSpinAvailable > 0) {
+        this.enterSpinReadyMode();
+      } else {
+        this._turntableNeedsWatch = true;
+        this.setSpinWheelBottomButton({
+          label: this.getSpinWheelBottomButtonLabel(false),
+          disabled: false,
+        });
+      }
+    }
+
     this.updateSpinWheelSubtitle();
     this.setSpinWheelVisible(true);
   },
 
   hideSpinWheel() {
+    if (this._waitingAdForSpin) {
+      this.cancelPendingSpinAd();
+      this.config.onSpinAdWaitRecover?.();
+    }
     this.setSpinWheelVisible(false);
   },
 
@@ -364,8 +469,8 @@ export const spinUiMixin = {
       }
       // Safety fallback: no spin chances locally, go back to watch mode.
       this._turntableNeedsWatch = true;
-      this._waitingAdForSpin = true;
-      this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: true });
+      this.beginWaitingAdForSpin();
+      this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: false });
       this.config.onWatchAdClick();
       return;
     }
@@ -378,6 +483,7 @@ export const spinUiMixin = {
       const result = await this.config.onSpinRequest();
       if (!result?.ok) {
         this._spinInFlight = false;
+        this.setSpinWheelBottomButton({ disabled: false });
         return;
       }
       prize = Number(result.coin ?? 0);
@@ -386,6 +492,7 @@ export const spinUiMixin = {
       }
     } catch (_) {
       this._spinInFlight = false;
+      this.setSpinWheelBottomButton({ disabled: false });
       return;
     }
     this.consumeSpinChance(1);

@@ -22,6 +22,9 @@ export function initGoldCoinsExchange({ router, route }) {
     onExchangeFailed: (message) => {
       showToast(message, "error");
     },
+    onExchangePending: (message) => {
+      showToast(message, "warning");
+    },
   });
 
   void exchange.init();

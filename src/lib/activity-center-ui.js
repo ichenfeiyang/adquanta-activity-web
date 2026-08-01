@@ -4,6 +4,22 @@ import { showToast } from "./activity-alert-ui.js";
 import { bindPageElements } from "./bind-page-elements.js";
 import { checkinUiMixin as checkinMixin } from "./activity-center-checkin-ui.js";
 import { spinUiMixin as spinMixin } from "./activity-center-spin-ui.js";
+import { newUserBonusUiMixin as newUserBonusMixin } from "./activity-center-new-user-bonus-ui.js";
+import { checkinChestUiMixin as checkinChestMixin } from "./activity-center-checkin-chest-ui.js";
+import { coinRainUiMixin as coinRainMixin } from "./activity-center-coin-rain-ui.js";
+import { t } from "./i18n/activity-locale.js";
+
+const DEFAULT_REDEEM_REWARD_ITEMS = [
+  { type: "mobile_recharge", titleKey: "center.redeemRewardMobileRecharge", fallback: true },
+  { type: "data_packs", titleKey: "center.redeemRewardDataPacks", fallback: true },
+  { type: "gift_cards", titleKey: "center.redeemRewardGiftCards", fallback: true },
+];
+
+const REDEEM_REWARD_TITLE_KEYS = {
+  mobile_recharge: "center.redeemRewardMobileRecharge",
+  data_packs: "center.redeemRewardDataPacks",
+  gift_cards: "center.redeemRewardGiftCards",
+};
 
 /**
  * UI 绑定层
@@ -26,6 +42,50 @@ export class ActivityCenterUI {
       spinRewardClose: "spinRewardClose",
       spinRewardCoins: "spinRewardCoins",
       withdrawBtn: "exchangeBtn",
+      adMaxCoin: "ad-max-coin",
+      redeemGapPanel: "redeemGapPanel",
+      redeemGapProgress: "redeemGapProgress",
+      redeemGapHint: "redeemGapHint",
+      redeemRewardsSection: "tc-redeem-rewards-section",
+      redeemRewardsList: "tc-redeem-rewards-list",
+      recentRedemptionsSection: "tc-recent-redemptions-section",
+      recentRedemptionsList: "tc-recent-redemptions-list",
+      coinRainSection: "tc-coin-rain-section",
+      coinRainEntry: "tc-coin-rain-entry",
+      coinRainEntryAction: "tc-coin-rain-entry-action",
+      coinRainDesc: "tc-coin-rain-desc",
+      coinRainOverlay: "tc-coin-rain-overlay",
+      coinRainLeave: "tc-coin-rain-leave",
+      coinRainTime: "tc-coin-rain-time",
+      coinRainGameProgress: "tc-coin-rain-game-progress",
+      coinRainCollected: "tc-coin-rain-collected",
+      coinRainMultiplier: "tc-coin-rain-multiplier",
+      coinRainMultiplierValue: "tc-coin-rain-multiplier-value",
+      coinRainCountdown: "tc-coin-rain-countdown",
+      coinRainCountdownValue: "tc-coin-rain-countdown-value",
+      coinRainCountdownMax: "tc-coin-rain-countdown-max",
+      coinRainStage: "tc-coin-rain-stage",
+      coinRainLeaveDialog: "tc-coin-rain-leave-dialog",
+      coinRainLeaveArt: "tc-coin-rain-leave-art",
+      coinRainLeaveDesc: "tc-coin-rain-leave-desc",
+      coinRainLeaveClose: "tc-coin-rain-leave-close",
+      coinRainContinue: "tc-coin-rain-continue",
+      coinRainConfirmLeave: "tc-coin-rain-confirm-leave",
+      coinRainJoinedDialog: "tc-coin-rain-joined-dialog",
+      coinRainJoinedArt: "tc-coin-rain-joined-art",
+      coinRainJoinedClose: "tc-coin-rain-joined-close",
+      coinRainJoinedOk: "tc-coin-rain-joined-ok",
+      coinRainResult: "tc-coin-rain-result",
+      coinRainResultClose: "tc-coin-rain-result-close",
+      coinRainResultHeroImg: "tc-coin-rain-result-hero-img",
+      coinRainResultTitle: "tc-coin-rain-result-title",
+      coinRainResultCopy: "tc-coin-rain-result-copy",
+      coinRainResultAmount: "tc-coin-rain-result-amount",
+      coinRainResultUnit: "tc-coin-rain-result-unit",
+      coinRainBoostOffer: "tc-coin-rain-boost-offer",
+      coinRainBoostOfferCopy: "tc-coin-rain-boost-offer-copy",
+      coinRainWatchAd: "tc-coin-rain-watch-ad",
+      coinRainClaim: "tc-coin-rain-claim",
       adProgressVideos: "ad-progress-videos",
       adProgressBarFill: "ad-progress-bar-fill",
       adEarnedText: "ad-earned-text",
@@ -43,12 +103,45 @@ export class ActivityCenterUI {
       signinDialogWatchBtnLabel: "signinDialogWatchBtnLabel",
       signinDialogWatchBtn: "signinDialogWatchBtn",
       signinDialogClaimBaseOnly: "signinDialogClaimBaseOnly",
+      checkinPromptModal: "checkinPromptModal",
+      checkinPromptClose: "checkinPromptClose",
+      checkinPromptTitle: "checkinPromptTitle",
+      checkinPromptDays: "checkinPromptDays",
+      checkinPromptChestTip: "checkinPromptChestTip",
+      checkinPromptChestTipImg: "checkinPromptChestTipImg",
+      checkinPromptChestTipText: "checkinPromptChestTipText",
+      checkinPromptClaim: "checkinPromptClaim",
+      checkinVideoTip: "tc-checkin-video-tip",
+      newUserBonusModal: "newUserBonusModal",
+      newUserBonusHero: "newUserBonusHero",
+      newUserBonusTitle: "newUserBonusTitle",
+      newUserBonusAmount: "newUserBonusAmount",
+      newUserBonusHeadline: "newUserBonusHeadline",
+      newUserBonusHeadlineCoin: "newUserBonusHeadlineCoin",
+      newUserBonusDesc: "newUserBonusDesc",
+      newUserBonusVideoCoin: "newUserBonusVideoCoin",
+      newUserBonusFoot: "newUserBonusFoot",
+      newUserBonusDoubleBtn: "newUserBonusDoubleBtn",
+      newUserBonusDoubleBtnLabel: "newUserBonusDoubleBtnLabel",
+      newUserBonusMaybeLater: "newUserBonusMaybeLater",
+      checkinChestModal: "checkinChestModal",
+      checkinChestHero: "checkinChestHero",
+      checkinChestWatchBtn: "checkinChestWatchBtn",
+      checkinChestDismissBtn: "checkinChestDismissBtn",
+      checkinChestRewardModal: "checkinChestRewardModal",
+      checkinChestRewardHero: "checkinChestRewardHero",
+      checkinChestRewardCoins: "checkinChestRewardCoins",
+      checkinChestRewardClose: "checkinChestRewardClose",
+      checkinChestRewardClaimBtn: "checkinChestRewardClaimBtn",
       checkinPill: "tc-checkin-pill",
       checkinDaysContainer: "tc-checkin-days-container",
     });
 
     this.spinLabels = Array.from({ length: 8 }, (_, i) =>
       document.querySelector(`.tc-spin-label-${i + 1}`),
+    );
+    this.spinCardLabels = Array.from({ length: 8 }, (_, i) =>
+      document.querySelector(`.tc-spin-card-label-${i + 1}`),
     );
 
     this.config = {
@@ -58,6 +151,20 @@ export class ActivityCenterUI {
       onWithdrawClick: config.onWithdrawClick || (() => {}),
       onSigninClick: config.onSigninClick || (() => {}),
       onSigninWatchVideoClick: config.onSigninWatchVideoClick || (() => {}),
+      onSigninDialogDismiss: config.onSigninDialogDismiss || (() => {}),
+      onCheckinPromptClaim: config.onCheckinPromptClaim || (() => {}),
+      onCheckinPromptClose: config.onCheckinPromptClose || (() => {}),
+      onSpinWheelDismiss: config.onSpinWheelDismiss || (() => {}),
+      onNewUserBonusVideoClick: config.onNewUserBonusVideoClick || (() => {}),
+      onNewUserBonusDismissClick: config.onNewUserBonusDismissClick || (() => {}),
+      onCheckinChestWatchClick: config.onCheckinChestWatchClick || (() => {}),
+      onCheckinChestDismissClick: config.onCheckinChestDismissClick || (() => {}),
+      onCheckinChestDayClick: config.onCheckinChestDayClick || (() => {}),
+      onCoinRainEntryClick: config.onCoinRainEntryClick || (() => {}),
+      onCoinRainSettle: config.onCoinRainSettle || (async () => ({ ok: false })),
+      onCoinRainAbandon: config.onCoinRainAbandon || (() => {}),
+      onCoinRainWatchAd: config.onCoinRainWatchAd || (() => {}),
+      onCoinRainResultDismiss: config.onCoinRainResultDismiss || (() => {}),
       ...config,
     };
 
@@ -71,11 +178,23 @@ export class ActivityCenterUI {
     this.spinRotation = 0;
     this._spinInFlight = false;
     this._waitingAdForSpin = false;
+    this._waitingAdForSpinAt = 0;
     this._signinVideoCompleted = false;
     this._signinTotalCoin = 0;
     this._lastGoldCoins = null;
     this._lastCheckinFingerprint = "";
     this._lastSpinPoolKey = "";
+    this._newUserBonus = null;
+    this._checkinChest = null;
+    this.recentRedemptionItems = [];
+    this.recentRedemptionNextIndex = 0;
+    this.recentRedemptionTimer = 0;
+    this._finishRecentRedemptionAnimation = null;
+    this._recentVisibilityHandler = () => {
+      if (document.hidden) this.stopRecentRedemptionRotation();
+      else this.startRecentRedemptionRotation();
+    };
+    document.addEventListener("visibilitychange", this._recentVisibilityHandler);
   }
 
 
@@ -161,6 +280,8 @@ export class ActivityCenterUI {
     this.renderTurntableFromCoins(this.spinPrizePool);
     this.setAdTaskDescription(this.spinPrizePool);
     this.renderAdTaskProgress(0, 0, 0);
+    this.updateRedeemRewards({ fallback: true });
+    this.updateRecentRedemptions([]);
     this.resetWatchSpinButton();
   }
 
@@ -224,6 +345,270 @@ export class ActivityCenterUI {
     }
   }
 
+  formatCoinNumber(value) {
+    const n = Number(value ?? 0);
+    if (!Number.isFinite(n)) return "0";
+    return Math.max(0, Math.round(n)).toLocaleString("en-US");
+  }
+
+  updateRedeemGap(gap) {
+    const panel = this.elements.redeemGapPanel;
+    const hint = this.elements.redeemGapHint;
+    const progress = this.elements.redeemGapProgress;
+    if (!panel || !hint) return;
+    if (!gap || gap.enabled !== true) {
+      hint.textContent = "";
+      if (progress) progress.style.width = "0%";
+      panel.style.display = "none";
+      return;
+    }
+    const minCoin = Math.max(0, Number(gap.min_coin ?? 0) || 0);
+    const remaining = Math.max(0, Number(gap.remaining_coin ?? 0) || 0);
+    const current = Math.max(0, minCoin - remaining);
+    const percent = minCoin > 0 ? Math.min(100, Math.max(0, (current / minCoin) * 100)) : 0;
+    if (progress) progress.style.width = `${percent}%`;
+    hint.textContent =
+      gap.can_redeem === true || remaining <= 0
+        ? t("center.redeemGapReady", { count: this.formatCoinNumber(minCoin) })
+        : t("center.redeemGapNeed", {
+            count: this.formatCoinNumber(remaining),
+            target: this.formatCoinNumber(minCoin),
+          });
+    panel.style.display = "";
+  }
+
+  redeemRewardCategoryIcon(type) {
+    if (type === "mobile_recharge") {
+      const icon = document.createElement("span");
+      icon.className = "tc-redeem-reward-currency";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = "₹";
+      return icon;
+    }
+    if (type === "data_packs") {
+      const icon = document.createElement("span");
+      icon.className = "tc-redeem-reward-wifi";
+      icon.setAttribute("aria-hidden", "true");
+      return icon;
+    }
+    const img = document.createElement("img");
+    img.alt = "";
+    img.width = 28;
+    img.height = 28;
+    img.loading = "lazy";
+    img.decoding = "async";
+    if (type === "gift_cards") {
+      img.src = assetUrl("icons/card_giftcard.svg");
+      return img;
+    }
+    img.src = assetUrl("icons/phone_iphone.svg");
+    return img;
+  }
+
+  updateRedeemRewards(rewards) {
+    const section = this.elements.redeemRewardsSection;
+    const list = this.elements.redeemRewardsList;
+    if (!section || !list) return;
+    const hasLiveItems = rewards?.enabled === true && Array.isArray(rewards.items) && rewards.items.length > 0;
+    const useFallbackItems = rewards?.fallback === true;
+    const items = hasLiveItems ? rewards.items : useFallbackItems ? DEFAULT_REDEEM_REWARD_ITEMS : [];
+    list.replaceChildren();
+    list.className = "tc-redeem-rewards-list";
+    if (!items.length) {
+      section.style.display = "none";
+      return;
+    }
+    for (const item of items) {
+      const minCoin = Number(item.min_coin ?? 0) || 0;
+      const isFallback = item.fallback === true;
+      if (!isFallback && minCoin <= 0) continue;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "tc-redeem-reward-item";
+      button.dataset.category = String(item.type || "");
+      const icon = document.createElement("span");
+      icon.className = "tc-redeem-reward-icon";
+      icon.appendChild(this.redeemRewardCategoryIcon(item.type));
+      const copy = document.createElement("span");
+      copy.className = "tc-redeem-reward-copy";
+      const name = document.createElement("span");
+      name.className = "tc-redeem-reward-name";
+      const titleKey = REDEEM_REWARD_TITLE_KEYS[item.type] || item.titleKey;
+      name.textContent = titleKey ? t(titleKey) : item.title || t("center.redeemRewardsFallbackTitle");
+      const threshold = document.createElement("span");
+      threshold.className = "tc-redeem-reward-threshold";
+      threshold.textContent = isFallback
+        ? t("center.redeemRewardsThresholdLoading")
+        : t("center.redeemRewardsFromCoins", { count: this.formatCoinNumber(minCoin) });
+      copy.append(name, threshold);
+      const arrow = document.createElement("span");
+      arrow.className = "tc-redeem-reward-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      arrow.textContent = "›";
+      button.append(icon, copy, arrow);
+      button.addEventListener("click", () => this.config.onWithdrawClick(item.type));
+      list.appendChild(button);
+    }
+    const renderedCount = list.children.length;
+    if (renderedCount > 0) {
+      list.classList.add(`tc-redeem-rewards-list--count-${Math.min(renderedCount, 3)}`);
+    }
+    section.style.display = renderedCount ? "" : "none";
+  }
+
+  updateRecentRedemptions(items) {
+    const section = this.elements.recentRedemptionsSection;
+    const list = this.elements.recentRedemptionsList;
+    if (!section || !list) return;
+    this.stopRecentRedemptionRotation();
+    this.finishRecentRedemptionAnimation();
+    this.recentRedemptionItems = Array.isArray(items) ? items : [];
+    this.recentRedemptionNextIndex = Math.min(3, this.recentRedemptionItems.length);
+    if (!this.recentRedemptionItems.length) {
+      list.replaceChildren();
+      section.style.display = "none";
+      return;
+    }
+    section.style.display = "";
+    this.renderRecentRedemptionBatch();
+    this.startRecentRedemptionRotation();
+  }
+
+  renderRecentRedemptionBatch() {
+    const list = this.elements.recentRedemptionsList;
+    if (!list) return;
+    const track = document.createElement("div");
+    track.className = "tc-recent-redemptions-track";
+    for (const item of this.recentRedemptionItems.slice(0, 3)) {
+      track.appendChild(this.createRecentRedemptionRow(item));
+    }
+    list.replaceChildren(track);
+  }
+
+  createRecentRedemptionRow(item) {
+    const row = document.createElement("div");
+    row.className = "tc-recent-redemption-item";
+
+    const user = document.createElement("span");
+    user.className = "tc-recent-redemption-user";
+    user.textContent = item.maskedUserId;
+
+    const reward = document.createElement("span");
+    reward.className = "tc-recent-redemption-reward";
+    const icon = document.createElement("span");
+    icon.className = `tc-recent-redemption-icon tc-recent-redemption-icon--${item.rewardType}`;
+    icon.appendChild(this.recentRedemptionIcon(item));
+    const name = document.createElement("span");
+    name.className = "tc-recent-redemption-name";
+    name.textContent = item.rewardName;
+    reward.append(icon, name);
+
+    const date = document.createElement("time");
+    date.className = "tc-recent-redemption-date";
+    date.dateTime = item.redeemedDate;
+    date.textContent = item.redeemedDate;
+
+    const success = document.createElement("span");
+    success.className = "tc-recent-redemption-success";
+    success.setAttribute("aria-label", t("common.completed"));
+    success.textContent = "✓";
+    row.append(user, reward, date, success);
+    return row;
+  }
+
+  animateRecentRedemptionBatch() {
+    const list = this.elements.recentRedemptionsList;
+    if (!list || this._finishRecentRedemptionAnimation) return;
+    const track = list.firstElementChild;
+    const nextItem = this.recentRedemptionItems[this.recentRedemptionNextIndex];
+    if (!nextItem) return;
+    const nextRow = this.createRecentRedemptionRow(nextItem);
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (!track) {
+      this.renderRecentRedemptionBatch();
+      return;
+    }
+    if (reduceMotion) {
+      track.firstElementChild?.remove();
+      track.appendChild(nextRow);
+      this.recentRedemptionNextIndex = (this.recentRedemptionNextIndex + 1) % this.recentRedemptionItems.length;
+      return;
+    }
+
+    track.appendChild(nextRow);
+    this.recentRedemptionNextIndex = (this.recentRedemptionNextIndex + 1) % this.recentRedemptionItems.length;
+    let finished = false;
+    let animationFrame = 0;
+    let fallbackTimer = 0;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      track.removeEventListener("transitionend", finish);
+      track.classList.remove("tc-recent-redemptions-track--animating");
+      track.firstElementChild?.remove();
+      this._finishRecentRedemptionAnimation = null;
+    };
+    this._finishRecentRedemptionAnimation = finish;
+    track.addEventListener("transitionend", finish);
+    animationFrame = window.requestAnimationFrame(() => {
+      track.classList.add("tc-recent-redemptions-track--animating");
+      fallbackTimer = window.setTimeout(finish, 1100);
+    });
+  }
+
+  finishRecentRedemptionAnimation() {
+    this._finishRecentRedemptionAnimation?.();
+  }
+
+  recentRedemptionIcon(item) {
+    if (item.rewardIconUrl) {
+      const image = document.createElement("img");
+      image.src = item.rewardIconUrl;
+      image.alt = "";
+      image.width = 24;
+      image.height = 24;
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.referrerPolicy = "no-referrer";
+      return image;
+    }
+    if (item.rewardType === "data") {
+      const glyph = document.createElement("span");
+      glyph.className = "tc-recent-redemption-data-glyph";
+      glyph.textContent = "↕";
+      return glyph;
+    }
+    const image = document.createElement("img");
+    image.src = assetUrl(item.rewardType === "gift_card" ? "icons/card_giftcard.svg" : "icons/phone_iphone.svg");
+    image.alt = "";
+    image.width = 24;
+    image.height = 24;
+    image.loading = "lazy";
+    image.decoding = "async";
+    return image;
+  }
+
+  startRecentRedemptionRotation() {
+    if (document.hidden || this.recentRedemptionTimer || this.recentRedemptionItems.length <= 3) return;
+    this.recentRedemptionTimer = window.setInterval(() => {
+      this.animateRecentRedemptionBatch();
+    }, 3000);
+  }
+
+  stopRecentRedemptionRotation() {
+    if (!this.recentRedemptionTimer) return;
+    window.clearInterval(this.recentRedemptionTimer);
+    this.recentRedemptionTimer = 0;
+  }
+
+  destroyRecentRedemptions() {
+    this.stopRecentRedemptionRotation();
+    this.finishRecentRedemptionAnimation();
+    document.removeEventListener("visibilitychange", this._recentVisibilityHandler);
+  }
+
   /**
    * 更新日常视频任务 UI（type === 'video' 的 task.detail：today_watched, daily_limit, remain_count, coin, roulette）
    */
@@ -245,7 +630,7 @@ export class ActivityCenterUI {
     this.syncTurntableFromTask(task);
     this.syncSpinAvailableFromTask(task);
 
-    this.setAdTaskDescription(r?.roulette_coins);
+    this.setAdTaskDescription(r?.roulette_coins, r?.daily_max_coins ?? r?.total_coins);
     this.syncAdTaskProgressFromTask(task);
     this.resetWatchSpinButton();
     if (this.elements.btnSpinEntry) {
@@ -295,6 +680,7 @@ export class ActivityCenterUI {
    * 绑定事件
    */
   bindEvents() {
+    this.bindCoinRainEvents?.();
     // 看广告/领取按钮
     if (this.elements.btnWatchAd) {
       this.elements.btnWatchAd.addEventListener("click", () => {
@@ -313,6 +699,7 @@ export class ActivityCenterUI {
         e.preventDefault();
         e.stopPropagation();
         this.hideSpinWheel();
+        this.config.onSpinWheelDismiss();
       });
     }
     if (this.elements.spinWheelSpinBtn) {
@@ -355,6 +742,18 @@ export class ActivityCenterUI {
     if (this.elements.signinDialogClaimBaseOnly) {
       this.elements.signinDialogClaimBaseOnly.addEventListener("click", () => {
         this.hideSigninDialog();
+        this.config.onSigninDialogDismiss();
+      });
+    }
+
+    if (this.elements.checkinPromptClaim) {
+      this.elements.checkinPromptClaim.addEventListener("click", () => {
+        this.config.onCheckinPromptClaim(this._checkinPrompt);
+      });
+    }
+    if (this.elements.checkinPromptClose) {
+      this.elements.checkinPromptClose.addEventListener("click", () => {
+        this.config.onCheckinPromptClose(this._checkinPrompt);
       });
     }
 
@@ -362,9 +761,36 @@ export class ActivityCenterUI {
     if (this.elements.signinDialogWatchBtn) {
       this.elements.signinDialogWatchBtn.addEventListener("click", () => {
         if (this.elements.signinDialogWatchBtn.disabled) return;
-        this.hideSigninDialog();
         this.config.onSigninWatchVideoClick();
       });
+    }
+
+    if (this.elements.newUserBonusDoubleBtn) {
+      this.elements.newUserBonusDoubleBtn.addEventListener("click", () => {
+        if (this.elements.newUserBonusDoubleBtn.disabled) return;
+        this.config.onNewUserBonusVideoClick(this._newUserBonus);
+      });
+    }
+
+    if (this.elements.newUserBonusMaybeLater) {
+      this.elements.newUserBonusMaybeLater.addEventListener("click", () => {
+        if (this.elements.newUserBonusMaybeLater.disabled) return;
+        this.config.onNewUserBonusDismissClick(this._newUserBonus);
+      });
+    }
+
+    if (this.elements.checkinChestWatchBtn) {
+      this.elements.checkinChestWatchBtn.addEventListener("click", () => {
+        if (!this.elements.checkinChestWatchBtn.disabled) this.config.onCheckinChestWatchClick(this._checkinChest);
+      });
+    }
+    if (this.elements.checkinChestDismissBtn) {
+      this.elements.checkinChestDismissBtn.addEventListener("click", () => {
+        if (!this.elements.checkinChestDismissBtn.disabled) this.config.onCheckinChestDismissClick(this._checkinChest);
+      });
+    }
+    for (const element of [this.elements.checkinChestRewardClose, this.elements.checkinChestRewardClaimBtn]) {
+      element?.addEventListener("click", () => this.hideCheckinChestRewardDialog());
     }
 
     if (!this._scrollLockTouchBound) {
@@ -377,6 +803,7 @@ export class ActivityCenterUI {
           if (target instanceof Node) {
             if (this.elements.spinWheelModal?.contains(target)) return;
             if (this.elements.spinRewardModal?.contains(target)) return;
+            if (this.elements.newUserBonusModal?.contains(target)) return;
           }
           e.preventDefault();
         },
@@ -391,4 +818,4 @@ export class ActivityCenterUI {
 
 }
 
-Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin);
+Object.assign(ActivityCenterUI.prototype, spinMixin, checkinMixin, newUserBonusMixin, checkinChestMixin, coinRainMixin);

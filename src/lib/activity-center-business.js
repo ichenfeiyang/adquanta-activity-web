@@ -1,4 +1,11 @@
-import { getActivityInfo, postCheckin, postActivityVideo } from "./activity-api.js";
+import {
+  getActivityInfo,
+  postActivityVideo,
+  postCheckin,
+  postCheckinChest,
+  postCoinRain,
+  postNewUserBonus,
+} from "./activity-api.js";
 import { invalidateActivityInfoCache, loadActivityInfoWithSWR } from "./activity-page-cache.js";
 import { showToast } from "./activity-alert-ui.js";
 import {
@@ -14,6 +21,11 @@ import {
   videoCompletedRewardMessage,
 } from "./activity-messages.js";
 import * as logger from "./activity-logger.js";
+import { normalizeCheckinChests } from "./checkin-chest.js";
+import { normalizeRecentRedemptions } from "./recent-redemptions.js";
+import { normalizeCoinRain } from "./coin-rain.js";
+
+export { normalizeCheckinChests } from "./checkin-chest.js";
 
 export function getDailyAdLimitMessage() {
   return dailyAdLimitMessage();
@@ -33,6 +45,21 @@ function normalizeWalletCoin(value) {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+const CHECKIN_CHEST_QUEUE_KEY = "activity_checkin_chest_queue_v1";
+
+function readCheckinChestQueue() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(CHECKIN_CHEST_QUEUE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCheckinChestQueue(queue) {
+  try { sessionStorage.setItem(CHECKIN_CHEST_QUEUE_KEY, JSON.stringify(queue)); } catch { /* unavailable storage */ }
 }
 
 /**
@@ -58,9 +85,16 @@ export class ActivityCenterBusiness {
 
     // 签到任务详情（来自 tasks[] 中 type === 'checkin' 的 task.detail）
     this.checkinDetail = null;
+    this.checkinChests = [];
 
     // 当前用户 ID（来自 user_info.user_id）
     this.userId = null;
+
+    this.newUserBonus = null;
+    this.redeemGap = null;
+    this.redeemRewards = null;
+    this.recentRedemptions = [];
+    this.coinRain = null;
 
     this._lastActivityInfoFingerprint = "";
 
@@ -69,7 +103,13 @@ export class ActivityCenterBusiness {
       onAssetsUpdate: config.onAssetsUpdate || (() => {}),
       onTaskUpdate: config.onTaskUpdate || (() => {}),
       onCheckinUpdate: config.onCheckinUpdate || (() => {}),
+      onCheckinChestUpdate: config.onCheckinChestUpdate || (() => {}),
+      onCheckinPromptUpdate: config.onCheckinPromptUpdate || (() => {}),
       onFeatureVisibilityUpdate: config.onFeatureVisibilityUpdate || (() => {}),
+      onRedeemGapUpdate: config.onRedeemGapUpdate || (() => {}),
+      onRedeemRewardsUpdate: config.onRedeemRewardsUpdate || (() => {}),
+      onRecentRedemptionsUpdate: config.onRecentRedemptionsUpdate || (() => {}),
+      onCoinRainUpdate: config.onCoinRainUpdate || (() => {}),
       ...config,
     };
   }
@@ -130,12 +170,76 @@ export class ActivityCenterBusiness {
       userId: d?.user_info?.user_id ?? null,
       checkin,
       video,
+      newUserBonus: d?.new_user_bonus ?? null,
+      redeemGap: d?.redeem_gap ?? null,
+      redeemRewards: d?.redeem_rewards ?? null,
+      recentRedemptions: d?.recent_redemptions ?? [],
+      coinRain: d?.coin_rain ?? null,
     });
   }
 
-  applyActivityInfoData(d) {
+  normalizeNewUserBonus(value) {
+    if (!value || typeof value !== "object") return null;
+    return {
+      eligible: value.eligible === true,
+      show: value.show === true,
+      base_coin: Number(value.base_coin ?? 0) || 0,
+      video_coin: Number(value.video_coin ?? 0) || 0,
+      status: String(value.status || ""),
+    };
+  }
+
+  normalizeRedeemGap(value) {
+    if (!value || typeof value !== "object" || value.enabled !== true) return null;
+    const minCoin = Number(value.min_coin ?? 0) || 0;
+    const remainingCoin = Number(value.remaining_coin ?? 0) || 0;
+    if (minCoin <= 0) return null;
+    return {
+      enabled: true,
+      min_coin: minCoin,
+      remaining_coin: Math.max(0, remainingCoin),
+      can_redeem: value.can_redeem === true,
+      message: String(value.message || ""),
+    };
+  }
+
+  normalizeRedeemRewards(value, hasRedeemRewardsField = true) {
+    if (!hasRedeemRewardsField) return { fallback: true };
+    if (!value || typeof value !== "object" || value.enabled !== true) return null;
+    const items = Array.isArray(value.items) ? value.items : [];
+    const normalizedItems = items
+      .map((item) => {
+        const minCoin = Number(item?.min_coin ?? 0) || 0;
+        if (minCoin <= 0) return null;
+        const remainingCoin = Number(item?.remaining_coin ?? 0) || 0;
+        return {
+          type: String(item?.type || ""),
+          title: String(item?.title || ""),
+          min_coin: minCoin,
+          remaining_coin: Math.max(0, remainingCoin),
+          can_redeem: item?.can_redeem === true,
+        };
+      })
+      .filter(Boolean);
+    if (!normalizedItems.length) return null;
+    return {
+      enabled: true,
+      items: normalizedItems,
+    };
+  }
+
+  normalizeCoinRain(value) {
+    return normalizeCoinRain(value);
+  }
+
+  applyActivityInfoData(d, { fromCache = false } = {}) {
     const fingerprint = this.buildActivityInfoFingerprint(d);
     if (fingerprint === this._lastActivityInfoFingerprint) {
+      // Cached content is intentionally not allowed to trigger the prompt, but
+      // the fresh response still needs to do so even when task data is unchanged.
+      if (!fromCache) {
+        this.config.onCheckinPromptUpdate?.(d?.checkin_prompt, this.checkinDetail, { fromCache: false });
+      }
       return;
     }
 
@@ -144,7 +248,16 @@ export class ActivityCenterBusiness {
     let applied = false;
 
     this.checkinDetail = null;
+    this.checkinChests = [];
     this.adTaskStatus = this.createEmptyAdTaskStatus();
+    this.newUserBonus = this.normalizeNewUserBonus(d?.new_user_bonus);
+    this.redeemGap = this.normalizeRedeemGap(d?.redeem_gap);
+    this.redeemRewards = this.normalizeRedeemRewards(
+      d?.redeem_rewards,
+      Object.prototype.hasOwnProperty.call(d || {}, "redeem_rewards"),
+    );
+    this.recentRedemptions = normalizeRecentRedemptions(d?.recent_redemptions);
+    this.coinRain = this.normalizeCoinRain(d?.coin_rain);
 
     try {
       if (d.user_info != null && d.user_info.user_id != null) {
@@ -161,6 +274,7 @@ export class ActivityCenterBusiness {
         if (task.type === "checkin" && task.detail != null) {
           hasCheckinTask = true;
           this.checkinDetail = task.detail;
+          this.checkinChests = normalizeCheckinChests(task.detail?.chests);
           this.config.onCheckinUpdate(task.detail);
         }
         if (task.type === "video" && task.detail != null) {
@@ -187,6 +301,7 @@ export class ActivityCenterBusiness {
       if (!hasCheckinTask) {
         this.config.onCheckinUpdate(null);
       }
+      this.config.onCheckinChestUpdate(this.checkinChests[0] || null);
       if (!hasVideoTask) {
         this.config.onTaskUpdate({ watchAd: null });
       }
@@ -196,6 +311,11 @@ export class ActivityCenterBusiness {
         goldCoins: this.userAssets.goldCoins,
         checkin: hasCheckinTask,
         watchAd: hasVideoTask ? this.adTaskStatus : null,
+        newUserBonus: this.newUserBonus,
+        redeemGap: this.redeemGap,
+        redeemRewards: this.redeemRewards,
+        recentRedemptions: this.recentRedemptions,
+        coinRain: this.coinRain,
       });
     } catch (error) {
       logger.error("[Activity API] Failed to apply activity info UI", error);
@@ -205,6 +325,12 @@ export class ActivityCenterBusiness {
         video: hasVideoTask,
       });
       if (applied) {
+        this.config.onNewUserBonusUpdate?.(this.newUserBonus);
+        this.config.onRedeemGapUpdate?.(this.redeemGap);
+        this.config.onRedeemRewardsUpdate?.(this.redeemRewards);
+        this.config.onRecentRedemptionsUpdate?.(this.recentRedemptions);
+        this.config.onCoinRainUpdate?.(this.coinRain);
+        this.config.onCheckinPromptUpdate?.(d?.checkin_prompt, this.checkinDetail, { fromCache });
         this._lastActivityInfoFingerprint = fingerprint;
       }
     }
@@ -221,6 +347,7 @@ export class ActivityCenterBusiness {
     const token = apiOptions.token || "";
 
     try {
+      await this.flushCheckinChestQueue(apiOptions);
       if (force) {
         invalidateActivityInfoCache(token);
       }
@@ -228,7 +355,7 @@ export class ActivityCenterBusiness {
       const result = await loadActivityInfoWithSWR(token, {
         force,
         fetcher: () => getActivityInfo(apiOptions),
-        onData: (data) => this.applyActivityInfoData(data),
+        onData: (data, metadata) => this.applyActivityInfoData(data, metadata),
       });
 
       if (result.ok && result.data) {
@@ -239,6 +366,7 @@ export class ActivityCenterBusiness {
       throw result.error || new Error("API returned an error");
     } catch (error) {
       logger.error("[Activity API] Request failed", error?.message ?? error);
+      this.config.onRedeemRewardsUpdate?.({ fallback: true });
       showToast(activityLoadFailedMessage(), "warning");
       return { ok: false, error };
     }
@@ -254,18 +382,23 @@ export class ActivityCenterBusiness {
       const res = await postCheckin(apiOptions, { type: "base" });
       if (res.code !== 200) {
         showToast(res.message || checkinFailedMessage(), "error");
-        return { ok: false };
+        return { ok: false, message: res.message || checkinFailedMessage() };
       }
       const coinFromCheckin = res.data?.coin ?? res.coin ?? 0;
+      const chest = normalizeCheckinChests(res.data?.chest ? [res.data.chest] : [])[0] || null;
+      if (chest) {
+        this.checkinChests = [chest];
+        this.config.onCheckinChestUpdate(chest);
+      }
       await this.loadActivityInfo(apiOptions, { force: true });
       const today = this.getTodayCheckinDay();
       const video_coin = today?.video_coin ?? 0;
       const multiplier = (today?.coin > 0) ? Math.floor((today.video_coin ?? 0) / today.coin) : 0;
-      return { ok: true, coinFromCheckin, video_coin, multiplier };
+      return { ok: true, coinFromCheckin, video_coin, multiplier, chest };
     } catch (error) {
       logger.error("Do checkin failed", error);
       showToast(error?.message || checkinFailedRetryMessage(), "error");
-      return { ok: false };
+      return { ok: false, message: error?.message || checkinFailedRetryMessage() };
     }
   }
 
@@ -283,6 +416,11 @@ export class ActivityCenterBusiness {
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200) {
         success = true;
+        const chest = normalizeCheckinChests(res.data?.chest ? [res.data.chest] : [])[0] || null;
+        if (chest) {
+          this.checkinChests = [chest];
+          this.config.onCheckinChestUpdate(chest);
+        }
         showToast(videoCheckinSuccessMessage(), "success");
       } else {
         showToast(msg || claimFailedMessage(), "error");
@@ -296,6 +434,54 @@ export class ActivityCenterBusiness {
       await this.loadActivityInfo(apiOptions, { force: true });
     }
     return { ok: success };
+  }
+
+  queueCheckinChestAction(action, chestId, adEventId = "") {
+    // Soft-close no longer uses dismiss; only claim needs offline replay.
+    if (action !== "claim") return;
+    const item = { chest_id: Number(chestId), action: "claim", ad_event_id: String(adEventId || "") };
+    if (!item.chest_id) return;
+    const queue = readCheckinChestQueue().filter((entry) => entry.chest_id !== item.chest_id);
+    queue.push(item);
+    writeCheckinChestQueue(queue);
+  }
+
+  async flushCheckinChestQueue(apiOptions = {}) {
+    const queue = readCheckinChestQueue();
+    if (!queue.length) return;
+    // Drop legacy dismiss entries so soft-close chests stay reopenable.
+    const claims = queue.filter((item) => item?.action === "claim");
+    const remaining = [];
+    for (const item of claims) {
+      try {
+        const res = await postCheckinChest(apiOptions, item);
+        if (res?.code !== 200) remaining.push(item);
+      } catch {
+        remaining.push(item);
+      }
+    }
+    writeCheckinChestQueue(remaining);
+  }
+
+  async submitCheckinChestAction(apiOptions = {}, action, chestId, adEventId = "") {
+    try {
+      const res = await postCheckinChest(apiOptions, { chest_id: chestId, action, ad_event_id: adEventId });
+      const ok = res?.code === 200 && res?.data?.success !== false;
+      if (!ok) return { ok: false, message: res?.data?.message || res?.message || claimFailedMessage() };
+      const totalCoin = Number(res?.data?.total_coin);
+      if (Number.isFinite(totalCoin)) {
+        this.userAssets.goldCoins = Math.max(0, totalCoin);
+        this.config.onAssetsUpdate(this.userAssets);
+      }
+      this.checkinChests = this.checkinChests.filter((chest) => chest.id !== Number(chestId));
+      this.config.onCheckinChestUpdate(this.checkinChests[0] || null);
+      await this.loadActivityInfo(apiOptions, { force: true });
+      return { ok: true, coin: Number(res?.data?.coin ?? 0) || 0, totalCoin: Number.isFinite(totalCoin) ? totalCoin : 0 };
+    } catch (error) {
+      if (action === "claim") this.queueCheckinChestAction(action, chestId, adEventId);
+      logger.warn("Check-in chest action queued for retry", { action, chestId, message: error?.message });
+      return { ok: false, queued: action === "claim" };
+    }
   }
 
   /**
@@ -333,6 +519,52 @@ export class ActivityCenterBusiness {
       );
     }
     return { ok: false };
+  }
+
+  async submitNewUserBonusAction(apiOptions = {}, action, adEventId = "") {
+    try {
+      const res = await postNewUserBonus(apiOptions, {
+        action,
+        ad_event_id: adEventId,
+      });
+      const ok = res?.code === 200 && res?.data?.success !== false;
+      if (!ok) {
+        showToast(res?.data?.message || res?.message || claimFailedMessage(), "error");
+        return { ok: false };
+      }
+
+      await this.loadActivityInfo(apiOptions, { force: true });
+      return {
+        ok: true,
+        coin: Number(res?.data?.coin ?? res?.data?.reward_coin ?? 0) || 0,
+        message: res?.data?.message || res?.message || "",
+      };
+    } catch (error) {
+      logger.error("New user bonus action failed", error);
+      showToast(error?.message || claimFailedRetryMessage(), "error");
+      return { ok: false };
+    }
+  }
+
+  async submitCoinRainAction(apiOptions = {}, action, payload = {}) {
+    try {
+      const res = await postCoinRain(apiOptions, { action, ...payload });
+      if (res?.code !== 200 || res?.data?.success === false) {
+        return { ok: false, message: res?.data?.message || res?.message || claimFailedMessage() };
+      }
+      this.coinRain = this.normalizeCoinRain(res.data);
+      this.config.onCoinRainUpdate?.(this.coinRain);
+      const totalCoin = Number(res?.data?.total_coin);
+      if ((action === "settle" || action === "boost") && Number.isFinite(totalCoin) && totalCoin >= 0) {
+        this.userAssets.goldCoins = totalCoin;
+        this.config.onAssetsUpdate(this.userAssets);
+      }
+      invalidateActivityInfoCache(apiOptions.token || "");
+      return { ok: true, ...res.data };
+    } catch (error) {
+      logger.error("Coin rain action failed", error);
+      return { ok: false, message: error?.message || claimFailedRetryMessage() };
+    }
   }
 
   /**

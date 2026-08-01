@@ -5,6 +5,8 @@ import {
   DEFAULT_REDEEM_COUNTRY,
   formatPhoneDisplay,
   formatRedeemDenomination,
+  getGiftCurrenciesForCountry,
+  getInitialGiftCurrencyForCountry,
   getInitialRedeemCountry,
   getRedeemCurrencyForCountry,
   getSavedRedeemCountry,
@@ -19,6 +21,12 @@ test("resolveRedeemCountry maps supported ISO codes", () => {
   assert.equal(resolveRedeemCountry("PK").dialCode, "+92");
   assert.equal(resolveRedeemCountry("BD").dialCode, "+880");
   assert.equal(resolveRedeemCountry("NP").dialCode, "+977");
+});
+
+test("redeem countries keep English name fallback and i18n nameKey", () => {
+  assert.equal(resolveRedeemCountry("IN").name, "India");
+  assert.equal(resolveRedeemCountry("IN").nameKey, "redeem.countryIN");
+  assert.equal(resolveRedeemCountry("PK").nameKey, "redeem.countryPK");
 });
 
 test("resolveRedeemCountry falls back to India", () => {
@@ -53,6 +61,12 @@ test("getRedeemCurrencyForCountry maps ISO to Tremendous currency", () => {
   assert.equal(getRedeemCurrencyForCountry("IN").code, "INR");
   assert.equal(getRedeemCurrencyForCountry("ID").code, "IDR");
   assert.equal(getRedeemCurrencyForCountry("XX").code, "INR");
+});
+
+test("gift card currencies provide the local currency and USD for each activity country", () => {
+  assert.deepEqual(getGiftCurrenciesForCountry("IN").map((item) => item.code), ["INR", "USD"]);
+  assert.deepEqual(getGiftCurrenciesForCountry("PK").map((item) => item.code), ["USD", "PKR"]);
+  assert.equal(getInitialGiftCurrencyForCountry("PK").code, "USD");
 });
 
 test("formatRedeemDenomination formats currency labels", () => {
