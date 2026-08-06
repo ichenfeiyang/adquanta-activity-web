@@ -11,7 +11,7 @@ import {
 } from "./activity-cache-fingerprints.js";
 
 const STORAGE_PREFIX = "activity_page_cache_v1";
-const CHARGES_CACHE_KIND = "chargesByPhoneV2";
+const CHARGES_CACHE_KIND = "chargesByPhoneV3";
 const TREMENDOUS_CATALOG_CACHE_KIND = "tremendousCatalogV1";
 
 export const CACHE_TTL = {
@@ -36,6 +36,15 @@ function hashToken(token) {
 function scopedKey(kind, token, suffix = "") {
   const t = hashToken(token);
   return suffix ? `${kind}:${t}:${suffix}` : `${kind}:${t}`;
+}
+
+/** Cache / dedupe suffix: country_code + phone_number (isolates US/CA shared +1). */
+export function chargesCacheSuffix(countryCode, phoneNumber) {
+  const country = String(countryCode || "")
+    .trim()
+    .toUpperCase();
+  const phone = String(phoneNumber || "").trim();
+  return `${country}:${phone}`;
 }
 
 function storageKey(key) {
@@ -193,12 +202,16 @@ export function invalidateChargeRecordsCache(token) {
   removeEntry(scopedKey("chargeRecords", token));
 }
 
-export function getChargesCache(token, phoneNumber) {
-  return getCachedData(scopedKey(CHARGES_CACHE_KIND, token, phoneNumber));
+export function getChargesCache(token, countryCode, phoneNumber) {
+  return getCachedData(scopedKey(CHARGES_CACHE_KIND, token, chargesCacheSuffix(countryCode, phoneNumber)));
 }
 
-export function setChargesCache(token, phoneNumber, data) {
-  setCachedData(scopedKey(CHARGES_CACHE_KIND, token, phoneNumber), data, CACHE_TTL.chargesByPhone);
+export function setChargesCache(token, countryCode, phoneNumber, data) {
+  setCachedData(
+    scopedKey(CHARGES_CACHE_KIND, token, chargesCacheSuffix(countryCode, phoneNumber)),
+    data,
+    CACHE_TTL.chargesByPhone,
+  );
 }
 
 export function getTremendousCatalogCache(token, countryCode, currencyCode) {
@@ -245,17 +258,23 @@ export async function loadChargeRecordsWithSWR(token, { force = false, fetcher, 
   });
 }
 
-export async function loadChargesWithSWR(token, phoneNumber, { force = false, fetcher, onData }) {
-  const cacheKey = scopedKey(CHARGES_CACHE_KIND, token, phoneNumber);
+export async function loadChargesWithSWR(
+  token,
+  countryCode,
+  phoneNumber,
+  { force = false, fetcher, onData },
+) {
+  const suffix = chargesCacheSuffix(countryCode, phoneNumber);
+  const cacheKey = scopedKey(CHARGES_CACHE_KIND, token, suffix);
   return loadWithSWR({
     force,
     cacheKey,
-    dedupeKey: scopedKey(CHARGES_CACHE_KIND, token, `${phoneNumber}:fetch`),
+    dedupeKey: scopedKey(CHARGES_CACHE_KIND, token, `${suffix}:fetch`),
     fetcher,
     onData,
     isValidResponse: (res) => res?.code === 200 && res?.data != null,
     extractData: (res) => res.data,
-    persist: (data) => setChargesCache(token, phoneNumber, data),
+    persist: (data) => setChargesCache(token, countryCode, phoneNumber, data),
     fingerprint: fingerprintCharges,
   });
 }

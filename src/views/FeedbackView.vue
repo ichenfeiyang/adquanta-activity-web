@@ -7,6 +7,7 @@ import { FEEDBACK_PAGE_ID } from "../lib/activity-analytics.js";
 import { requireActivitySession } from "../lib/activity-session.js";
 import { goToActivityCenter, goToFeedbackSuccess } from "../lib/activity-navigation.js";
 import { getActivityLocale } from "../lib/i18n/activity-locale.js";
+import { findSupportedRedeemCountry, getSavedRedeemCountryIso } from "../lib/redeem-country.js";
 import { useI18n } from "../composables/useI18n.js";
 import { assetUrl } from "../lib/asset-url.js";
 
@@ -31,6 +32,16 @@ function newRequestId() {
 // Reuse one request id until success so retries stay idempotent.
 const clientRequestId = ref(newRequestId());
 const contactEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function feedbackCountryCode() {
+  // Prefer an explicit market from the feedback URL, then the user's saved redeem
+  // country. Never fall back to India — unknown/missing means "未提供" on BE.
+  const query = { ...(session?.routeQuery || {}), ...(route.query || {}) };
+  const raw = query.country_code ?? query.countryCode ?? query.country ?? query.region ?? "";
+  const fromQuery = findSupportedRedeemCountry(Array.isArray(raw) ? raw[0] : raw)?.iso;
+  if (fromQuery) return fromQuery;
+  return getSavedRedeemCountryIso();
+}
 
 function validateContactEmail() {
   const value = contactEmail.value.trim();
@@ -77,13 +88,14 @@ async function submit() {
       contactEmail: normalizedEmail,
       locale: getActivityLocale(),
       clientRequestId: clientRequestId.value,
+      countryCode: feedbackCountryCode(),
     });
     if (result?.code !== 200) throw new Error(result?.message || t("feedback.submitFailed"));
     clientRequestId.value = newRequestId();
     track("rewards_feedback_submit_success", {
       element_id: "submit_feedback_button",
     });
-    goToFeedbackSuccess(router, session.activityId);
+    goToFeedbackSuccess(router, session.activityId, { countryCode: feedbackCountryCode() });
   } catch (e) {
     error.value = e?.message || t("feedback.submitFailed");
     track("rewards_feedback_submit_fail", {

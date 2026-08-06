@@ -264,6 +264,7 @@ export async function postActivityFeedback(options = {}, body = {}) {
       client_request_id: String(body.clientRequestId || ""),
       contact_email: String(body.contactEmail || ""),
       locale: String(body.locale || ""),
+      country_code: String(body.countryCode || ""),
     }),
     timeoutMs: 15_000,
   });

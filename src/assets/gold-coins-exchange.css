@@ -704,6 +704,15 @@ body {
   color: #6b7280;
 }
 
+.redeem-history-status {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.redeem-history-status--fail {
+  color: #dc2626;
+}
+
 .redeem-history-phone {
   font-size: 11px;
   color: #6b7280;

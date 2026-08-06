@@ -9,6 +9,8 @@ export const DEFAULT_REDEEM_COUNTRY = {
 
 export const SUPPORTED_REDEEM_COUNTRIES = [
   DEFAULT_REDEEM_COUNTRY,
+  { iso: "US", dialCode: "+1", name: "United States", nameKey: "redeem.countryUS", flag: "🇺🇸" },
+  { iso: "CA", dialCode: "+1", name: "Canada", nameKey: "redeem.countryCA", flag: "🇨🇦" },
   { iso: "ID", dialCode: "+62", name: "Indonesia", nameKey: "redeem.countryID", flag: "🇮🇩" },
   { iso: "PH", dialCode: "+63", name: "Philippines", nameKey: "redeem.countryPH", flag: "🇵🇭" },
   { iso: "PK", dialCode: "+92", name: "Pakistan", nameKey: "redeem.countryPK", flag: "🇵🇰" },
@@ -29,10 +31,27 @@ export function getSavedRedeemCountry() {
   try {
     const iso = sessionStorage.getItem(USER_SELECTION_KEY);
     if (!iso) return null;
-    return resolveRedeemCountry(iso);
+    return findSupportedRedeemCountry(iso);
   } catch (_) {
     return null;
   }
+}
+
+/** Returns a supported country or null (does not fall back to India). */
+export function findSupportedRedeemCountry(iso) {
+  const code = String(iso || "")
+    .trim()
+    .toUpperCase();
+  if (!code) return null;
+  return SUPPORTED_REDEEM_COUNTRIES.find((c) => c.iso === code) || null;
+}
+
+/**
+ * Explicit user-selected ISO from sessionStorage, or "" when unset/unknown.
+ * Unlike getInitialRedeemCountry, never defaults to India.
+ */
+export function getSavedRedeemCountryIso() {
+  return getSavedRedeemCountry()?.iso || "";
 }
 
 export function saveRedeemCountry(iso) {
@@ -50,23 +69,25 @@ export function getInitialRedeemCountry() {
 /** ISO 3166-1 alpha-2 → Tremendous currency + display symbol */
 export const REDEEM_COUNTRY_CURRENCIES = {
   IN: { code: "INR", symbol: "₹" },
+  US: { code: "USD", symbol: "$" },
+  CA: { code: "CAD", symbol: "C$" },
   ID: { code: "IDR", symbol: "Rp" },
   PH: { code: "PHP", symbol: "₱" },
   PK: { code: "PKR", symbol: "Rs" },
   BD: { code: "BDT", symbol: "৳" },
   NP: { code: "NPR", symbol: "Rs" },
-  US: { code: "USD", symbol: "$" },
 };
 
 const GIFT_CURRENCY_CODES_BY_COUNTRY = {
   IN: ["INR", "USD"],
+  US: ["USD"],
+  CA: ["CAD", "USD"],
   ID: ["IDR", "USD"],
   PH: ["PHP", "USD"],
   // USD is first where the current activity catalog has no local-currency products.
   PK: ["USD", "PKR"],
   BD: ["BDT", "USD"],
   NP: ["USD", "NPR"],
-  US: ["USD"],
 };
 
 const GIFT_CURRENCY_LABEL_KEYS = {
@@ -76,6 +97,7 @@ const GIFT_CURRENCY_LABEL_KEYS = {
   PKR: "redeem.currencyPKR",
   BDT: "redeem.currencyBDT",
   NPR: "redeem.currencyNPR",
+  CAD: "redeem.currencyCAD",
   USD: "redeem.currencyUSD",
 };
 
@@ -121,7 +143,7 @@ export function formatPhoneDisplay(phoneRaw = "") {
   const digits = String(phoneRaw || "").replace(/\D/g, "");
   if (!digits) return "-";
 
-  // Current countries have no nested dial-code prefixes; if that changes, match longest prefix first.
+  // US and Canada share +1; display formatting only needs the common dial-code prefix.
   for (const country of SUPPORTED_REDEEM_COUNTRIES) {
     const cc = country.dialCode.replace(/\D/g, "");
     if (digits.startsWith(cc) && digits.length > cc.length) {
