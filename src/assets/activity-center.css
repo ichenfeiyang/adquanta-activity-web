@@ -1418,13 +1418,57 @@ body {
   box-shadow: 0 4px 12px rgba(236, 91, 19, 0.06);
 }
 
+.tc-flow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
 .tc-flow-title {
   font-size: 14px;
   line-height: 1.05;
   font-weight: 800;
   color: #050914;
-  margin-bottom: 11px;
+  margin: 0;
   letter-spacing: 0;
+}
+
+.tc-rules-entry {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid rgba(236, 78, 11, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #df4c0b;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(205, 65, 5, 0.07);
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.tc-rules-entry svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.tc-rules-entry:active {
+  transform: scale(0.97);
+}
+
+.tc-rules-entry:focus-visible {
+  outline: 3px solid rgba(255, 174, 74, 0.42);
+  outline-offset: 2px;
 }
 
 .tc-flow-steps {
@@ -1558,7 +1602,16 @@ body {
 
   .tc-flow-title {
     font-size: 13px;
+  }
+
+  .tc-flow-header {
     margin-bottom: 10px;
+  }
+
+  .tc-rules-entry {
+    min-height: 30px;
+    padding: 5px 9px;
+    font-size: 10.5px;
   }
 
   .tc-flow-steps {

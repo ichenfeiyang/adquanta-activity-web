@@ -5,14 +5,18 @@ import { ROUTE_NAMES } from "../lib/activity-pages.js";
 import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useI18n } from "../composables/useI18n.js";
 import { useRoute, useRouter } from "vue-router";
+import { ref } from "vue";
 import { goToFeedback } from "../lib/activity-navigation.js";
 import { getSavedRedeemCountryIso } from "../lib/redeem-country.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import ActivityLanguageSwitcher from "../components/ActivityLanguageSwitcher.vue";
+import ActivityRulesModal from "../components/ActivityRulesModal.vue";
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const rulesVisible = ref(false);
+
 function openFeedback() {
   window.ActivityBridgeHelper?.trackEvent?.("rewards_feedback_entry_click", {
     page_id: ACTIVITY_CENTER_PAGE_ID,
@@ -23,6 +27,21 @@ function openFeedback() {
     String(route.query.country_code || route.query.countryCode || route.query.country || "").trim() ||
     getSavedRedeemCountryIso();
   goToFeedback(router, String(route.query.activity_id || ""), { countryCode });
+}
+
+function openRules() {
+  try {
+    window.ActivityBridgeHelper?.trackEvent?.("activity_rules_entry_click", {
+      page_id: ACTIVITY_CENTER_PAGE_ID,
+      element_id: "rules_entry",
+      element_name: "Rules",
+    })?.catch?.(() => {});
+  } catch (_) {}
+  rulesVisible.value = true;
+}
+
+function closeRules() {
+  rulesVisible.value = false;
 }
 
 useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
@@ -184,7 +203,21 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
 
       <section id="tc-video-task-section" class="tc-section">
         <div class="tc-card tc-flow-card">
-          <h2 class="tc-flow-title">{{ t('center.flowHowTitle') }}</h2>
+          <div class="tc-flow-header">
+            <h2 class="tc-flow-title">{{ t('center.flowHowTitle') }}</h2>
+            <button
+              type="button"
+              class="tc-rules-entry"
+              aria-haspopup="dialog"
+              @click="openRules"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M7 3.5h7.5L19 8v12.5H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M14.5 3.5V8H19M9 12h6M9 15.5h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>{{ t('rules.entry') }}</span>
+            </button>
+          </div>
           <div class="tc-flow-steps">
             <div class="tc-flow-step">
               <div class="tc-flow-icon">
@@ -231,6 +264,8 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       </section>
     </main>
   </div>
+
+  <ActivityRulesModal :visible="rulesVisible" @close="closeRules" />
 
   <div id="tc-coin-rain-overlay" class="tc-coin-rain-overlay" style="display:none;">
     <button id="tc-coin-rain-leave" type="button" class="tc-coin-rain-leave" :aria-label="t('common.close')">×</button>

@@ -7,6 +7,123 @@
     "feedbackSubmitted": "Feedback Submitted",
     "default": "Page"
   },
+  "rules": {
+    "entry": "Rules",
+    "ariaLabel": "Rewards Center Rules",
+    "eyebrow": "Rewards Guide",
+    "title": "Rewards Center Rules",
+    "subtitle": "Everything you need to know about earning coins, enjoying activities and redeeming rewards.",
+    "quickNav": "Explore rules",
+    "sectionLabel": "Section {number}",
+    "stepLabel": "Step {number}",
+    "noteLabel": "Good to know",
+    "done": "Got it",
+    "sections": {
+      "about": {
+        "title": "What is the Rewards Center?",
+        "body": "Da Fit Rewards Center is a benefits hub created for users. Earn coins through daily check-ins, Lucky Spin, Coin Rain and more, then redeem them for mobile airtime, data packs, gift cards and other real rewards. Join activities every day and turn your healthy lifestyle and daily app use into more benefits."
+      },
+      "coins": {
+        "title": "My Coins",
+        "body": "At the top of the Rewards Center, you can see your current coin balance and how many more coins you need for the lowest-value reward. Coins are added to your account automatically and remain available after you leave or reopen Da Fit. Once your balance reaches a redemption requirement, open the rewards page and choose the reward you want.",
+        "note": "Uninstalling Da Fit or clearing Rewards Center data may clear your Rewards Center information and benefits. Please proceed carefully."
+      },
+      "checkin": {
+        "title": "Daily Check-in",
+        "body": "Visit the Rewards Center every day to check in and claim coins. You can check in once per day. After checking in, you may claim the base coins directly or watch a rewarded video to double them.",
+        "chest": "On the 3rd, 5th and 7th days of a continuous check-in streak, a Lucky Chest may appear after check-in. You must watch a rewarded video to open it and receive random bonus coins. If you skip the chest, it will not appear again that day."
+      },
+      "spin": {
+        "title": "Lucky Spin",
+        "body": "You can play Lucky Spin up to 20 times per day. Each spin is unlocked by watching one rewarded video. After the wheel stops, you may watch another video to double the coins won from that spin."
+      },
+      "coinRain": {
+        "title": "Coin Rain",
+        "body": "Coin Rain is a timed interactive activity available once per day. Tap “Play Now” to start a 3-second countdown, then tap as many falling coins as possible during the 30-second game. When time is up, claim the collected coins directly or watch a rewarded video to double them."
+      },
+      "rewards": {
+        "title": "Redeem Rewards",
+        "body": "When your coin balance meets the requirement, open “Redeem Rewards” to choose a reward.",
+        "supported": "Available rewards currently include mobile airtime, data packs and gift cards. Reward availability varies by country and region; the options shown on the redemption page are final.",
+        "rateNote": "Exchange rates, product prices, operating costs and reward supply can change. Coin requirements, available values and redemption rates may therefore be adjusted. Always refer to the latest information shown on the Rewards Center page."
+      },
+      "topup": {
+        "title": "Mobile Airtime & Data Packs",
+        "intro": "Follow these steps when redeeming mobile airtime or a data pack:",
+        "step1": "Enter a correct mobile number. The system uses it to identify the corresponding country and carrier.",
+        "step2": "Confirm the detected carrier. If detection succeeds, select the carrier to view the supported airtime values or data plans. If no carrier is detected, the number or region may not currently be supported.",
+        "step3": "Choose an available airtime value or data plan. Each option shows the number of coins required.",
+        "step4": "Select “Redeem Now” after the number is valid, the carrier is identified, a supported option is selected and your balance is sufficient.",
+        "unsupported": "If your number is not supported, the carrier may not yet be connected, the number type may be ineligible, or reward supply in that region may be limited. We will continue adding carriers and reward options."
+      },
+      "giftCards": {
+        "title": "Gift Cards",
+        "intro": "Follow these steps when redeeming a gift card:",
+        "step1": "Choose a gift card available in your country or region. Supported brands may vary by location.",
+        "step2": "Choose a gift card value. Different values require different amounts of coins.",
+        "step3": "Enter the recipient name and a valid email address. The email is used by our service provider only to deliver the reward, so check it carefully.",
+        "step4": "Select “Redeem Now” only after the gift card, value and recipient information are complete and your coin balance is sufficient."
+      },
+      "recent": {
+        "title": "Recent Successful Redemptions",
+        "body": "The Rewards Center may show recent successful redemptions, including an anonymous user ID, redeemed reward, redemption date and success status. These records help you understand real reward activity in the Rewards Center."
+      },
+      "feedback": {
+        "title": "Feedback",
+        "body": "Select “Feedback” to share suggestions about activities, rewards, redemption problems or your overall experience. Each submission can contain up to 300 characters, and your feedback helps us keep improving the Rewards Center."
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Quick answers to common reward and redemption questions.",
+      "items": {
+        "1": {
+          "question": "How do I redeem a reward?",
+          "answer": "When your balance meets the requirement, select “Redeem” at the top of the Rewards Center. Choose mobile airtime, a data pack or a gift card, then complete the required phone, carrier, value or email information and submit the redemption."
+        },
+        "2": {
+          "question": "Why has the coin requirement increased?",
+          "answer": "Redemption rates may change because of exchange rates, product prices and reward supply. Please refer to the requirement currently shown on the redemption page."
+        },
+        "3": {
+          "question": "Do coins expire?",
+          "answer": "Coins currently do not expire automatically over time. As long as your Rewards Center account remains available, earned coins stay in your balance for eligible rewards."
+        },
+        "4": {
+          "question": "Why can’t I redeem a reward?",
+          "answer": "You must have enough coins, choose a valid reward and provide complete, correct information. If your balance is insufficient, continue participating in activities to earn more coins."
+        },
+        "5": {
+          "question": "Why can’t I redeem airtime or data after entering my number?",
+          "answer": "Your mobile number may not support the selected plan, carrier or redemption service at this time."
+        },
+        "6": {
+          "question": "Why are rewards different in each country?",
+          "answer": "Carrier partnerships, reward supply and service coverage vary by country and region. Available airtime, data packs and gift cards therefore differ; please refer to the options shown in the Rewards Center."
+        },
+        "7": {
+          "question": "Why is the redemption button disabled?",
+          "answer": "“Redeem Now” becomes available only when you have selected a valid reward, entered all required information correctly and have enough coins."
+        },
+        "8": {
+          "question": "How long does it take to receive a reward?",
+          "answer": "Delivery time varies by reward type, country, region and service provider. Follow the on-screen status and check the email address provided for gift card delivery."
+        },
+        "9": {
+          "question": "Will my coins remain after uninstalling Da Fit?",
+          "answer": "Uninstalling Da Fit or clearing Rewards Center data may clear your Rewards Center account information and benefits. Please proceed carefully."
+        },
+        "10": {
+          "question": "Why didn’t I receive a reward after watching a video?",
+          "answer": "Make sure the rewarded video plays to completion. An incomplete video, network problem or unmet reward condition may prevent the reward from being issued."
+        },
+        "11": {
+          "question": "Why can’t an ad load or play?",
+          "answer": "Ad availability depends on your network, region and current ad supply. If an ad fails to load, please try again later."
+        }
+      }
+    }
+  },
   "common": {
     "goldCoins": "Coins",
     "coins": "Coins",

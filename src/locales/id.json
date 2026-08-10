@@ -7,6 +7,123 @@
     "feedbackSubmitted": "Masukan Terkirim",
     "default": "Halaman"
   },
+  "rules": {
+    "entry": "Aturan",
+    "ariaLabel": "Aturan Pusat Hadiah",
+    "eyebrow": "Panduan Hadiah",
+    "title": "Aturan Pusat Hadiah",
+    "subtitle": "Semua yang perlu Anda ketahui tentang mendapatkan koin, mengikuti aktivitas, dan menukarkan hadiah.",
+    "quickNav": "Jelajahi aturan",
+    "sectionLabel": "Bagian {number}",
+    "stepLabel": "Langkah {number}",
+    "noteLabel": "Perlu diketahui",
+    "done": "Mengerti",
+    "sections": {
+      "about": {
+        "title": "Apa itu Pusat Hadiah?",
+        "body": "Pusat Hadiah Da Fit adalah platform manfaat yang dibuat untuk pengguna. Dapatkan koin melalui check-in harian, Lucky Spin, Hujan Koin, dan aktivitas lainnya, lalu tukarkan dengan pulsa, paket data, kartu hadiah, dan hadiah nyata lainnya. Ikuti aktivitas setiap hari dan ubah gaya hidup sehat serta penggunaan aplikasi Anda menjadi lebih banyak manfaat."
+      },
+      "coins": {
+        "title": "Koin Saya",
+        "body": "Di bagian atas Pusat Hadiah, Anda dapat melihat saldo koin saat ini dan jumlah koin yang masih dibutuhkan untuk hadiah dengan nilai terendah. Koin otomatis ditambahkan ke akun dan tetap tersedia setelah Anda keluar atau membuka kembali Da Fit. Setelah saldo memenuhi syarat, buka halaman penukaran dan pilih hadiah yang diinginkan.",
+        "note": "Menghapus instalasi Da Fit atau membersihkan data Pusat Hadiah dapat menghapus informasi dan manfaat Pusat Hadiah Anda. Harap berhati-hati."
+      },
+      "checkin": {
+        "title": "Check-in Harian",
+        "body": "Kunjungi Pusat Hadiah setiap hari untuk check-in dan mengambil koin. Anda dapat check-in satu kali per hari. Setelah check-in, Anda dapat langsung mengambil koin dasar atau menonton video berhadiah untuk menggandakannya.",
+        "chest": "Pada hari ke-3, ke-5, dan ke-7 dari rangkaian check-in, Peti Keberuntungan mungkin muncul setelah check-in. Anda harus menonton video berhadiah untuk membukanya dan mendapatkan koin bonus acak. Jika dilewati, peti tidak akan muncul lagi pada hari itu."
+      },
+      "spin": {
+        "title": "Lucky Spin",
+        "body": "Anda dapat memainkan Lucky Spin hingga 20 kali per hari. Setiap putaran dibuka dengan menonton satu video berhadiah. Setelah roda berhenti, Anda dapat menonton video lain untuk menggandakan koin dari putaran tersebut."
+      },
+      "coinRain": {
+        "title": "Hujan Koin",
+        "body": "Hujan Koin adalah aktivitas interaktif berbatas waktu yang dapat dimainkan satu kali per hari. Ketuk “Main Sekarang” untuk memulai hitung mundur 3 detik, lalu ketuk sebanyak mungkin koin yang jatuh selama permainan 30 detik. Setelah waktu habis, ambil koin yang terkumpul atau tonton video berhadiah untuk menggandakannya."
+      },
+      "rewards": {
+        "title": "Tukar Hadiah",
+        "body": "Jika saldo koin memenuhi persyaratan, buka “Tukar Hadiah” untuk memilih hadiah.",
+        "supported": "Hadiah yang tersedia saat ini meliputi pulsa, paket data, dan kartu hadiah. Ketersediaan hadiah berbeda menurut negara dan wilayah; pilihan yang ditampilkan di halaman penukaran adalah acuan akhir.",
+        "rateNote": "Nilai tukar, harga produk, biaya operasional, dan persediaan hadiah dapat berubah. Jumlah koin, nominal hadiah, dan rasio penukaran dapat disesuaikan. Selalu lihat informasi terbaru di halaman Pusat Hadiah."
+      },
+      "topup": {
+        "title": "Pulsa & Paket Data",
+        "intro": "Ikuti langkah berikut untuk menukarkan pulsa atau paket data:",
+        "step1": "Masukkan nomor ponsel yang benar. Sistem menggunakannya untuk mengenali negara dan operator terkait.",
+        "step2": "Konfirmasikan operator yang terdeteksi. Jika berhasil, pilih operator untuk melihat nominal pulsa atau paket data yang tersedia. Jika tidak terdeteksi, nomor atau wilayah tersebut mungkin belum didukung.",
+        "step3": "Pilih nominal pulsa atau paket data yang tersedia. Setiap pilihan menampilkan jumlah koin yang diperlukan.",
+        "step4": "Pilih “Tukar Sekarang” setelah nomor valid, operator dikenali, pilihan yang didukung telah dipilih, dan saldo koin mencukupi.",
+        "unsupported": "Jika nomor tidak didukung, operator mungkin belum terhubung, jenis nomor tidak memenuhi syarat, atau persediaan hadiah di wilayah tersebut terbatas. Kami akan terus menambahkan operator dan pilihan hadiah."
+      },
+      "giftCards": {
+        "title": "Kartu Hadiah",
+        "intro": "Ikuti langkah berikut untuk menukarkan kartu hadiah:",
+        "step1": "Pilih kartu hadiah yang tersedia di negara atau wilayah Anda. Merek yang didukung dapat berbeda menurut lokasi.",
+        "step2": "Pilih nominal kartu hadiah. Nominal yang berbeda memerlukan jumlah koin yang berbeda.",
+        "step3": "Masukkan nama penerima dan alamat email yang valid. Email hanya digunakan oleh penyedia layanan kami untuk mengirim hadiah, jadi periksa dengan teliti.",
+        "step4": "Pilih “Tukar Sekarang” setelah kartu hadiah, nominal, dan informasi penerima lengkap serta saldo koin mencukupi."
+      },
+      "recent": {
+        "title": "Penukaran Berhasil Terbaru",
+        "body": "Pusat Hadiah dapat menampilkan penukaran terbaru yang berhasil, termasuk ID pengguna anonim, hadiah, tanggal penukaran, dan status berhasil. Catatan ini membantu Anda melihat aktivitas hadiah nyata di Pusat Hadiah."
+      },
+      "feedback": {
+        "title": "Masukan",
+        "body": "Pilih “Masukan” untuk membagikan saran tentang aktivitas, hadiah, masalah penukaran, atau pengalaman Anda. Setiap kiriman dapat berisi hingga 300 karakter dan membantu kami terus meningkatkan Pusat Hadiah."
+      }
+    },
+    "faq": {
+      "title": "Pertanyaan yang Sering Diajukan",
+      "subtitle": "Jawaban cepat untuk pertanyaan umum tentang hadiah dan penukaran.",
+      "items": {
+        "1": {
+          "question": "Bagaimana cara menukarkan hadiah?",
+          "answer": "Jika saldo memenuhi persyaratan, pilih “Tukar” di bagian atas Pusat Hadiah. Pilih pulsa, paket data, atau kartu hadiah, lengkapi informasi nomor, operator, nominal, atau email yang diminta, lalu kirim penukaran."
+        },
+        "2": {
+          "question": "Mengapa jumlah koin yang diperlukan meningkat?",
+          "answer": "Rasio penukaran dapat berubah karena nilai tukar, harga produk, dan persediaan hadiah. Lihat persyaratan yang saat ini ditampilkan di halaman penukaran."
+        },
+        "3": {
+          "question": "Apakah koin akan kedaluwarsa?",
+          "answer": "Saat ini koin tidak kedaluwarsa secara otomatis. Selama akun Pusat Hadiah tetap tersedia, koin yang diperoleh akan tetap tersimpan untuk hadiah yang memenuhi syarat."
+        },
+        "4": {
+          "question": "Mengapa saya tidak dapat menukarkan hadiah?",
+          "answer": "Anda harus memiliki cukup koin, memilih hadiah yang valid, dan memberikan informasi yang lengkap serta benar. Jika saldo tidak cukup, ikuti lebih banyak aktivitas untuk mendapatkan koin."
+        },
+        "5": {
+          "question": "Mengapa saya tidak dapat menukar pulsa atau data setelah memasukkan nomor?",
+          "answer": "Nomor ponsel Anda mungkin belum mendukung paket, operator, atau layanan penukaran yang dipilih."
+        },
+        "6": {
+          "question": "Mengapa hadiah berbeda di setiap negara?",
+          "answer": "Kerja sama operator, persediaan hadiah, dan jangkauan layanan berbeda menurut negara dan wilayah. Karena itu, pulsa, paket data, dan kartu hadiah yang tersedia juga berbeda."
+        },
+        "7": {
+          "question": "Mengapa tombol penukaran dinonaktifkan?",
+          "answer": "“Tukar Sekarang” hanya aktif jika Anda telah memilih hadiah yang valid, memasukkan semua informasi dengan benar, dan memiliki cukup koin."
+        },
+        "8": {
+          "question": "Berapa lama hadiah diterima?",
+          "answer": "Waktu pengiriman berbeda menurut jenis hadiah, negara, wilayah, dan penyedia layanan. Perhatikan status di layar dan email yang diberikan untuk pengiriman kartu hadiah."
+        },
+        "9": {
+          "question": "Apakah koin tetap ada setelah Da Fit dihapus?",
+          "answer": "Menghapus instalasi Da Fit atau membersihkan data Pusat Hadiah dapat menghapus informasi akun dan manfaat Anda. Harap berhati-hati."
+        },
+        "10": {
+          "question": "Mengapa hadiah tidak diterima setelah menonton video?",
+          "answer": "Pastikan video berhadiah diputar sampai selesai. Video yang tidak selesai, masalah jaringan, atau syarat yang belum terpenuhi dapat membuat hadiah tidak diberikan."
+        },
+        "11": {
+          "question": "Mengapa iklan tidak dapat dimuat atau diputar?",
+          "answer": "Ketersediaan iklan bergantung pada jaringan, wilayah, dan persediaan iklan saat ini. Jika gagal dimuat, silakan coba lagi nanti."
+        }
+      }
+    }
+  },
   "common": {
     "goldCoins": "Koin",
     "coins": "Koin",
