@@ -2418,7 +2418,7 @@ body {
   overflow-wrap: normal;
 }
 
-@media (min-width: 430px) {
+@media (min-width: 500px) {
   .tc-video-progress-label {
     width: auto;
     white-space: nowrap;

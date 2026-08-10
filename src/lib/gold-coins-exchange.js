@@ -548,7 +548,7 @@ export class GoldCoinsExchange {
 
     try {
       this.chargesLoading = true;
-      let result = await loadChargesWithSWR(token, phoneNumber, {
+      let result = await loadChargesWithSWR(token, this.state.countryCodeEnum, phoneNumber, {
         force,
         fetcher: () =>
           getCharges(this.config.apiOptions, {
@@ -561,7 +561,7 @@ export class GoldCoinsExchange {
       if (!this.isChargesLookupCurrent(lookupKey)) return;
 
       if (!result.ok && !force) {
-        result = await loadChargesWithSWR(token, phoneNumber, {
+        result = await loadChargesWithSWR(token, this.state.countryCodeEnum, phoneNumber, {
           force: true,
           fetcher: () =>
             getCharges(this.config.apiOptions, {

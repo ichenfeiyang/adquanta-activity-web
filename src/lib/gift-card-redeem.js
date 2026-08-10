@@ -57,6 +57,28 @@ function formatGiftHistoryDate(value) {
   return formatActivityRecordDate(value, "—");
 }
 
+export function giftDeliveryFailureMessageKey(status, failureReasonCode) {
+  if (status !== "delivery_failed") return "";
+  switch (String(failureReasonCode || "unknown").trim().toLowerCase()) {
+    case "invalid_email":
+      return "redeem.giftDeliveryFailedInvalidEmail";
+    case "invalid_domain":
+      return "redeem.giftDeliveryFailedInvalidDomain";
+    case "mailbox_unavailable":
+      return "redeem.giftDeliveryFailedMailboxUnavailable";
+    default:
+      return "redeem.giftDeliveryFailed";
+  }
+}
+
+function giftDeliveryFailureMessage(record, status, fallbackCoins) {
+  const messageKey = giftDeliveryFailureMessageKey(status, record?.failure_reason_code);
+  if (!messageKey) return "";
+  const refundedCoins = Number(record?.refunded_coin ?? fallbackCoins);
+  const coins = Number.isFinite(refundedCoins) && refundedCoins > 0 ? refundedCoins : fallbackCoins;
+  return t(messageKey, { coins });
+}
+
 function buildBrandIconHtml(product) {
   const logoUrl = String(product?.logo_url || "").trim();
   if (logoUrl) {
@@ -817,11 +839,13 @@ export const giftCardRedeemMethods = {
               : status === "fail" || status === "failed" || status === "delivery_failed"
                 ? "✕"
                 : "✓";
+          const failureMessage = giftDeliveryFailureMessage(record, status, coins);
           return `<div class="redeem-history-item">
             <div class="redeem-history-icon ${iconClass}">${iconText}</div>
             <div class="redeem-history-main">
               <div class="redeem-history-title">${escapeHtml(title)}</div>
               <div class="redeem-history-subtitle">${escapeHtml(formatGiftHistoryDate(record.created_at))}</div>
+              ${failureMessage ? `<div class="redeem-history-status redeem-history-status--fail">${escapeHtml(failureMessage)}</div>` : ""}
             </div>
             <div class="redeem-history-amount">
               <div>-${escapeHtml(value)}</div>

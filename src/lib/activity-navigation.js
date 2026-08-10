@@ -24,6 +24,13 @@ export function activityCenterQuery(activityId) {
   return compactQuery(activityId ? { activity_id: activityId } : {});
 }
 
+export function feedbackQuery(activityId, options = {}) {
+  return compactQuery({
+    ...activityCenterQuery(activityId),
+    country_code: options.countryCode || "",
+  });
+}
+
 export function goToActivityCenter(router, activityId) {
   return router.push({
     name: ROUTE_NAMES.ACTIVITY_CENTER,
@@ -45,12 +52,18 @@ export function goToGoldCoinsExchange(router, activityId, options = {}) {
   });
 }
 
-export function goToFeedback(router, activityId) {
-  return router.push({ name: ROUTE_NAMES.FEEDBACK, query: activityCenterQuery(activityId) });
+export function goToFeedback(router, activityId, options = {}) {
+  return router.push({
+    name: ROUTE_NAMES.FEEDBACK,
+    query: feedbackQuery(activityId, options),
+  });
 }
 
-export function goToFeedbackSuccess(router, activityId) {
-  return router.replace({ name: ROUTE_NAMES.FEEDBACK_SUCCESS, query: activityCenterQuery(activityId) });
+export function goToFeedbackSuccess(router, activityId, options = {}) {
+  return router.replace({
+    name: ROUTE_NAMES.FEEDBACK_SUCCESS,
+    query: feedbackQuery(activityId, options),
+  });
 }
 
 export function goToTopupStatus(router, payload = {}) {

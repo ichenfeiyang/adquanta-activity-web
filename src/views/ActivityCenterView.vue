@@ -6,6 +6,7 @@ import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useI18n } from "../composables/useI18n.js";
 import { useRoute, useRouter } from "vue-router";
 import { goToFeedback } from "../lib/activity-navigation.js";
+import { getSavedRedeemCountryIso } from "../lib/redeem-country.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import ActivityLanguageSwitcher from "../components/ActivityLanguageSwitcher.vue";
 
@@ -18,7 +19,10 @@ function openFeedback() {
     element_id: "feedback_entry",
     element_name: "点击活动中心首页反馈按钮",
   });
-  goToFeedback(router, String(route.query.activity_id || ""));
+  const countryCode =
+    String(route.query.country_code || route.query.countryCode || route.query.country || "").trim() ||
+    getSavedRedeemCountryIso();
+  goToFeedback(router, String(route.query.activity_id || ""), { countryCode });
 }
 
 useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
