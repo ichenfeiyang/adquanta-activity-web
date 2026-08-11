@@ -1,0 +1,104 @@
+name: Build And Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - test
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # The workflow is also present in developer forks. Only the reviewed commit
+    # merged into the upstream repository is allowed to use deployment secrets.
+    if: >-
+      github.repository == 'Ad-Quanta/adquanta-activity-web' &&
+      (github.ref_name == 'master' || github.ref_name == 'test')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build production dist
+        if: github.ref_name == 'master'
+        env:
+          VITE_ACTIVITY_API_BASE_URL: ${{ secrets.VITE_ACTIVITY_API_BASE_URL }}
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
+        run: |
+          if [[ "$VITE_ACTIVITY_API_BASE_URL" != https://* ]]; then
+            echo "::error::VITE_ACTIVITY_API_BASE_URL must be a non-empty HTTPS URL"
+            exit 1
+          fi
+          npm run build
+
+      - name: Build test dist
+        if: github.ref_name == 'test'
+        env:
+          VITE_ACTIVITY_API_BASE_URL: ${{ secrets.TEST_VITE_ACTIVITY_API_BASE_URL }}
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.TEST_VITE_GA_MEASUREMENT_ID }}
+        run: |
+          if [[ "$VITE_ACTIVITY_API_BASE_URL" != https://* ]]; then
+            echo "::error::TEST_VITE_ACTIVITY_API_BASE_URL must be a non-empty HTTPS URL"
+            exit 1
+          fi
+          npm run build
+
+      - name: Test deployment script
+        run: python3 -m unittest scripts/deploy_static_test.py
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install boto3
+
+      - name: Deploy master to Volcengine TOS
+        if: github.ref_name == 'master'
+        env:
+          STORAGE_PROVIDER: Volcengine TOS
+          STORAGE_ACCESS_KEY_ID: ${{ secrets.TOS_ACCESS_KEY_ID }}
+          STORAGE_SECRET_ACCESS_KEY: ${{ secrets.TOS_SECRET_ACCESS_KEY }}
+          STORAGE_ENDPOINT: ${{ secrets.TOS_ENDPOINT }}
+          STORAGE_REGION: ${{ secrets.TOS_REGION }}
+          STORAGE_BUCKET: ${{ secrets.TOS_BUCKET }}
+          STORAGE_KEY_PREFIX: ${{ secrets.TOS_KEY_PREFIX }}
+          STORAGE_ADDRESSING_STYLE: virtual
+          STORAGE_PUBLIC_URL: ${{ secrets.TOS_CDN_DOMAIN }}
+        run: python3 scripts/deploy_static.py
+
+      - name: Deploy test to Cloudflare R2
+        if: github.ref_name == 'test'
+        env:
+          STORAGE_PROVIDER: Cloudflare R2
+          STORAGE_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          STORAGE_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          STORAGE_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          STORAGE_REGION: auto
+          STORAGE_BUCKET: ${{ secrets.R2_BUCKET }}
+          STORAGE_KEY_PREFIX: ${{ secrets.R2_KEY_PREFIX }}
+          STORAGE_ADDRESSING_STYLE: path
+          STORAGE_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+        run: python3 scripts/deploy_static.py
