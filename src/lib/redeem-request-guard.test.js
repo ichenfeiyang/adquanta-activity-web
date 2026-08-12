@@ -58,6 +58,19 @@ test("findCurrentDenomination replaces a cached gift price with the refreshed op
   assert.equal(findCurrentDenomination([{ denomination: 200, spend_coin: 150 }], { denomination: 100 }), null);
 });
 
+test("findCurrentDenomination keeps the selected V2 prize when face values collide", () => {
+  const refreshed = findCurrentDenomination(
+    [
+      { prize_id: "prize_brand_a_10", denomination: 10, spend_coin: 900 },
+      { prize_id: "prize_brand_b_10", denomination: 10, spend_coin: 950 },
+    ],
+    { prize_id: "prize_brand_b_10", denomination: 10, spend_coin: 940 },
+  );
+
+  assert.equal(refreshed.prize_id, "prize_brand_b_10");
+  assert.equal(refreshed.spend_coin, 950);
+});
+
 test("isInsufficientCoinMessage recognizes backend balance errors", () => {
   assert.equal(isInsufficientCoinMessage("金币余额不足"), true);
   assert.equal(isInsufficientCoinMessage("Insufficient coin balance"), true);

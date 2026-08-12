@@ -1,14 +1,19 @@
+export function normalizeCheckinChestId(value) {
+  const id = String(value ?? "").trim();
+  return id && id !== "0" ? id : "";
+}
+
 export function normalizeCheckinChests(value) {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => ({
-      id: Number(item?.id ?? 0),
+      id: normalizeCheckinChestId(item?.id),
       continuous_day: Number(item?.continuous_day ?? 0),
       status: String(item?.status || ""),
       trigger: String(item?.trigger || ""),
       guaranteed: item?.guaranteed === true,
     }))
-    .filter((item) => item.id > 0 && item.status === "pending");
+    .filter((item) => item.id && item.status === "pending");
 }
 
 export function normalizeCheckinChestEligibleDays(value) {
@@ -32,7 +37,7 @@ export function readSoftClosedCheckinChestIds(now = new Date()) {
   try {
     const parsed = JSON.parse(sessionStorage.getItem(SOFT_CLOSED_CHEST_KEY) || "null");
     if (!parsed || parsed.date !== todayKey(now) || !Array.isArray(parsed.ids)) return new Set();
-    return new Set(parsed.ids.map(Number).filter((id) => id > 0));
+    return new Set(parsed.ids.map(normalizeCheckinChestId).filter(Boolean));
   } catch {
     return new Set();
   }
@@ -40,7 +45,7 @@ export function readSoftClosedCheckinChestIds(now = new Date()) {
 
 export function writeSoftClosedCheckinChestIds(ids, now = new Date()) {
   try {
-    const unique = [...new Set([...ids].map(Number).filter((id) => id > 0))];
+    const unique = [...new Set([...ids].map(normalizeCheckinChestId).filter(Boolean))];
     sessionStorage.setItem(SOFT_CLOSED_CHEST_KEY, JSON.stringify({ date: todayKey(now), ids: unique }));
   } catch {
     /* unavailable storage */
@@ -48,16 +53,16 @@ export function writeSoftClosedCheckinChestIds(ids, now = new Date()) {
 }
 
 export function markCheckinChestSoftClosed(chestId, now = new Date()) {
-  const id = Number(chestId);
-  if (!(id > 0)) return;
+  const id = normalizeCheckinChestId(chestId);
+  if (!id) return;
   const ids = readSoftClosedCheckinChestIds(now);
   ids.add(id);
   writeSoftClosedCheckinChestIds(ids, now);
 }
 
 export function clearCheckinChestSoftClosed(chestId, now = new Date()) {
-  const id = Number(chestId);
-  if (!(id > 0)) return;
+  const id = normalizeCheckinChestId(chestId);
+  if (!id) return;
   const ids = readSoftClosedCheckinChestIds(now);
   if (!ids.delete(id)) return;
   writeSoftClosedCheckinChestIds(ids, now);

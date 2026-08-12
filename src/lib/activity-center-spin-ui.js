@@ -93,6 +93,24 @@ export const spinUiMixin = {
     return `${y}${m}${day}`;
   },
 
+  setSpinStorageScope(scope) {
+    const nextScope = String(scope || "").trim();
+    if (nextScope === this._spinStorageScope) return;
+    this._spinStorageScope = nextScope;
+    // A local spin chance is only a UI cache. On account/activity changes,
+    // restore only the matching scoped value and never carry the previous
+    // user's chance into the new session.
+    this.currentSpinAvailable = nextScope ? this.loadSpinAvailableState() : 0;
+    this.clearWaitingAdForSpin();
+    this._turntableNeedsWatch = true;
+  },
+
+  getSpinStorageKey(name) {
+    const scope = String(this._spinStorageScope || "").trim();
+    if (!scope) return "";
+    return `${name}_${encodeURIComponent(scope)}_${this.getTodayDateKey()}`;
+  },
+
   getSpinWheelSubtitleText() {
     if (this._turntableNeedsWatch) {
       return t("center.spinSubtitleWatch");
@@ -145,16 +163,17 @@ export const spinUiMixin = {
   },
 
   getTodaySpinAvailableKey() {
-    return `activity_turntable_available_${this.getTodayDateKey()}`;
+    return this.getSpinStorageKey("activity_turntable_available");
   },
 
   getTodayTurntableDailyFirstShownKey() {
-    return `activity_turntable_daily_first_shown_${this.getTodayDateKey()}`;
+    return this.getSpinStorageKey("activity_turntable_daily_first_shown");
   },
 
   isTodayTurntableDailyFirstShown() {
     try {
-      return localStorage.getItem(this.getTodayTurntableDailyFirstShownKey()) === "1";
+      const key = this.getTodayTurntableDailyFirstShownKey();
+      return key ? localStorage.getItem(key) === "1" : false;
     } catch (_) {
       return false;
     }
@@ -162,13 +181,16 @@ export const spinUiMixin = {
 
   markTodayTurntableDailyFirstShown() {
     try {
-      localStorage.setItem(this.getTodayTurntableDailyFirstShownKey(), "1");
+      const key = this.getTodayTurntableDailyFirstShownKey();
+      if (key) localStorage.setItem(key, "1");
     } catch (_) {}
   },
 
   loadSpinAvailableState() {
     try {
-      const raw = localStorage.getItem(this.getTodaySpinAvailableKey()) || "0";
+      const key = this.getTodaySpinAvailableKey();
+      if (!key) return 0;
+      const raw = localStorage.getItem(key) || "0";
       const n = Number(raw);
       return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
     } catch (_) {
@@ -178,7 +200,8 @@ export const spinUiMixin = {
 
   saveSpinAvailableState() {
     try {
-      localStorage.setItem(this.getTodaySpinAvailableKey(), String(this.currentSpinAvailable));
+      const key = this.getTodaySpinAvailableKey();
+      if (key) localStorage.setItem(key, String(this.currentSpinAvailable));
     } catch (_) {}
   },
 
@@ -204,6 +227,13 @@ export const spinUiMixin = {
     if (!Number.isFinite(dec) || dec <= 0) return;
     this.currentSpinAvailable = Math.max(0, this.currentSpinAvailable - Math.floor(dec));
     this.saveSpinAvailableState();
+  },
+
+  discardSpinChance() {
+    this.currentSpinAvailable = 0;
+    this.saveSpinAvailableState();
+    this.clearWaitingAdForSpin();
+    this.enterSpinWatchAgainMode();
   },
 
   normalizeRouletteCoins(rouletteCoins) {
@@ -330,6 +360,15 @@ export const spinUiMixin = {
     }
     this.addSpinChance(1);
     this.enterSpinReadyMode();
+  },
+
+  restorePendingSpinChance() {
+    if (this.config.isDailyAdLimitReached?.()) return false;
+    this.clearWaitingAdForSpin();
+    this.currentSpinAvailable = Math.max(1, Number(this.currentSpinAvailable) || 0);
+    this.clampSpinCountByLimit();
+    this.enterSpinReadyMode();
+    return true;
   },
 
   enterSpinReadyMode() {
@@ -483,7 +522,14 @@ export const spinUiMixin = {
       const result = await this.config.onSpinRequest();
       if (!result?.ok) {
         this._spinInFlight = false;
-        this.setSpinWheelBottomButton({ disabled: false });
+        if (result?.discardChance) {
+          // localStorage is only a UI cache. If the server-side settlement is
+          // missing or definitively rejected, discard the stale local chance
+          // so the button cannot loop forever on an unclaimable Spin state.
+          this.discardSpinChance();
+        } else {
+          this.setSpinWheelBottomButton({ disabled: false });
+        }
         return;
       }
       prize = Number(result.coin ?? 0);

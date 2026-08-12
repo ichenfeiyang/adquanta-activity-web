@@ -170,6 +170,7 @@ export class ActivityCenterUI {
 
     this.dailySpinLimit = 5;
     this.spinPrizePool = [10, 20, 30, 50, 100, 150, 200, 10];
+    this._spinStorageScope = "";
     this.currentSpinAvailable = this.loadSpinAvailableState();
     // Turntable bottom-button state machine:
     // - needsWatch=true  => show "Watch to Spin/Watch to Spin Again"

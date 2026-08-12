@@ -36,9 +36,15 @@ import {
   SUPPORTED_REDEEM_COUNTRIES,
 } from "./redeem-country.js";
 import { shouldApplyLookupResult } from "./redeem-request-guard.js";
+import { isRetryableNetworkError } from "./fetch-with-retry.js";
 
-function isChargeRedeemTimeoutError(error) {
-  return error?.name === "AbortError";
+export function buildChargeRedeemIntentKey(payload = {}, token = "") {
+  return JSON.stringify({
+    token: String(token || ""),
+    prize_id: String(payload.prize_id || ""),
+    phone_number: String(payload.phone_number || ""),
+    send_value: String(payload.send_value ?? ""),
+  });
 }
 
 function createRechargeRequestId() {
@@ -46,6 +52,38 @@ function createRechargeRequestId() {
     return globalThis.crypto.randomUUID();
   }
   return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
+export function attachChargeRedeemRequestId(ctx, payload, token = "") {
+  const intentKey = buildChargeRedeemIntentKey(payload, token);
+  if (!ctx.retryChargeRequestId || ctx.retryChargeIntentKey !== intentKey) {
+    ctx.retryChargeRequestId = createRechargeRequestId();
+    ctx.retryChargeIntentKey = intentKey;
+  }
+  return {
+    ...payload,
+    client_request_id: ctx.retryChargeRequestId,
+  };
+}
+
+export function clearChargeRedeemRequestId(ctx) {
+  ctx.retryChargeRequestId = "";
+  ctx.retryChargeIntentKey = "";
+}
+
+export function isChargeRedeemOutcomeUnknown(error) {
+  return (
+    error?.name === "AbortError" ||
+    error?.name === "NetworkError" ||
+    error instanceof TypeError ||
+    isRetryableNetworkError(error)
+  );
+}
+
+export function handleChargeRedeemRequestError(ctx, error) {
+  const outcomeUnknown = isChargeRedeemOutcomeUnknown(error);
+  if (!outcomeUnknown) clearChargeRedeemRequestId(ctx);
+  return outcomeUnknown;
 }
 
 function formatRedeemCountryLabel(country) {
@@ -96,7 +134,7 @@ export class GoldCoinsExchange {
     // 当前用户金币（未获取到服务端数据前缺省 0）
     this.userGoldCoins = 0;
 
-    // 话费选项（来自 /api/v1/ops/activity/charges）
+    // 话费选项（来自 Activity V2 可兑奖奖品目录）
     /** @type {Array<{ provider_code: string, provider_name: string, logo_url?: string, products: Array<object> }> | null} */
     this.chargesProviders = null;
     /** 当前选中的运营商 key（优先 provider_code） */
@@ -112,10 +150,10 @@ export class GoldCoinsExchange {
 
     // Redeem request lock (prevent multi-click / multi-request)
     this.exchangeLoading = false;
-    // Kept only after a client timeout. The next tap reuses it so a delayed
-    // successful server write resolves to the existing order instead of
-    // freezing coins twice.
+    // Kept only while the outcome of the same top-up intent is unknown. The
+    // next tap reuses it so a delayed server write cannot freeze coins twice.
     this.retryChargeRequestId = "";
+    this.retryChargeIntentKey = "";
     this.lastSubmitAt = 0;
     this.submitDebounceMs = 800;
 
@@ -459,7 +497,7 @@ export class GoldCoinsExchange {
 
 
   /**
-   * 加载兑换记录（/api/v1/ops/activity/charges/records）
+   * 加载 Activity V2 兑换记录。
    */
 
 
@@ -531,7 +569,7 @@ export class GoldCoinsExchange {
   }
 
   /**
-   * 加载话费选项（/api/v1/ops/activity/charges），成功则用接口数据渲染面额
+   * 加载 Activity V2 话费奖品，成功则用接口数据渲染面额。
    */
   async loadCharges(options = {}) {
     const { force = false } = options;
@@ -853,15 +891,16 @@ export class GoldCoinsExchange {
       }
 
       // Backend requires sku_code + send_value (instead of charges_id).
-      clientRequestId = this.retryChargeRequestId || createRechargeRequestId();
       const selectedCharge = this.state.selectedCharge || {};
-      const res = await postChargeRedeem(this.config.apiOptions, {
+      const redeemRequest = attachChargeRedeemRequestId(this, {
+        prize_id: selectedCharge.prize_id || String(chargesId),
         sku_code: String(chargesId),
         send_value: sendValue,
         phone_number,
-        client_request_id: clientRequestId,
-      });
-      this.retryChargeRequestId = "";
+      }, this.config.apiOptions?.token);
+      clientRequestId = redeemRequest.client_request_id;
+      const res = await postChargeRedeem(this.config.apiOptions, redeemRequest);
+      clearChargeRedeemRequestId(this);
       const msg = res?.data?.message || res?.message || "";
       if (res?.code !== 200) {
         this.config.onExchangeFailed(msg || t("redeem.redeemFailed"));
@@ -903,13 +942,10 @@ export class GoldCoinsExchange {
       }
       return;
     } catch (error) {
-      if (isChargeRedeemTimeoutError(error)) {
-        // A timeout must never leave the exchange screen permanently locked.
-        // The server persists recharge orders without calling DingConnect, so
-        // a normal submit returns quickly; refresh server state and let the
-        // user retry if no order appears.
-        logger.warn("Redeem top-up request timed out; refreshing order state");
-        this.retryChargeRequestId = clientRequestId;
+      if (clientRequestId && handleChargeRedeemRequestError(this, error)) {
+        // A transport failure may happen after the server durably accepted the
+        // order. Refresh state and retain this intent's ID for the next tap.
+        logger.warn("Redeem top-up outcome is unknown; refreshing order state");
         this.config.onExchangePending(t("redeem.submissionPending"));
         void Promise.all([
           this.loadActivityInfo({ force: true }),
@@ -917,7 +953,7 @@ export class GoldCoinsExchange {
         ]);
         return;
       }
-      this.retryChargeRequestId = "";
+      clearChargeRedeemRequestId(this);
       logger.error("Redeem top-up failed", error);
       this.config.onExchangeFailed(error?.message || t("redeem.redeemFailed"));
     } finally {

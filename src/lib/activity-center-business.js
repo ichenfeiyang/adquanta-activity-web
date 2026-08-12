@@ -1,5 +1,6 @@
 import {
   getActivityInfo,
+  prepareActivityVideo,
   postActivityVideo,
   postCheckin,
   postCheckinChest,
@@ -21,7 +22,7 @@ import {
   videoCompletedRewardMessage,
 } from "./activity-messages.js";
 import * as logger from "./activity-logger.js";
-import { normalizeCheckinChests } from "./checkin-chest.js";
+import { normalizeCheckinChestId, normalizeCheckinChests } from "./checkin-chest.js";
 import { normalizeRecentRedemptions } from "./recent-redemptions.js";
 import { normalizeCoinRain } from "./coin-rain.js";
 
@@ -48,6 +49,12 @@ function normalizeWalletCoin(value) {
 }
 
 const CHECKIN_CHEST_QUEUE_KEY = "activity_checkin_chest_queue_v1";
+
+function createCheckinChestIdempotentKey() {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return `signin-chest-claim-${uuid}`;
+  return `signin-chest-claim-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+}
 
 function readCheckinChestQueue() {
   try {
@@ -337,7 +344,7 @@ export class ActivityCenterBusiness {
   }
 
   /**
-   * 加载活动基础数据（后端接口 /api/v1/ops/activity/info）
+   * 加载 Activity V2 活动基础数据。
    * 成功则用接口数据更新资产与任务；失败则返回错误
    * @param {Object} [apiOptions] - { baseUrl?, token? }
    * @param {{ force?: boolean }} [options] - force=true 跳过缓存直接请求
@@ -373,7 +380,7 @@ export class ActivityCenterBusiness {
   }
 
   /**
-   * 执行签到（调用后端 /api/v1/ops/activity/checkin），成功后刷新 activity info，返回弹框三处数据：coinFromCheckin、video_coin、multiplier
+   * 执行 V2 签到，成功后刷新 activity info，返回弹框三处数据：coinFromCheckin、video_coin、multiplier
    * @param {Object} [apiOptions] - { baseUrl?, token? }
    * @returns {Promise<{ ok: boolean, coinFromCheckin?: number, video_coin?: number, multiplier?: number }>}
    */
@@ -403,16 +410,16 @@ export class ActivityCenterBusiness {
   }
 
   /**
-   * 签到看视频成功领取奖励：调用 /api/v1/ops/activity/checkin(type=triple)，然后 tip message，再刷新基础信息
+   * 签到看视频成功后通过 V2 boost 动作领取奖励，再刷新基础信息。
    * @param {Object} [apiOptions] - { baseUrl?, token? }
    * @param {string} [video_id] - 看完视频后得到的视频 id（来自 SDK 回调）
    * @returns {Promise<{ ok: boolean }>}
    */
   async claimCheckinVideoReward(apiOptions = {}, video_id = "") {
-    logger.log("[Check-in video reward] Call /api/v1/ops/activity/checkin type=triple, video_id=" + video_id);
+    logger.log("[Check-in video reward] Settle V2 signin boost, video_id=" + video_id);
     let success = false;
     try {
-      const res = await postCheckin(apiOptions, { type: "triple" });
+      const res = await postCheckin(apiOptions, { type: "triple", video_id });
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200) {
         success = true;
@@ -436,21 +443,46 @@ export class ActivityCenterBusiness {
     return { ok: success };
   }
 
-  queueCheckinChestAction(action, chestId, adEventId = "") {
+  queueCheckinChestAction(action, chestId, adEventId = "", idempotentKey = "") {
     // Soft-close no longer uses dismiss; only claim needs offline replay.
     if (action !== "claim") return;
-    const item = { chest_id: Number(chestId), action: "claim", ad_event_id: String(adEventId || "") };
-    if (!item.chest_id) return;
-    const queue = readCheckinChestQueue().filter((entry) => entry.chest_id !== item.chest_id);
-    queue.push(item);
-    writeCheckinChestQueue(queue);
+    const normalizedChestId = normalizeCheckinChestId(chestId);
+    if (!normalizedChestId) return;
+    const queue = readCheckinChestQueue();
+    const existing = queue.find(
+      (entry) => entry?.action === "claim" && normalizeCheckinChestId(entry?.chest_id) === normalizedChestId,
+    );
+    const item = {
+      chest_id: normalizedChestId,
+      action: "claim",
+      ad_event_id: String(existing?.ad_event_id || adEventId || ""),
+      idempotent_key: String(
+        existing?.idempotent_key || idempotentKey || createCheckinChestIdempotentKey(),
+      ),
+    };
+    const remaining = queue.filter(
+      (entry) => normalizeCheckinChestId(entry?.chest_id) !== normalizedChestId,
+    );
+    remaining.push(item);
+    writeCheckinChestQueue(remaining);
   }
 
   async flushCheckinChestQueue(apiOptions = {}) {
     const queue = readCheckinChestQueue();
     if (!queue.length) return;
     // Drop legacy dismiss entries so soft-close chests stay reopenable.
-    const claims = queue.filter((item) => item?.action === "claim");
+    const claims = queue
+      .filter((item) => item?.action === "claim")
+      .map((item) => ({
+        ...item,
+        chest_id: normalizeCheckinChestId(item?.chest_id),
+        action: "claim",
+        ad_event_id: String(item?.ad_event_id || ""),
+        idempotent_key: String(item?.idempotent_key || createCheckinChestIdempotentKey()),
+      }))
+      .filter((item) => item.chest_id);
+    // Persist keys added to legacy queue items before sending. A lost response can then be replayed safely.
+    writeCheckinChestQueue(claims);
     const remaining = [];
     for (const item of claims) {
       try {
@@ -464,8 +496,18 @@ export class ActivityCenterBusiness {
   }
 
   async submitCheckinChestAction(apiOptions = {}, action, chestId, adEventId = "") {
+    const normalizedChestId = normalizeCheckinChestId(chestId);
+    const queuedItem = readCheckinChestQueue().find(
+      (item) => item?.action === "claim" && normalizeCheckinChestId(item?.chest_id) === normalizedChestId,
+    );
+    const idempotentKey = String(queuedItem?.idempotent_key || createCheckinChestIdempotentKey());
     try {
-      const res = await postCheckinChest(apiOptions, { chest_id: chestId, action, ad_event_id: adEventId });
+      const res = await postCheckinChest(apiOptions, {
+        chest_id: chestId,
+        action,
+        ad_event_id: adEventId,
+        idempotent_key: idempotentKey,
+      });
       const ok = res?.code === 200 && res?.data?.success !== false;
       if (!ok) return { ok: false, message: res?.data?.message || res?.message || claimFailedMessage() };
       const totalCoin = Number(res?.data?.total_coin);
@@ -473,27 +515,55 @@ export class ActivityCenterBusiness {
         this.userAssets.goldCoins = Math.max(0, totalCoin);
         this.config.onAssetsUpdate(this.userAssets);
       }
-      this.checkinChests = this.checkinChests.filter((chest) => chest.id !== Number(chestId));
+      const settledChestId = normalizeCheckinChestId(chestId);
+      this.checkinChests = this.checkinChests.filter(
+        (chest) => normalizeCheckinChestId(chest.id) !== settledChestId,
+      );
       this.config.onCheckinChestUpdate(this.checkinChests[0] || null);
       await this.loadActivityInfo(apiOptions, { force: true });
       return { ok: true, coin: Number(res?.data?.coin ?? 0) || 0, totalCoin: Number.isFinite(totalCoin) ? totalCoin : 0 };
     } catch (error) {
-      if (action === "claim") this.queueCheckinChestAction(action, chestId, adEventId);
+      if (action === "claim") this.queueCheckinChestAction(action, chestId, adEventId, idempotentKey);
       logger.warn("Check-in chest action queued for retry", { action, chestId, message: error?.message });
       return { ok: false, queued: action === "claim" };
     }
   }
 
   /**
-   * 日常看视频后转动转盘结算：广告看完后调用 /api/v1/ops/activity/video，再刷新基础信息
+   * Create the V2 watch-ad session before the unchanged Native SDK starts the ad.
+   */
+  async prepareDailyVideoReward(apiOptions = {}) {
+    try {
+      const res = await prepareActivityVideo(apiOptions);
+      if (res?.code !== 200 || !res?.data?.success || !res?.data?.session_id) {
+        return { ok: false, message: res?.data?.message || res?.message || adFailedMessage() };
+      }
+      return {
+        ok: true,
+        session_id: String(res.data.session_id),
+        custom_data: String(res.data.custom_data || res.data.session_id),
+        expires_at: res.data.expires_at || null,
+      };
+    } catch (error) {
+      logger.error("Prepare daily video reward failed", error);
+      return { ok: false, message: error?.message || adFailedMessage() };
+    }
+  }
+
+  /**
+   * 日常看视频后转动转盘结算：旧 SDK 广告回调后调用 V2 兼容动作，再刷新基础信息。
    * @param {Object} [apiOptions] - { baseUrl?, token? }
    * @param {string} [video_id]
    * @returns {Promise<{ ok: boolean }>}
    */
-  async claimDailyVideoReward(apiOptions = {}, video_id = "") {
-    logger.log("[Spin settlement] Call /api/v1/ops/activity/video video_id=" + video_id);
+  async claimDailyVideoReward(apiOptions = {}, video_id = "", session_id = "") {
+    logger.log("[Spin settlement] Settle V2 watch-ad compatibility action, video_id=" + video_id);
     try {
-      const res = await postActivityVideo(apiOptions, { video_id });
+      const res = await postActivityVideo(apiOptions, {
+        video_id,
+        ad_event_id: video_id,
+        session_id,
+      });
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200 && res.data?.success) {
         const coinValue = res.data?.coin;
@@ -510,6 +580,7 @@ export class ActivityCenterBusiness {
         };
       } else {
         showToast(this.resolveDailyAdMessage(msg, claimFailedMessage()), "error");
+        return { ok: false, retryable: false };
       }
     } catch (error) {
       logger.error("Turntable / daily video reward failed", error);
@@ -517,8 +588,9 @@ export class ActivityCenterBusiness {
         this.resolveDailyAdMessage(error?.message, claimFailedRetryMessage()),
         "error",
       );
+      return { ok: false, retryable: true };
     }
-    return { ok: false };
+    return { ok: false, retryable: false };
   }
 
   async submitNewUserBonusAction(apiOptions = {}, action, adEventId = "") {

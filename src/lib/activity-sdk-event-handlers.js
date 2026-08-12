@@ -24,7 +24,7 @@ function firstNonEmptyString(...values) {
  *   newUserBonusClaimInFlight: { value: boolean },
  *   checkinChestAdInFlight: { value: boolean },
  *   checkinChestClaimInFlight: { value: boolean },
- *   checkinChestSettlingIds?: Set<number>,
+ *   checkinChestSettlingIds?: Set<string>,
  *   onCheckinVideoRewardClaimed: () => void,
  * }} ctx
  */
@@ -175,7 +175,8 @@ async function handleRewardAdEvent(ctx, result) {
     }
     if (checkinChestClaimInFlight.value) return;
     checkinChestClaimInFlight.value = true;
-    checkinChestSettlingIds.add(Number(chest.id));
+    const chestId = firstNonEmptyString(chest.id);
+    checkinChestSettlingIds.add(chestId);
     const adEventId = firstNonEmptyString(
       result.ad_event_id,
       result.adEventId,
@@ -184,11 +185,11 @@ async function handleRewardAdEvent(ctx, result) {
       result.data?.ad_event_id,
       result.request_ad_event_id,
     );
-    const claimResult = await business.submitCheckinChestAction(apiOptions, "claim", chest.id, adEventId);
+    const claimResult = await business.submitCheckinChestAction(apiOptions, "claim", chestId, adEventId);
     checkinChestClaimInFlight.value = false;
     ui.setCheckinChestLoading(false);
     if (claimResult?.ok) {
-      checkinChestSettlingIds.delete(Number(chest.id));
+      checkinChestSettlingIds.delete(chestId);
       ui.hideCheckinChestDialog();
       ui.showCheckinChestRewardDialog(claimResult.coin);
       adapter.trackEvent("checkin_chest_reward_granted", {
@@ -205,7 +206,7 @@ async function handleRewardAdEvent(ctx, result) {
         chest_id: chest.id,
       });
     } else {
-      checkinChestSettlingIds.delete(Number(chest.id));
+      checkinChestSettlingIds.delete(chestId);
       showToast(claimResult?.message || adNotCompletedMessage(), "error");
       adapter.trackEvent("checkin_chest_claim_failed", {
         page_id: ACTIVITY_CENTER_PAGE_ID,
@@ -284,7 +285,13 @@ async function handleInterstitialAdEvent(ctx, result) {
   if (taskId !== "task_checkin") return;
 
   if (success) {
-    const video_id = result.video_id ?? result.videoId ?? result.data?.video_id ?? "";
+    const video_id = firstNonEmptyString(
+      result.video_id,
+      result.videoId,
+      result.data?.video_id,
+      result.data?.ad_event_id,
+      result.request_ad_event_id,
+    );
     logger.log("[活动事件完成] 签到看视频领奖 video_id=" + video_id);
     if (checkinVideoClaimInFlight.value) return;
     checkinVideoClaimInFlight.value = true;

@@ -72,6 +72,7 @@ export function mapChargeProduct(prod, providerContext = {}) {
 
   return {
     charges_id: String(prod?.sku_code ?? prod?.charges_id ?? "").trim(),
+    prize_id: String(prod?.prize_id ?? prod?.sku_code ?? prod?.charges_id ?? "").trim(),
     amount: amount ?? 0,
     amount_text: isData ? displayText || topupAmountText : topupAmountText,
     amount_subtitle: isData ? validityLabel : "",

@@ -9,6 +9,16 @@ import {
   saveTopupStatusPreview,
 } from "./topup-status-preview.js";
 
+if (typeof globalThis.sessionStorage === "undefined") {
+  const values = new Map();
+  globalThis.sessionStorage = {
+    getItem: (key) => values.get(String(key)) ?? null,
+    setItem: (key, value) => values.set(String(key), String(value)),
+    removeItem: (key) => values.delete(String(key)),
+    clear: () => values.clear(),
+  };
+}
+
 test("saveTopupStatusPreview stores preview by distributor ref", () => {
   __resetTopupStatusPreviewForTests();
   saveTopupStatusPreview("order-123", {

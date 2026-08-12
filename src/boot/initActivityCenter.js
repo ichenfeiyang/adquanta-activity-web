@@ -23,11 +23,24 @@ import { getActivityInfoCache, isActivityInfoCacheFresh } from "../lib/activity-
 import {
   clearCheckinChestSoftClosed,
   markCheckinChestSoftClosed,
+  normalizeCheckinChestId,
   readSoftClosedCheckinChestIds,
 } from "../lib/checkin-chest.js";
 import { dismissCheckinPrompt, shouldShowCheckinPrompt } from "../lib/checkin-prompt.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
 import { SPIN_AD_WAIT_STALE_MS } from "../lib/activity-center-spin-ui.js";
+import {
+  clearWatchAdSettlement,
+  hasUsableWatchAdSettlement,
+  readWatchAdSettlement,
+  saveWatchAdSettlement,
+} from "../lib/watch-ad-settlement.js";
+import {
+  clearWatchAdPendingPlayback,
+  normalizeWatchAdPendingPlayback,
+  readWatchAdPendingPlayback,
+  saveWatchAdPendingPlayback,
+} from "../lib/watch-ad-pending-playback.js";
 import * as logger from "../lib/activity-logger.js";
 import { isNoviceGuideCompleted, markNoviceGuideCompleted } from "../lib/novice-guide/novice-guide-state.js";
 import { createNoviceGuide } from "../lib/novice-guide/create-novice-guide.js";
@@ -71,6 +84,7 @@ export function initActivityCenter({ router, route }) {
   }
 
   const { code, activityId, apiOptions } = session;
+  const watchAdSettlementScope = { activityId, token: apiOptions.token };
 
   const adRequestCoordinator = new ActivityAdRequestCoordinator({
     onTimeout: (request) => {
@@ -106,6 +120,11 @@ export function initActivityCenter({ router, route }) {
   let latestCheckinPromptDetail = null;
   let checkinPromptShownForDate = "";
   let newUserBonusVisible = false;
+  let preparedWatchAdSettlement = readWatchAdSettlement(watchAdSettlementScope);
+  let pendingWatchAdPlayback = preparedWatchAdSettlement
+    ? null
+    : readWatchAdPendingPlayback(watchAdSettlementScope);
+  if (preparedWatchAdSettlement) clearWatchAdPendingPlayback(watchAdSettlementScope);
   const checkinChestDroppedIds = new Set();
   const checkinChestImpressedIds = new Set();
   const checkinChestSettlingIds = new Set();
@@ -144,7 +163,7 @@ export function initActivityCenter({ router, route }) {
   }
 
   function isCheckinChestSoftClosed(chestId) {
-    return readSoftClosedCheckinChestIds().has(Number(chestId));
+    return readSoftClosedCheckinChestIds().has(normalizeCheckinChestId(chestId));
   }
 
   function trackActivityEvent(eventType, eventData = {}) {
@@ -159,7 +178,7 @@ export function initActivityCenter({ router, route }) {
       return;
     }
     if (deferCheckinChestDialog) return;
-    const chestId = Number(deferredCheckinChest.id);
+    const chestId = normalizeCheckinChestId(deferredCheckinChest.id);
     if (checkinChestSettlingIds.has(chestId)) {
       ui.hideCheckinChestDialog();
       return;
@@ -170,12 +189,12 @@ export function initActivityCenter({ router, route }) {
       return;
     }
     if (force) clearCheckinChestSoftClosed(chestId);
-    if (Number.isSafeInteger(chestId) && chestId > 0 && !checkinChestDroppedIds.has(chestId)) {
+    if (chestId && !checkinChestDroppedIds.has(chestId)) {
       checkinChestDroppedIds.add(chestId);
       trackActivityEvent("checkin_chest_dropped", { task_id: "task_checkin_chest", chest_id: chestId });
     }
     ui.showCheckinChestDialog(deferredCheckinChest);
-    if (Number.isSafeInteger(chestId) && chestId > 0 && !checkinChestImpressedIds.has(chestId)) {
+    if (chestId && !checkinChestImpressedIds.has(chestId)) {
       checkinChestImpressedIds.add(chestId);
       trackActivityEvent("checkin_chest_impression", { task_id: "task_checkin_chest", chest_id: chestId });
     }
@@ -278,7 +297,13 @@ export function initActivityCenter({ router, route }) {
 
   const business = new ActivityCenterBusiness({
     onAssetsUpdate: (assets) => ui.updateAssets(assets),
-    onTaskUpdate: (tasks) => ui.updateTasks(tasks),
+    onTaskUpdate: (tasks) => {
+      // The old WebView can retain localStorage across users. Scope the
+      // turntable UI cache by the server-resolved activity and user before the
+      // task update reads or writes it.
+      ui.setSpinStorageScope(getUserTipStorageScope());
+      ui.updateTasks(tasks);
+    },
     onCheckinUpdate: (detail) => ui.updateCheckin(detail),
     onFeatureVisibilityUpdate: (visibility) => ui.updateFeatureVisibility(visibility),
     onRedeemGapUpdate: (gap) => ui.updateRedeemGap(gap),
@@ -345,6 +370,28 @@ export function initActivityCenter({ router, route }) {
       logger.warn("Ignoring duplicate or stale SDK ad callback", result);
       return;
     }
+    if (request.taskId === "task_watch_ad") {
+      if (result?.success) {
+        const settlement = {
+          session_id: String(request.watchAdSessionId || ""),
+          ad_event_id: String(request.watchAdEventId || ""),
+          expires_at: request.watchAdExpiresAt,
+        };
+        const persisted = saveWatchAdSettlement(watchAdSettlementScope, settlement);
+        // sessionStorage can be unavailable in a restricted WebView. Preserve
+        // the current-page settlement even when durable refresh recovery is not.
+        preparedWatchAdSettlement = persisted || (
+          settlement.session_id && settlement.ad_event_id ? settlement : null
+        );
+        pendingWatchAdPlayback = null;
+        clearWatchAdPendingPlayback(watchAdSettlementScope);
+      } else {
+        // The server session is still prepared. Keep its unexpired playback
+        // metadata so a later click can retry Native without another prepare.
+        preparedWatchAdSettlement = null;
+        clearWatchAdSettlement(watchAdSettlementScope);
+      }
+    }
     await handleSDKEventCompleted({
       ...result,
       eventType: request.eventType,
@@ -356,7 +403,12 @@ export function initActivityCenter({ router, route }) {
       coin_rain_ad_event_id: request.coinRainAdEventId || "",
       // Reused by reward flows whose backend records an ad event for
       // idempotency/audit but whose current SDK callback omits that ID.
-      request_ad_event_id: request.rewardAdEventId || "",
+      request_ad_event_id: request.requestAdEventId || request.rewardAdEventId || "",
+      // V2 watch_ad is prepared by H5 immediately before the unchanged Bridge
+      // call. Old Native callbacks may not echo either value, so restore both
+      // from the serialized request metadata.
+      watch_ad_session_id: request.watchAdSessionId || "",
+      watch_ad_event_id: request.watchAdEventId || "",
     });
   };
 
@@ -385,14 +437,63 @@ export function initActivityCenter({ router, route }) {
         ui.cancelPendingSpinAd();
         return false;
       }
-      const request = beginAdRequest("reward_ad", "task_watch_ad");
+      // Unclaimed settlement is the only entitlement after Native success.
+      // Spin Now can fall back here when today_watched clamps local chance to 0;
+      // recover Spin Now instead of discarding the claimable session.
+      const durableSettlement = readWatchAdSettlement(watchAdSettlementScope);
+      if (durableSettlement) preparedWatchAdSettlement = durableSettlement;
+      if (hasUsableWatchAdSettlement(preparedWatchAdSettlement)) {
+        ui.restorePendingSpinChance();
+        return true;
+      }
+      preparedWatchAdSettlement = null;
+      pendingWatchAdPlayback = readWatchAdPendingPlayback(watchAdSettlementScope)
+        || normalizeWatchAdPendingPlayback(pendingWatchAdPlayback);
+      const request = beginAdRequest("reward_ad", "task_watch_ad", {
+        watchAdEventId: pendingWatchAdPlayback?.ad_event_id || createClientAdEventId("watch-ad"),
+      });
       if (!request) {
         ui.cancelPendingSpinAd();
         return false;
       }
       try {
+        let playback = pendingWatchAdPlayback;
+        if (!playback) {
+          const prepared = await business.prepareDailyVideoReward(apiOptions);
+          if (!prepared?.ok) {
+            adRequestCoordinator.cancel(request);
+            pendingWatchAdPlayback = null;
+            clearWatchAdPendingPlayback(watchAdSettlementScope);
+            const message = normalizeAdMessage(prepared?.message, adNotAvailableMessage());
+            ui.handleRewardAdFailedForSpin(message, { showFailureToast: false });
+            return false;
+          }
+          playback = normalizeWatchAdPendingPlayback({
+            session_id: prepared.session_id,
+            custom_data: prepared.custom_data,
+            expires_at: prepared.expires_at,
+            ad_event_id: request.watchAdEventId,
+          });
+          if (!playback) {
+            adRequestCoordinator.cancel(request);
+            pendingWatchAdPlayback = null;
+            clearWatchAdPendingPlayback(watchAdSettlementScope);
+            ui.handleRewardAdFailedForSpin(adNotAvailableMessage(), { showFailureToast: false });
+            return false;
+          }
+          const persisted = saveWatchAdPendingPlayback(watchAdSettlementScope, playback);
+          // Keep same-page recovery when sessionStorage is unavailable.
+          pendingWatchAdPlayback = persisted || playback;
+        }
+        request.watchAdSessionId = playback.session_id;
+        request.watchAdEventId = playback.ad_event_id;
+        request.watchAdExpiresAt = playback.expires_at;
         const adTaskStatus = business.getAdTaskStatus();
-        await triggerNativeAd(request, { taskId: "task_watch_ad", reward: adTaskStatus.reward });
+        await triggerNativeAd(request, {
+          taskId: "task_watch_ad",
+          reward: adTaskStatus.reward,
+          custom_data: playback.custom_data,
+        });
         return true;
       } catch (error) {
         const message = normalizeAdMessage(error?.message, adNotAvailableMessage());
@@ -413,6 +514,11 @@ export function initActivityCenter({ router, route }) {
     },
     onSpinWheelOpen: async () => {
       const token = apiOptions.token || "";
+      if (preparedWatchAdSettlement) {
+        await business.loadActivityInfo(apiOptions, { force: true });
+        ui.restorePendingSpinChance();
+        return;
+      }
       if (isActivityInfoCacheFresh(token)) {
         const cached = getActivityInfoCache(token);
         if (cached) {
@@ -423,8 +529,30 @@ export function initActivityCenter({ router, route }) {
       await business.loadActivityInfo(apiOptions);
     },
     onSpinRequest: async () => {
-      const result = await business.claimDailyVideoReward(apiOptions, "");
-      if (!result?.ok) return { ok: false };
+      const request = preparedWatchAdSettlement;
+      if (!request?.session_id || !request?.ad_event_id) {
+        // A prepared-but-not-played session is not a reward entitlement. The
+        // spin can only settle after a successful Native callback promoted it
+        // from pending playback to settlement state.
+        return { ok: false, discardChance: true };
+      }
+      const result = await business.claimDailyVideoReward(
+        apiOptions,
+        request?.ad_event_id || "",
+        request?.session_id || "",
+      );
+      if (!result?.ok) {
+        // Keep an unexpired settlement after a network failure: the server may
+        // already have committed it, and the same idempotent request is safe to
+        // retry after refresh. A definitive business rejection clears it.
+        if (!result?.retryable) {
+          preparedWatchAdSettlement = null;
+          clearWatchAdSettlement(watchAdSettlementScope);
+        }
+        return { ok: false, discardChance: !result?.retryable };
+      }
+      preparedWatchAdSettlement = null;
+      clearWatchAdSettlement(watchAdSettlementScope);
       return {
         ok: true,
         coin: Number(result.coin ?? 0),
@@ -469,7 +597,9 @@ export function initActivityCenter({ router, route }) {
         showAdProcessingToast();
         return;
       }
-      const request = beginAdRequest("interstitial_ad", "task_checkin");
+      const request = beginAdRequest("interstitial_ad", "task_checkin", {
+        requestAdEventId: createClientAdEventId("checkin-video"),
+      });
       if (!request) return;
       try {
         checkinWatchAdInFlight.value = true;
@@ -581,7 +711,7 @@ export function initActivityCenter({ router, route }) {
       // Soft-close only: keep pending, suppress auto-popup across refresh, allow reopen from day node.
       if (chest?.id) {
         markCheckinChestSoftClosed(chest.id);
-        checkinChestImpressedIds.delete(Number(chest.id));
+        checkinChestImpressedIds.delete(normalizeCheckinChestId(chest.id));
         trackActivityEvent("checkin_chest_dismiss", {
           task_id: "task_checkin_chest",
           chest_id: chest.id,
@@ -591,7 +721,7 @@ export function initActivityCenter({ router, route }) {
     },
     onCheckinChestDayClick: (chest) => {
       if (!chest?.id || checkinChestAdInFlight.value || checkinChestClaimInFlight.value) return;
-      if (checkinChestSettlingIds.has(Number(chest.id))) {
+      if (checkinChestSettlingIds.has(normalizeCheckinChestId(chest.id))) {
         showToast(t("center.checkinChestProcessing"), "info");
         return;
       }
@@ -728,6 +858,10 @@ export function initActivityCenter({ router, route }) {
     logger.error("广告播放错误:", error);
     const request = adRequestCoordinator.take("reward_ad");
     if (!request) return;
+    if (request.taskId === "task_watch_ad") {
+      preparedWatchAdSettlement = null;
+      clearWatchAdSettlement(watchAdSettlementScope);
+    }
     void handleSDKEventCompleted({
       eventType: "reward_ad",
       taskId: request.taskId,
@@ -883,7 +1017,9 @@ export function initActivityCenter({ router, route }) {
 
   // The prompt must use a fresh server decision so a cached pre-midnight state
   // cannot incorrectly surface (or hide) today's check-in reminder.
-  void business.loadActivityInfo(apiOptions, { force: true });
+  void business.loadActivityInfo(apiOptions, { force: true }).then(() => {
+    if (preparedWatchAdSettlement) ui.restorePendingSpinChance();
+  });
 
   scheduleGoldCoinsExchangePrefetch();
 

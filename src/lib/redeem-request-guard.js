@@ -10,6 +10,10 @@ export function findCurrentDenomination(denominations, selectedDenomination) {
   const selectedValue = Number(selectedDenomination?.denomination);
   if (!Number.isFinite(selectedValue) || selectedValue <= 0) return null;
   const list = Array.isArray(denominations) ? denominations : [];
+  const selectedPrizeId = String(selectedDenomination?.prize_id || "").trim();
+  if (selectedPrizeId) {
+    return list.find((item) => String(item?.prize_id || "").trim() === selectedPrizeId) || null;
+  }
   return list.find((item) => Number(item?.denomination) === selectedValue) || null;
 }
 

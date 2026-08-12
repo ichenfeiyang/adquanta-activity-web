@@ -13,6 +13,7 @@ import { formatActivityRecordDate } from "./activity-date-format.js";
 import * as logger from "./activity-logger.js";
 import { t } from "./i18n/activity-locale.js";
 import { showToast } from "./activity-alert-ui.js";
+import { isRetryableNetworkError } from "./fetch-with-retry.js";
 import {
   formatRedeemDenomination,
   getGiftCurrenciesForCountry,
@@ -36,6 +37,27 @@ const GIFT_RECIPIENT_NAME_MAX_LENGTH = 80;
 const GIFT_RECIPIENT_EMAIL_MAX_LENGTH = 50;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function createGiftRedeemRequestId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
+function giftRedeemIntentKey(payload = {}) {
+  return JSON.stringify({
+    prize_id: String(payload.prize_id || ""),
+    product_id: String(payload.product_id || ""),
+    country_code: String(payload.country_code || ""),
+    denomination: Number(payload.denomination) || 0,
+    currency_code: String(payload.currency_code || ""),
+    recipient_name: String(payload.recipient_name || ""),
+    recipient_email: String(payload.recipient_email || "").toLowerCase(),
+    recipient_phone: String(payload.recipient_phone || ""),
+    delivery_method: String(payload.delivery_method || ""),
+  });
+}
 
 function formatGiftCurrencyLabel(currency) {
   const code = String(currency?.code || "").toUpperCase();
@@ -116,7 +138,7 @@ function bindBrandLogoFallbacks(grid) {
 
 function buildGiftAmountButtonHtml(item, currencyCode) {
   const label = formatRedeemDenomination(item.denomination, currencyCode);
-  return `<button type="button" class="redeem-gift-amount-btn" data-denomination="${Number(item.denomination)}" data-spend-coin="${Number(item.spend_coin ?? 0)}">
+  return `<button type="button" class="redeem-gift-amount-btn" data-prize-id="${escapeHtml(item.prize_id || "")}" data-denomination="${Number(item.denomination)}" data-spend-coin="${Number(item.spend_coin ?? 0)}">
       <span class="redeem-gift-amount-main">${escapeHtml(label)}</span>
       <span class="redeem-gift-amount-cost">
         <img src="${assetUrl("icons/gold_coin.svg")}" alt="" class="redeem-amount-coin-icon" />
@@ -173,6 +195,7 @@ function hasValidGiftContact(ctx) {
 
 function buildGiftRedeemPayload(ctx, denomination) {
   return {
+    prize_id: denomination.prize_id,
     product_id: ctx.giftState.productId,
     country_code: ctx.tremendousInfo.countryCode,
     denomination: denomination.denomination,
@@ -182,6 +205,33 @@ function buildGiftRedeemPayload(ctx, denomination) {
     recipient_email: getRecipientEmail(ctx),
     recipient_phone: "",
   };
+}
+
+export function attachGiftRedeemRequestId(ctx, payload) {
+  const intentKey = giftRedeemIntentKey(payload);
+  if (!ctx.retryGiftRequestId || ctx.retryGiftIntentKey !== intentKey) {
+    ctx.retryGiftRequestId = createGiftRedeemRequestId();
+    ctx.retryGiftIntentKey = intentKey;
+  }
+  return {
+    ...payload,
+    client_request_id: ctx.retryGiftRequestId,
+  };
+}
+
+export function clearGiftRedeemRequestId(ctx) {
+  ctx.retryGiftRequestId = "";
+  ctx.retryGiftIntentKey = "";
+}
+
+export function handleGiftRedeemRequestError(ctx, error) {
+  const outcomeUnknown =
+    error?.name === "AbortError" ||
+    error?.name === "NetworkError" ||
+    error instanceof TypeError ||
+    isRetryableNetworkError(error);
+  if (!outcomeUnknown) clearGiftRedeemRequestId(ctx);
+  return outcomeUnknown;
 }
 
 function giftCatalogKeyFromQuery(query) {
@@ -206,6 +256,11 @@ export const giftCardRedeemMethods = {
     };
     this._giftCurrencyDropdownOpen = false;
     this.giftExchangeLoading = false;
+    // Keep one request ID only while the outcome of the same user intent is
+    // unknown. A retry then resolves to the existing V2 order instead of
+    // creating and charging a second order.
+    this.retryGiftRequestId = "";
+    this.retryGiftIntentKey = "";
     this.giftCatalogLoading = false;
     this.giftRecordsLoading = false;
     this._desiredGiftCatalogKey = "";
@@ -456,8 +511,9 @@ export const giftCardRedeemMethods = {
         if (!btn) return;
         const denomination = Number(btn.getAttribute("data-denomination"));
         const spendCoin = Number(btn.getAttribute("data-spend-coin"));
+        const prizeId = String(btn.getAttribute("data-prize-id") || "");
         if (!Number.isFinite(denomination) || denomination <= 0) return;
-        void this.selectGiftDenomination({ denomination, spend_coin: spendCoin }, btn);
+        void this.selectGiftDenomination({ prize_id: prizeId, denomination, spend_coin: spendCoin }, btn);
       });
     }
 
@@ -892,6 +948,7 @@ export const giftCardRedeemMethods = {
   async performGiftRedeem() {
     let product = getSelectedProduct(this);
     let denomination = this.giftState.selectedDenomination;
+    let redeemRequestSubmitted = false;
     if (!product || !denomination || this.giftExchangeLoading) return;
 
     const currentCatalogKey = giftCatalogKeyFromQuery(this.getTremendousQueryParams());
@@ -959,12 +1016,21 @@ export const giftCardRedeemMethods = {
         throw new Error(t("redeem.notEnoughCoins"));
       }
 
-      const redeemPayload = buildGiftRedeemPayload(this, denomination);
+      const redeemPayload = attachGiftRedeemRequestId(
+        this,
+        buildGiftRedeemPayload(this, denomination),
+      );
+      redeemRequestSubmitted = true;
       const res = await postTremendousRedeem(this.config.apiOptions, redeemPayload);
       const result = res?.data;
       if (!isApiEnvelopeOk(res) || !result?.success) {
+        // The server returned a definitive rejection. A later tap is a new
+        // intent and must not inherit this request ID.
+        clearGiftRedeemRequestId(this);
         throw new Error(result?.message || res?.message || t("redeem.redeemFailed"));
       }
+
+      clearGiftRedeemRequestId(this);
 
       this.applyGiftRedeemWallet(result.coin_spent);
       this.giftState.selectedDenomination = null;
@@ -988,6 +1054,10 @@ export const giftCardRedeemMethods = {
         }
       }
     } catch (error) {
+      // Transport failures (including client timeouts) have an unknown server
+      // outcome, so keep the ID for an idempotent retry. Errors before submit
+      // never create an ID; explicit API rejections clear it above.
+      if (redeemRequestSubmitted) handleGiftRedeemRequestError(this, error);
       logger.error("Tremendous redeem failed", error);
       if (isInsufficientCoinMessage(error?.message)) {
         await Promise.allSettled([

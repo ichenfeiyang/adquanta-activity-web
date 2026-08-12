@@ -22,6 +22,7 @@ function createSpinUi(config = {}) {
     _waitingAdForSpinAt: 0,
     _spinInFlight: false,
     spinRotation: 0,
+    _spinStorageScope: "",
     syncBodyScrollLock() {},
     saveSpinAvailableState() {},
     clampSpinCountByLimit() {
@@ -30,6 +31,64 @@ function createSpinUi(config = {}) {
   });
   return ui;
 }
+
+test("spin localStorage keys are isolated by activity and user", () => {
+  const previousLocalStorage = globalThis.localStorage;
+  const values = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+  };
+  try {
+    const ui = createSpinUi();
+    delete ui.saveSpinAvailableState;
+    ui.setSpinStorageScope("activity-a:user-1");
+    ui.currentSpinAvailable = 1;
+    ui.saveSpinAvailableState();
+    ui.markTodayTurntableDailyFirstShown();
+    const user1ChanceKey = ui.getTodaySpinAvailableKey();
+    const user1FirstShownKey = ui.getTodayTurntableDailyFirstShownKey();
+
+    ui.setSpinStorageScope("activity-a:user-2");
+
+    assert.equal(ui.currentSpinAvailable, 0);
+    assert.notEqual(ui.getTodaySpinAvailableKey(), user1ChanceKey);
+    assert.notEqual(ui.getTodayTurntableDailyFirstShownKey(), user1FirstShownKey);
+    assert.equal(ui.isTodayTurntableDailyFirstShown(), false);
+
+    ui.currentSpinAvailable = 2;
+    ui.saveSpinAvailableState();
+    ui.setSpinStorageScope("activity-a:user-1");
+
+    assert.equal(ui.currentSpinAvailable, 1);
+    assert.equal(ui.isTodayTurntableDailyFirstShown(), true);
+  } finally {
+    if (previousLocalStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previousLocalStorage;
+  }
+});
+
+test("spin localStorage stays disabled until activity and user scope is known", () => {
+  const previousLocalStorage = globalThis.localStorage;
+  const writes = [];
+  globalThis.localStorage = {
+    getItem: () => "9",
+    setItem: (...args) => writes.push(args),
+  };
+  try {
+    const ui = createSpinUi();
+    delete ui.saveSpinAvailableState;
+    assert.equal(ui.getTodaySpinAvailableKey(), "");
+    assert.equal(ui.loadSpinAvailableState(), 0);
+    ui.currentSpinAvailable = 1;
+    ui.saveSpinAvailableState();
+    ui.markTodayTurntableDailyFirstShown();
+    assert.deepEqual(writes, []);
+  } finally {
+    if (previousLocalStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previousLocalStorage;
+  }
+});
 
 test("stale spin-ad wait unlocks and retries instead of staying on Processing", async () => {
   await initActivityLocale({ locale: "en", force: true });
@@ -87,6 +146,24 @@ test("failed spin settlement re-enables the spin button", async () => {
   assert.equal(ui.currentSpinAvailable, 1);
 });
 
+test("definitively rejected spin settlement discards the stale local chance", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const ui = createSpinUi({
+    onSpinRequest: async () => ({ ok: false, discardChance: true }),
+    isDailyAdLimitReached: () => false,
+  });
+  ui.currentSpinAvailable = 1;
+  ui._turntableNeedsWatch = false;
+
+  await ui.spinWheel();
+
+  assert.equal(ui._spinInFlight, false);
+  assert.equal(ui.currentSpinAvailable, 0);
+  assert.equal(ui._turntableNeedsWatch, true);
+  assert.equal(ui.elements.spinWheelSpinBtn.textContent, "Watch to Spin Again");
+  assert.equal(ui.elements.spinWheelSpinBtn.disabled, false);
+});
+
 test("ad success unlocks Spin Now even when waiting was already cleared", async () => {
   await initActivityLocale({ locale: "en", force: true });
   const ui = createSpinUi({ isDailyAdLimitReached: () => false });
@@ -98,6 +175,20 @@ test("ad success unlocks Spin Now even when waiting was already cleared", async 
   assert.equal(ui.currentSpinAvailable, 1);
   assert.equal(ui._turntableNeedsWatch, false);
   assert.equal(ui.elements.spinWheelSpinBtn.textContent, "Spin Now");
+});
+
+test("restoring a persisted settlement grants exactly one pending spin chance", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const ui = createSpinUi({ isDailyAdLimitReached: () => false });
+  ui.currentSpinAvailable = 0;
+
+  assert.equal(ui.restorePendingSpinChance(), true);
+  assert.equal(ui.currentSpinAvailable, 1);
+  assert.equal(ui._turntableNeedsWatch, false);
+  assert.equal(ui.elements.spinWheelSpinBtn.textContent, "Spin Now");
+
+  ui.restorePendingSpinChance();
+  assert.equal(ui.currentSpinAvailable, 1);
 });
 
 test("bottom click with leftover chance only unlocks Spin Now when still in watch mode", async () => {

@@ -39,6 +39,45 @@ test("reveals a deferred chest only after the check-in video reward is settled",
   }
 });
 
+test("uses the request-scoped event ID when the check-in SDK callback omits video_id", async () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { ActivityBridgeHelper: { EventType: { INTERSTITIAL_AD: "interstitial" } } };
+  const videoIds = [];
+  try {
+    const handler = createActivitySdkEventHandler({
+      business: {
+        claimCheckinVideoReward: async (_options, videoId) => {
+          videoIds.push(videoId);
+          return { ok: true };
+        },
+      },
+      ui: {
+        markSigninVideoCompleted: () => {},
+        isSigninVideoCompleted: () => true,
+        setSigninWatchLoading: () => {},
+      },
+      adapter: { trackEvent: () => {} },
+      apiOptions: {},
+      normalizeAdMessage: (message) => message,
+      checkinVideoClaimInFlight: { value: false },
+      checkinWatchAdInFlight: { value: true },
+    });
+
+    await handler({
+      eventType: "interstitial",
+      taskId: "task_checkin",
+      success: true,
+      video_id: "",
+      request_ad_event_id: "checkin-video-fallback-id",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.deepEqual(videoIds, ["checkin-video-fallback-id"]);
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
 test("shows the chest reward result dialog after the chest ad is settled", async () => {
   const originalWindow = globalThis.window;
   globalThis.window = { ActivityBridgeHelper: { EventType: { REWARD_AD: "reward" } } };
@@ -60,7 +99,7 @@ test("shows the chest reward result dialog after the chest ad is settled", async
       showDailyAdLimitToast: () => {},
       checkinChestAdInFlight: { value: true },
       checkinChestClaimInFlight: { value: false },
-      getCheckinChest: () => ({ id: 9 }),
+      getCheckinChest: () => ({ id: "chest_9" }),
     });
 
     await handler({ eventType: "reward", taskId: "task_checkin_chest", success: true, ad_event_id: "ad-1" });
@@ -220,7 +259,7 @@ test("uses the request-scoped event ID for a check-in chest when the SDK omits o
       checkinChestAdInFlight: { value: true },
       checkinChestClaimInFlight: { value: false },
       checkinChestSettlingIds: new Set(),
-      getCheckinChest: () => ({ id: 9 }),
+      getCheckinChest: () => ({ id: "chest_9" }),
     });
 
     await handler({
@@ -231,7 +270,7 @@ test("uses the request-scoped event ID for a check-in chest when the SDK omits o
       request_ad_event_id: "checkin-chest-fallback-id",
     });
 
-    assert.deepEqual(claims, [{ action: "claim", chestId: 9, adEventId: "checkin-chest-fallback-id" }]);
+    assert.deepEqual(claims, [{ action: "claim", chestId: "chest_9", adEventId: "checkin-chest-fallback-id" }]);
   } finally {
     globalThis.window = originalWindow;
   }
@@ -256,12 +295,12 @@ test("keeps a chest locked when its reward claim is queued for retry", async () 
       checkinChestAdInFlight: { value: true },
       checkinChestClaimInFlight: { value: false },
       checkinChestSettlingIds: settlingIds,
-      getCheckinChest: () => ({ id: 9 }),
+      getCheckinChest: () => ({ id: "chest_9" }),
     });
 
     await handler({ eventType: "reward", taskId: "task_checkin_chest", success: true, ad_event_id: "ad-1" });
 
-    assert.deepEqual([...settlingIds], [9]);
+    assert.deepEqual([...settlingIds], ["chest_9"]);
   } finally {
     globalThis.window = originalWindow;
   }
