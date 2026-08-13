@@ -223,6 +223,7 @@ test("coin rain flow provides PRD dialog copy for every supported locale", async
     "center.coinRainWatchMore",
     "center.coinRainWatchVideo",
     "center.coinRainLater",
+    "center.coinRainTryTomorrow",
     "center.coinRainAlreadyJoinedTitle",
     "center.coinRainAlreadyJoinedDesc",
     "center.coinRainOk",

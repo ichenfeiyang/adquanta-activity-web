@@ -8,6 +8,12 @@ function clearTimer(timer) {
 }
 
 const coinRainRecoveryStorageKey = "activity-center:coin-rain-recovery";
+export function formatCoinRainTime(remainingMs) {
+  const totalSeconds = Math.max(0, Math.ceil((Number(remainingMs) || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
 
 function readCoinRainRecovery() {
   try {
@@ -152,11 +158,18 @@ export const coinRainUiMixin = {
       return;
     }
     if (this.elements.coinRainDesc) this.elements.coinRainDesc.textContent = t("center.coinRainDescMax", { count: displayMaxCoin });
-    const completed = status.state === "completed" || status.state === "abandoned" || status.state === "expired";
+    const terminalReason = String(status.terminal_reason || "");
+    const endedWithoutCompletion = terminalReason === "abandoned" || terminalReason === "expired"
+      || status.state === "abandoned" || status.state === "expired";
+    const completed = status.state === "completed" || endedWithoutCompletion;
+    const localSettlementPending = this.hasPendingCoinRainSettlement()
+      && (status.state === "playing" || status.state === "available");
     entry.classList.toggle("is-completed", completed);
     if (status.state === "boost_available") action.textContent = t("center.coinRainBoost");
-    else if (status.state === "settle_pending") action.textContent = t("center.coinRainClaim");
-    else action.textContent = completed ? t("center.coinRainCompleted") : t("center.coinRainPlay");
+    else if (endedWithoutCompletion) action.textContent = t("center.coinRainTryTomorrow");
+    else if (completed) action.textContent = t("center.coinRainCompleted");
+    else if (status.state === "settle_pending" || localSettlementPending) action.textContent = t("center.coinRainClaim");
+    else action.textContent = t("center.coinRainPlay");
   },
 
   clearCoinRainLocalTimers() {
@@ -194,10 +207,11 @@ export const coinRainUiMixin = {
       pauseStartedAt: 0,
       endAt: 0,
       deadlineAt: Number.isFinite(Date.parse(result.deadline_at)) ? Date.parse(result.deadline_at) : 0,
+      resumed: resume === true,
     };
     this.elements.coinRainCollected.textContent = String(this._coinRainSession.clicked);
     this.updateCoinRainMultiplier(this._coinRainSession.clicked);
-    this.elements.coinRainTime.textContent = `00:${String(this._coinRainSession.duration).padStart(2, "0")}`;
+    this.elements.coinRainTime.textContent = formatCoinRainTime(this._coinRainSession.duration * 1000);
     this.updateCoinRainGameProgress(this._coinRainSession.duration * 1000, this._coinRainSession.duration * 1000);
     if (this.elements.coinRainCountdownMax) {
       this.updateCoinRainCountdownMax(displayMaxCoin);
@@ -260,7 +274,7 @@ export const coinRainUiMixin = {
     };
     this.elements.coinRainCollected.textContent = "0";
     this.updateCoinRainMultiplier(0);
-    this.elements.coinRainTime.textContent = `00:${String(this._coinRainSession.duration).padStart(2, "0")}`;
+    this.elements.coinRainTime.textContent = formatCoinRainTime(this._coinRainSession.duration * 1000);
     this.updateCoinRainGameProgress(this._coinRainSession.duration * 1000, this._coinRainSession.duration * 1000);
     this.updateCoinRainCountdownMax(displayMaxCoin);
     this.elements.coinRainStage?.replaceChildren();
@@ -348,7 +362,15 @@ export const coinRainUiMixin = {
     if (!session || session.running) return;
     session.running = true;
     const durationMs = session.duration * 1000;
-    session.endAt = session.deadlineAt > 0 ? session.deadlineAt : Date.now() + durationMs;
+    const now = Date.now();
+    // A fresh start gets the full configured gameplay duration after the start
+    // response arrives. A resumed game keeps the server's remaining deadline,
+    // while a malformed/legacy value must never extend the configured duration.
+    const latestValidDeadline = now + durationMs;
+    session.endAt = session.resumed && session.deadlineAt > 0
+      ? Math.min(session.deadlineAt, latestValidDeadline)
+      : now + durationMs;
+    this.elements.coinRainTime.textContent = formatCoinRainTime(Math.max(0, session.endAt - now));
     this.elements.coinRainOverlay.classList.remove("is-countdown");
     const coinFace = assetUrl("icons/coin-rain-gold-coin.svg");
     const sparkArt = assetUrl("images/coin-rain-sparkle.png");
@@ -406,7 +428,7 @@ export const coinRainUiMixin = {
         }
         return;
       }
-      this.elements.coinRainTime.textContent = `00:${String(Math.ceil(remaining / 1000)).padStart(2, "0")}`;
+      this.elements.coinRainTime.textContent = formatCoinRainTime(remaining);
       this.updateCoinRainGameProgress(remaining, durationMs);
       if (remaining <= 0) this.finishCoinRain();
     }, 200);

@@ -177,6 +177,17 @@ test("ad success unlocks Spin Now even when waiting was already cleared", async 
   assert.equal(ui.elements.spinWheelSpinBtn.textContent, "Spin Now");
 });
 
+test("final ad settlement still unlocks Spin Now after the daily limit is reached", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const ui = createSpinUi({ isDailyAdLimitReached: () => true });
+
+  await ui.handleRewardAdCompletedForSpin();
+
+  assert.equal(ui.currentSpinAvailable, 1);
+  assert.equal(ui._turntableNeedsWatch, false);
+  assert.equal(ui.elements.spinWheelSpinBtn.textContent, "Spin Now");
+});
+
 test("restoring a persisted settlement grants exactly one pending spin chance", async () => {
   await initActivityLocale({ locale: "en", force: true });
   const ui = createSpinUi({ isDailyAdLimitReached: () => false });
@@ -189,6 +200,44 @@ test("restoring a persisted settlement grants exactly one pending spin chance", 
 
   ui.restorePendingSpinChance();
   assert.equal(ui.currentSpinAvailable, 1);
+});
+
+test("persisted settlement recovery is not blocked by the post-settlement daily limit", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const ui = createSpinUi({ isDailyAdLimitReached: () => true });
+
+  assert.equal(ui.restorePendingSpinChance(), true);
+  assert.equal(ui.currentSpinAvailable, 1);
+  assert.equal(ui._turntableNeedsWatch, false);
+});
+
+test("bottom click lets V2 reconcile an earned settlement after the daily limit is reached", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const calls = [];
+  const ui = createSpinUi({
+    onWatchAdClick: () => calls.push("reconcile"),
+    isDailyAdLimitReached: () => true,
+  });
+
+  ui.handleSpinWheelBottomClick();
+
+  assert.deepEqual(calls, ["reconcile"]);
+  assert.equal(ui.isWaitingAdForSpin(), true);
+});
+
+test("empty spin fallback also lets V2 reconcile after the daily limit is reached", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const calls = [];
+  const ui = createSpinUi({
+    onWatchAdClick: () => calls.push("reconcile"),
+    isDailyAdLimitReached: () => true,
+  });
+  ui._turntableNeedsWatch = false;
+
+  await ui.spinWheel();
+
+  assert.deepEqual(calls, ["reconcile"]);
+  assert.equal(ui.isWaitingAdForSpin(), true);
 });
 
 test("bottom click with leftover chance only unlocks Spin Now when still in watch mode", async () => {

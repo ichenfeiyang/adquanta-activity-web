@@ -37,15 +37,23 @@ test("pending playback requires all Native replay metadata and rejects expired s
     custom_data: "signed-custom-data",
     ad_event_id: "event-1",
     expires_at: "2026-08-12T00:15:00Z",
+    settlement_mode: "ssv",
+    baseline_join_count_today: 2,
+    baseline_join_count_total: 12,
+    baseline_last_join_id: "join-before",
   };
 
   assert.deepEqual(normalizeWatchAdPendingPlayback(complete, { now }), {
-    version: 1,
+    version: 2,
     ...complete,
     expires_at: "2026-08-12T00:15:00.000Z",
   });
   assert.equal(normalizeWatchAdPendingPlayback({ ...complete, custom_data: "" }, { now }), null);
   assert.equal(normalizeWatchAdPendingPlayback({ ...complete, expires_at: now }, { now }), null);
+  assert.equal(
+    normalizeWatchAdPendingPlayback({ ...complete, baseline_join_count_today: undefined }, { now }),
+    null,
+  );
 });
 
 test("pending playback survives retryable Native failures until success clears it or it expires", () => {
@@ -57,6 +65,10 @@ test("pending playback survives retryable Native failures until success clears i
     custom_data: "signed-custom-data",
     ad_event_id: "event-1",
     expires_at: "2026-08-12T00:15:00Z",
+    settlement_mode: "ssv",
+    baseline_join_count_today: 2,
+    baseline_join_count_total: 12,
+    baseline_last_join_id: "join-before",
   };
 
   const saved = saveWatchAdPendingPlayback(scope, playback, { storage, now });

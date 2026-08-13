@@ -543,6 +543,10 @@ export class ActivityCenterBusiness {
         session_id: String(res.data.session_id),
         custom_data: String(res.data.custom_data || res.data.session_id),
         expires_at: res.data.expires_at || null,
+        settlement_mode: String(res.data.settlement_mode || ""),
+        baseline_join_count_today: Number(res.data.baseline_join_count_today ?? 0) || 0,
+        baseline_join_count_total: Number(res.data.baseline_join_count_total ?? 0) || 0,
+        baseline_last_join_id: String(res.data.baseline_last_join_id || ""),
       };
     } catch (error) {
       logger.error("Prepare daily video reward failed", error);
@@ -551,18 +555,22 @@ export class ActivityCenterBusiness {
   }
 
   /**
-   * 日常看视频后转动转盘结算：旧 SDK 广告回调后调用 V2 兼容动作，再刷新基础信息。
+   * 日常看视频后转动转盘结算：legacy 调兼容动作，V2 等待 AdMob SSV 后从权威配置确认奖励。
    * @param {Object} [apiOptions] - { baseUrl?, token? }
    * @param {string} [video_id]
    * @returns {Promise<{ ok: boolean }>}
    */
-  async claimDailyVideoReward(apiOptions = {}, video_id = "", session_id = "") {
-    logger.log("[Spin settlement] Settle V2 watch-ad compatibility action, video_id=" + video_id);
+  async claimDailyVideoReward(apiOptions = {}, video_id = "", session_id = "", settlement = {}) {
+    logger.log("[Spin settlement] Confirm V2 watch-ad reward, video_id=" + video_id);
     try {
       const res = await postActivityVideo(apiOptions, {
         video_id,
         ad_event_id: video_id,
         session_id,
+        settlement_mode: settlement.settlement_mode,
+        baseline_join_count_today: settlement.baseline_join_count_today,
+        baseline_join_count_total: settlement.baseline_join_count_total,
+        baseline_last_join_id: settlement.baseline_last_join_id,
       });
       const msg = res.data?.message ?? res.message ?? "";
       if (res.code === 200 && res.data?.success) {
@@ -578,6 +586,8 @@ export class ActivityCenterBusiness {
           roulette: res.data?.roulette ?? null,
           message: msg || videoCompletedRewardMessage(),
         };
+      } else if (res?.data?.pending === true && res?.data?.retryable === true) {
+        return { ok: false, pending: true, retryable: true, message: msg };
       } else {
         showToast(this.resolveDailyAdMessage(msg, claimFailedMessage()), "error");
         return { ok: false, retryable: false };

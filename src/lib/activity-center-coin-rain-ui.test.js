@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { coinRainUiMixin } from "./activity-center-coin-rain-ui.js";
+import { coinRainUiMixin, formatCoinRainTime } from "./activity-center-coin-rain-ui.js";
 import { initActivityLocale } from "./i18n/activity-locale.js";
 
 function classList() {
@@ -121,6 +121,7 @@ test("paused game timer still settles when the deadline elapses", () => {
       settlementPending: false,
       clicked: 3,
       baseMaxCoin: 200,
+      resumed: true,
     },
     finishCoinRain() {
       finished += 1;
@@ -159,6 +160,54 @@ test("game progress follows the remaining coin rain time", () => {
   assert.equal(progress.style.width, "0%");
 });
 
+test("coin rain countdown always uses MM:SS", () => {
+  assert.equal(formatCoinRainTime(0), "00:00");
+  assert.equal(formatCoinRainTime(8_001), "00:09");
+  assert.equal(formatCoinRainTime(60_000), "01:00");
+  assert.equal(formatCoinRainTime(23_566_000), "392:46");
+});
+
+test("fresh games keep the full configured duration after the start response", () => {
+  const previousWindow = globalThis.window;
+  const previousNow = Date.now;
+  const now = 1_789_000_000_000;
+  Date.now = () => now;
+  globalThis.window = {
+    setInterval: () => 1,
+    clearInterval() {},
+    setTimeout() {},
+  };
+  const time = { textContent: "" };
+  const ui = {
+    ...coinRainUiMixin,
+    elements: {
+      coinRainOverlay: { classList: classList() },
+      coinRainStage: { childElementCount: 14, appendChild() {} },
+      coinRainTime: time,
+      coinRainGameProgress: { style: {} },
+    },
+    _coinRainSession: {
+      duration: 30,
+      deadlineAt: now + 8 * 60 * 60 * 1000,
+      endAt: 0,
+      running: false,
+      paused: false,
+      clicked: 0,
+      baseMaxCoin: 200,
+      resumed: false,
+    },
+  };
+  try {
+    ui.runCoinRain();
+    assert.equal(ui._coinRainSession.endAt, now + 30_000);
+    assert.equal(time.textContent, "00:30");
+  } finally {
+    ui.clearCoinRainLocalTimers();
+    Date.now = previousNow;
+    globalThis.window = previousWindow;
+  }
+});
+
 test("resumed games keep the original server deadline", () => {
   const previousWindow = globalThis.window;
   globalThis.window = {
@@ -183,6 +232,7 @@ test("resumed games keep the original server deadline", () => {
       paused: false,
       clicked: 0,
       baseMaxCoin: 200,
+      resumed: true,
     },
   };
   try {
@@ -190,6 +240,45 @@ test("resumed games keep the original server deadline", () => {
     assert.equal(ui._coinRainSession.endAt, deadlineAt);
   } finally {
     ui.clearCoinRainLocalTimers();
+    globalThis.window = previousWindow;
+  }
+});
+
+test("malformed resumed deadlines cannot extend the configured game duration", () => {
+  const previousWindow = globalThis.window;
+  const previousNow = Date.now;
+  const now = 1_789_000_000_000;
+  Date.now = () => now;
+  globalThis.window = {
+    setInterval: () => 1,
+    clearInterval() {},
+    setTimeout() {},
+  };
+  const ui = {
+    ...coinRainUiMixin,
+    elements: {
+      coinRainOverlay: { classList: classList() },
+      coinRainStage: { childElementCount: 14, appendChild() {} },
+      coinRainTime: { textContent: "" },
+      coinRainGameProgress: { style: {} },
+    },
+    _coinRainSession: {
+      duration: 30,
+      deadlineAt: now + 8 * 60 * 60 * 1000,
+      endAt: 0,
+      running: false,
+      paused: false,
+      clicked: 0,
+      baseMaxCoin: 200,
+      resumed: true,
+    },
+  };
+  try {
+    ui.runCoinRain();
+    assert.equal(ui._coinRainSession.endAt, now + 30_000);
+  } finally {
+    ui.clearCoinRainLocalTimers();
+    Date.now = previousNow;
     globalThis.window = previousWindow;
   }
 });
@@ -353,7 +442,7 @@ test("boost success follows the Got it design layout", async () => {
   assert.match(heroImg.src, /coin-rain-reward-art\.png/);
 });
 
-test("background leave opens confirm dialog instead of abandoning", async () => {
+test("preparation leave opens confirm dialog without consuming today's attempt", async () => {
   await initActivityLocale({ locale: "en", force: true });
   const overlay = { classList: classList(), style: {} };
   const leaveDialog = { style: { display: "none" } };
@@ -372,7 +461,7 @@ test("background leave opens confirm dialog instead of abandoning", async () => 
   ui.leaveCoinRain();
   assert.equal(ui._coinRainSession.paused, true);
   assert.equal(leaveDialog.style.display, "flex");
-  assert.match(leaveDesc.textContent, /cannot join Coin Rain again today/i);
+  assert.match(leaveDesc.textContent, /start Coin Rain again later today/i);
 });
 
 test("backgrounding the preparation countdown never starts a coin-rain session", async () => {
@@ -439,7 +528,7 @@ test("already-joined dialog matches PRD copy", async () => {
   assert.equal(dialog.style.display, "none");
 });
 
-test("playing stays visible while abandoned is completed", async () => {
+test("abandoned and expired attempts do not masquerade as completed", async () => {
   await initActivityLocale({ locale: "en", force: true });
   const entry = { classList: classList() };
   const action = { textContent: "" };
@@ -461,7 +550,11 @@ test("playing stays visible while abandoned is completed", async () => {
 
   ui.updateCoinRain({ enabled: true, state: "abandoned", display_max_coin: 400, base_coin: 0, boost_coin: 0 });
   assert.equal(entry.classList.contains("is-completed"), true);
-  assert.equal(action.textContent, "Completed");
+  assert.equal(action.textContent, "Try Tomorrow");
+
+  ui.updateCoinRain({ enabled: true, state: "completed", terminal_reason: "expired", display_max_coin: 400, base_coin: 0, boost_coin: 0 });
+  assert.equal(entry.classList.contains("is-completed"), true);
+  assert.equal(action.textContent, "Try Tomorrow");
 
   ui.updateCoinRain({ enabled: true, state: "completed", display_max_coin: 400, base_coin: 0, boost_coin: 0 });
   assert.equal(entry.classList.contains("is-completed"), true);
@@ -470,6 +563,41 @@ test("playing stays visible while abandoned is completed", async () => {
   ui.updateCoinRain({ enabled: true, state: "settle_pending", display_max_coin: 400, base_coin: 0, boost_coin: 0 });
   assert.equal(entry.classList.contains("is-completed"), false);
   assert.equal(action.textContent, "Claim");
+});
+
+test("local pending settlement shows Claim until the server reaches a terminal state", async () => {
+  await initActivityLocale({ locale: "en", force: true });
+  const entry = { classList: classList() };
+  const action = { textContent: "" };
+  const ui = {
+    ...coinRainUiMixin,
+    _coinRainSession: { settlementPending: true },
+    elements: {
+      coinRainSection: { style: {} },
+      coinRainEntry: entry,
+      coinRainEntryAction: action,
+      coinRainDesc: { textContent: "" },
+    },
+  };
+
+  for (const state of ["playing", "available"]) {
+    ui.updateCoinRain({ enabled: true, state, display_max_coin: 400 });
+    assert.equal(action.textContent, "Claim");
+    assert.equal(entry.classList.contains("is-completed"), false);
+  }
+
+  ui.updateCoinRain({ enabled: true, state: "boost_available", display_max_coin: 400 });
+  assert.equal(action.textContent, "Boost Coins");
+
+  ui.updateCoinRain({ enabled: true, state: "completed", display_max_coin: 400 });
+  assert.equal(action.textContent, "Completed");
+  assert.equal(entry.classList.contains("is-completed"), true);
+
+  for (const terminalReason of ["abandoned", "expired"]) {
+    ui.updateCoinRain({ enabled: true, state: "completed", terminal_reason: terminalReason, display_max_coin: 400 });
+    assert.equal(action.textContent, "Try Tomorrow");
+    assert.equal(entry.classList.contains("is-completed"), true);
+  }
 });
 
 test("settlement retry keeps the original session and click count after both requests fail", async () => {

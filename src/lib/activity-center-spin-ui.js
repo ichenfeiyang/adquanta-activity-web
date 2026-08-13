@@ -6,7 +6,6 @@ import {
 } from "./activity-center-ui-helpers.js";
 import {
   adFailedMessage,
-  dailyAdLimitMessage,
 } from "./activity-messages.js";
 import { t } from "./i18n/activity-locale.js";
 
@@ -215,7 +214,6 @@ export const spinUiMixin = {
   },
 
   addSpinChance(delta = 1) {
-    if (this.config.isDailyAdLimitReached?.()) return;
     const inc = Number(delta);
     if (!Number.isFinite(inc) || inc <= 0) return;
     this.currentSpinAvailable += Math.floor(inc);
@@ -352,18 +350,11 @@ export const spinUiMixin = {
     // Always clear waiting: after locale reload the callback can arrive after waiting
     // was recovered/stale-cleared, but the ad still succeeded and must unlock Spin Now.
     this.clearWaitingAdForSpin();
-    if (this.config.isDailyAdLimitReached?.()) {
-      const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
-      this.handleRewardAdFailedForSpin(message);
-      this.refreshAdTaskStats();
-      return;
-    }
     this.addSpinChance(1);
     this.enterSpinReadyMode();
   },
 
   restorePendingSpinChance() {
-    if (this.config.isDailyAdLimitReached?.()) return false;
     this.clearWaitingAdForSpin();
     this.currentSpinAvailable = Math.max(1, Number(this.currentSpinAvailable) || 0);
     this.clampSpinCountByLimit();
@@ -421,12 +412,9 @@ export const spinUiMixin = {
         // Lost native callback after locale reload / WebView reinjection: unlock and retry.
         this.recoverStaleSpinAdWait();
       }
-      if (this.config.isDailyAdLimitReached?.()) {
-        const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
-        this.handleRewardAdFailedForSpin(message);
-        this.refreshAdTaskStats();
-        return;
-      }
+      // Let the activity callback reconcile a prepared/settled V2 ad before it
+      // applies the daily limit. The last successful SSV makes the counter look
+      // full, but that already-earned spin still has to be restored.
       this.beginWaitingAdForSpin();
       this.config.onWatchAdClick();
       return;
@@ -500,13 +488,9 @@ export const spinUiMixin = {
   async spinWheel() {
     if (this._spinInFlight) return;
     if (this.currentSpinAvailable <= 0) {
-      if (this.config.isDailyAdLimitReached?.()) {
-        const message = this.config.getDailyAdLimitMessage?.() || dailyAdLimitMessage();
-        showToast(message, "warning");
-        this.refreshAdTaskStats();
-        return;
-      }
-      // Safety fallback: no spin chances locally, go back to watch mode.
+      // Safety fallback: no spin chances locally, go back through the activity
+      // callback so it can reconcile an earned V2 settlement before applying
+      // the daily limit.
       this._turntableNeedsWatch = true;
       this.beginWaitingAdForSpin();
       this.setSpinWheelBottomButton({ label: t("center.watchToSpinAgain"), disabled: false });

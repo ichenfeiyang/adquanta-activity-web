@@ -348,7 +348,6 @@ export function initActivityCenter({ router, route }) {
     },
     apiOptions,
     normalizeAdMessage,
-    showDailyAdLimitToast,
     checkinVideoClaimInFlight,
     checkinWatchAdInFlight,
     newUserBonusAdInFlight,
@@ -376,6 +375,10 @@ export function initActivityCenter({ router, route }) {
           session_id: String(request.watchAdSessionId || ""),
           ad_event_id: String(request.watchAdEventId || ""),
           expires_at: request.watchAdExpiresAt,
+          settlement_mode: String(request.watchAdSettlementMode || ""),
+          baseline_join_count_today: Number(request.watchAdBaselineJoinCountToday ?? 0) || 0,
+          baseline_join_count_total: Number(request.watchAdBaselineJoinCountTotal ?? 0) || 0,
+          baseline_last_join_id: String(request.watchAdBaselineLastJoinId || ""),
         };
         const persisted = saveWatchAdSettlement(watchAdSettlementScope, settlement);
         // sessionStorage can be unavailable in a restricted WebView. Preserve
@@ -432,11 +435,6 @@ export function initActivityCenter({ router, route }) {
     getDailyAdLimitMessage: () => getDailyAdLimitMessage(),
     getAdTaskStatus: () => business.getAdTaskStatus(),
     onWatchAdClick: async () => {
-      if (business.isDailyAdLimitReached()) {
-        showDailyAdLimitToast();
-        ui.cancelPendingSpinAd();
-        return false;
-      }
       // Unclaimed settlement is the only entitlement after Native success.
       // Spin Now can fall back here when today_watched clamps local chance to 0;
       // recover Spin Now instead of discarding the claimable session.
@@ -447,8 +445,40 @@ export function initActivityCenter({ router, route }) {
         return true;
       }
       preparedWatchAdSettlement = null;
-      pendingWatchAdPlayback = readWatchAdPendingPlayback(watchAdSettlementScope)
-        || normalizeWatchAdPendingPlayback(pendingWatchAdPlayback);
+      const recoveredPlayback = readWatchAdPendingPlayback(watchAdSettlementScope);
+      pendingWatchAdPlayback = recoveredPlayback || normalizeWatchAdPendingPlayback(pendingWatchAdPlayback);
+      // A persisted playback can represent a Native success whose callback was
+      // lost while AdMob SSV still completed. Reconcile once before replaying so
+      // a refresh does not make the user watch an already-settled ad again.
+      if (pendingWatchAdPlayback?.settlement_mode === "ssv") {
+        const reconciled = await business.claimDailyVideoReward(
+          apiOptions,
+          pendingWatchAdPlayback.ad_event_id,
+          pendingWatchAdPlayback.session_id,
+          pendingWatchAdPlayback,
+        );
+        if (reconciled?.ok) {
+          const settlement = {
+            session_id: pendingWatchAdPlayback.session_id,
+            ad_event_id: pendingWatchAdPlayback.ad_event_id,
+            expires_at: pendingWatchAdPlayback.expires_at,
+            settlement_mode: pendingWatchAdPlayback.settlement_mode,
+            baseline_join_count_today: pendingWatchAdPlayback.baseline_join_count_today,
+            baseline_join_count_total: pendingWatchAdPlayback.baseline_join_count_total,
+            baseline_last_join_id: pendingWatchAdPlayback.baseline_last_join_id,
+          };
+          preparedWatchAdSettlement = saveWatchAdSettlement(watchAdSettlementScope, settlement) || settlement;
+          pendingWatchAdPlayback = null;
+          clearWatchAdPendingPlayback(watchAdSettlementScope);
+          ui.restorePendingSpinChance();
+          return true;
+        }
+      }
+      if (business.isDailyAdLimitReached()) {
+        showDailyAdLimitToast();
+        ui.cancelPendingSpinAd();
+        return false;
+      }
       const request = beginAdRequest("reward_ad", "task_watch_ad", {
         watchAdEventId: pendingWatchAdPlayback?.ad_event_id || createClientAdEventId("watch-ad"),
       });
@@ -473,6 +503,10 @@ export function initActivityCenter({ router, route }) {
             custom_data: prepared.custom_data,
             expires_at: prepared.expires_at,
             ad_event_id: request.watchAdEventId,
+            settlement_mode: prepared.settlement_mode,
+            baseline_join_count_today: prepared.baseline_join_count_today,
+            baseline_join_count_total: prepared.baseline_join_count_total,
+            baseline_last_join_id: prepared.baseline_last_join_id,
           });
           if (!playback) {
             adRequestCoordinator.cancel(request);
@@ -488,6 +522,10 @@ export function initActivityCenter({ router, route }) {
         request.watchAdSessionId = playback.session_id;
         request.watchAdEventId = playback.ad_event_id;
         request.watchAdExpiresAt = playback.expires_at;
+        request.watchAdSettlementMode = playback.settlement_mode;
+        request.watchAdBaselineJoinCountToday = playback.baseline_join_count_today;
+        request.watchAdBaselineJoinCountTotal = playback.baseline_join_count_total;
+        request.watchAdBaselineLastJoinId = playback.baseline_last_join_id;
         const adTaskStatus = business.getAdTaskStatus();
         await triggerNativeAd(request, {
           taskId: "task_watch_ad",
@@ -530,16 +568,18 @@ export function initActivityCenter({ router, route }) {
     },
     onSpinRequest: async () => {
       const request = preparedWatchAdSettlement;
-      if (!request?.session_id || !request?.ad_event_id) {
+      if (!hasUsableWatchAdSettlement(request)) {
         // A prepared-but-not-played session is not a reward entitlement. The
-        // spin can only settle after a successful Native callback promoted it
-        // from pending playback to settlement state.
+        // spin can only settle after a successful, unexpired Native callback.
+        preparedWatchAdSettlement = null;
+        clearWatchAdSettlement(watchAdSettlementScope);
         return { ok: false, discardChance: true };
       }
       const result = await business.claimDailyVideoReward(
         apiOptions,
         request?.ad_event_id || "",
         request?.session_id || "",
+        request,
       );
       if (!result?.ok) {
         // Keep an unexpired settlement after a network failure: the server may

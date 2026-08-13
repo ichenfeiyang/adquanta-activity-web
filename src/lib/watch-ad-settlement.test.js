@@ -40,6 +40,10 @@ test("watch-ad settlement saves and restores only an unexpired complete session"
       session_id: "session-1",
       ad_event_id: "event-1",
       expires_at: "2026-08-12T00:15:00Z",
+      settlement_mode: "ssv",
+      baseline_join_count_today: 2,
+      baseline_join_count_total: 12,
+      baseline_last_join_id: "join-before",
     },
     { storage, now },
   );
@@ -59,9 +63,17 @@ test("watch-ad settlement rejects incomplete data and can be cleared", () => {
     saveWatchAdSettlement(scope, { session_id: "session-1", expires_at: now + 10_000 }, { storage, now }),
     null,
   );
+  assert.equal(
+    saveWatchAdSettlement(
+      scope,
+      { session_id: "session-1", ad_event_id: "event-1", expires_at: now + 10_000, settlement_mode: "ssv" },
+      { storage, now },
+    ),
+    null,
+  );
   saveWatchAdSettlement(
     scope,
-    { session_id: "session-1", ad_event_id: "event-1", expires_at: now + 10_000 },
+    { session_id: "session-1", ad_event_id: "event-1", expires_at: now + 10_000, settlement_mode: "client_complete" },
     { storage, now },
   );
   clearWatchAdSettlement(scope, { storage });
@@ -70,20 +82,33 @@ test("watch-ad settlement rejects incomplete data and can be cleared", () => {
 
 test("hasUsableWatchAdSettlement keeps same-page entitlements and rejects expired ones", () => {
   const now = Date.parse("2026-08-12T00:00:00Z");
-  assert.equal(hasUsableWatchAdSettlement({ session_id: "s1", ad_event_id: "e1" }, { now }), true);
+  assert.equal(
+    hasUsableWatchAdSettlement({ session_id: "s1", ad_event_id: "e1", settlement_mode: "client_complete" }, { now }),
+    true,
+  );
   assert.equal(
     hasUsableWatchAdSettlement(
-      { session_id: "s1", ad_event_id: "e1", expires_at: "2026-08-12T00:10:00Z" },
+      {
+        session_id: "s1", ad_event_id: "e1", expires_at: "2026-08-12T00:10:00Z",
+        settlement_mode: "ssv", baseline_join_count_today: 2, baseline_join_count_total: 12, baseline_last_join_id: "join-before",
+      },
       { now },
     ),
     true,
   );
   assert.equal(
     hasUsableWatchAdSettlement(
-      { session_id: "s1", ad_event_id: "e1", expires_at: "2026-08-11T23:59:00Z" },
+      {
+        session_id: "s1", ad_event_id: "e1", expires_at: "2026-08-11T23:59:00Z",
+        settlement_mode: "ssv", baseline_join_count_today: 2, baseline_join_count_total: 12, baseline_last_join_id: "join-before",
+      },
       { now },
     ),
     false,
   );
   assert.equal(hasUsableWatchAdSettlement({ session_id: "s1" }, { now }), false);
+  assert.equal(
+    hasUsableWatchAdSettlement({ session_id: "s1", ad_event_id: "e1", settlement_mode: "ssv" }, { now }),
+    false,
+  );
 });

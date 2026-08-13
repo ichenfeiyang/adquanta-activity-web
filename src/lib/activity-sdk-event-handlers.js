@@ -1,4 +1,4 @@
-import { adNotCompletedMessage, dailyAdLimitMessage } from "./activity-messages.js";
+import { adNotCompletedMessage } from "./activity-messages.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "./activity-analytics.js";
 import { showToast } from "./activity-alert-ui.js";
 import * as logger from "./activity-logger.js";
@@ -17,7 +17,6 @@ function firstNonEmptyString(...values) {
  *   ui: import("./activity-center-ui.js").ActivityCenterUI,
  *   adapter: import("./activity-center-adapter.js").ActivityCenterAdapter,
  *   normalizeAdMessage: (message: string, fallback?: string) => string,
- *   showDailyAdLimitToast: () => void,
  *   checkinVideoClaimInFlight: { value: boolean },
  *   checkinWatchAdInFlight: { value: boolean },
  *   newUserBonusAdInFlight: { value: boolean },
@@ -36,7 +35,6 @@ async function handleRewardAdEvent(ctx, result) {
     apiOptions,
     getLastRewardAdTaskId,
     normalizeAdMessage,
-    showDailyAdLimitToast,
     newUserBonusAdInFlight,
     newUserBonusClaimInFlight,
     checkinChestAdInFlight,
@@ -221,16 +219,6 @@ async function handleRewardAdEvent(ctx, result) {
   if (taskId !== "task_watch_ad") return;
 
   if (success) {
-    if (business.isDailyAdLimitReached()) {
-      showDailyAdLimitToast();
-      adapter.trackEvent("daily_video_completed", {
-        taskId: "task_watch_ad",
-        success: false,
-        reason: dailyAdLimitMessage(),
-        platform: adapter.getPlatform(),
-      });
-      return;
-    }
     if (ui.isWaitingAdForSpin()) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }

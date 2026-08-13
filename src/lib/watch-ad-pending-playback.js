@@ -47,13 +47,28 @@ export function normalizeWatchAdPendingPlayback(playback = {}, { now = Date.now(
   const customData = String(playback?.custom_data || "").trim();
   const adEventId = String(playback?.ad_event_id || "").trim();
   const expiresAt = expiryTime(playback?.expires_at);
-  if (!sessionId || !customData || !adEventId || !expiresAt || expiresAt <= now) return null;
+  const settlementMode = String(playback?.settlement_mode || "").trim();
+  const baselineCount = Number(playback?.baseline_join_count_today);
+  const baselineTotal = Number(playback?.baseline_join_count_total);
+  const hasBaseline = Number.isInteger(baselineCount) && baselineCount >= 0
+    && Number.isInteger(baselineTotal) && baselineTotal >= 0
+    && Object.prototype.hasOwnProperty.call(playback, "baseline_last_join_id");
+  if (
+    !sessionId || !customData || !adEventId || !expiresAt || expiresAt <= now
+    || (settlementMode !== "client_complete" && !hasBaseline)
+  ) return null;
   return {
-    version: 1,
+    // V2 adds the prepare-time settlement baseline. Never hydrate older
+    // records that cannot prove which SSV join belongs to this playback.
+    version: 2,
     session_id: sessionId,
     custom_data: customData,
     ad_event_id: adEventId,
     expires_at: new Date(expiresAt).toISOString(),
+    settlement_mode: settlementMode,
+    baseline_join_count_today: hasBaseline ? baselineCount : 0,
+    baseline_join_count_total: hasBaseline ? baselineTotal : 0,
+    baseline_last_join_id: String(playback?.baseline_last_join_id || "").trim(),
   };
 }
 
@@ -88,7 +103,7 @@ export function readWatchAdPendingPlayback(scope = {}, { storage, now = Date.now
     const raw = target.getItem(watchAdPendingPlaybackStorageKey(scope));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    const entry = parsed?.version === 1
+    const entry = parsed?.version === 2
       ? normalizeWatchAdPendingPlayback(parsed, { now })
       : null;
     if (!entry) clearWatchAdPendingPlayback(scope, { storage: target });

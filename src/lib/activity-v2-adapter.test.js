@@ -28,7 +28,38 @@ test("V2 config keeps user identity and opaque check-in chest ids for the legacy
   assert.equal(result.user_info.user_id, "user_v2");
   assert.equal(result.wallet_info.coin, 321);
   assert.equal(result.tasks[0].task_id, "task_signin_real");
+  assert.equal(result.tasks[0].detail.continuous_days, 3);
+  assert.equal(result.tasks[0].detail.days[2].received, true);
+  assert.equal(result.tasks[0].detail.days[2].current, true);
   assert.equal(result.tasks[0].detail.chests[0].id, "chest_abcd");
+});
+
+test("V2 signin adapter exposes today's completed cycle day to the legacy card", () => {
+  const result = adaptV2ConfigToActivityInfo({
+    tasks: [{
+      task_id: "task_signin",
+      task_type: "signin",
+      state: "boost_available",
+      available_actions: ["boost"],
+      state_detail: {
+        progress: {
+          max_streak: 7,
+          current_cycle_day: 1,
+          next_cycle_day: 2,
+          completed_days: 1,
+          signed_today: true,
+        },
+        days: [
+          { day: 1, coin: 35, video_coin: 70, received: true, current: true },
+        ],
+      },
+    }],
+  });
+
+  const checkin = result.tasks[0].detail;
+  assert.equal(checkin.continuous_days, 1);
+  assert.equal(checkin.days[0].received, true);
+  assert.equal(checkin.days[0].current, true);
 });
 
 test("V2 signin adapter highlights next cycle day when today is unsigned", () => {

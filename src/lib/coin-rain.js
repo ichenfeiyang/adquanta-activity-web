@@ -7,6 +7,7 @@ export function normalizeCoinRain(value) {
   return {
     enabled: true,
     state: String(value.state || "available"),
+    terminal_reason: String(value.terminal_reason || ""),
     duration_seconds: Number(value.duration_seconds ?? 30) || 30,
     display_max_coin: displayMaxCoin,
     base_max_coin: baseMaxCoin,

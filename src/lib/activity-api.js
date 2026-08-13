@@ -28,6 +28,10 @@ export const CHARGE_REDEEM_TIMEOUT_MS = 5_000;
 export const CHARGE_OPTIONS_TIMEOUT_MS = 5_000;
 
 const ACTIVITY_V2_API_PREFIX = "/api/v2/activity";
+const WATCH_AD_SETTLEMENT_CLIENT_COMPLETE = "client_complete";
+const WATCH_AD_SETTLEMENT_SSV = "ssv";
+const WATCH_AD_SSV_POLL_ATTEMPTS = 6;
+const WATCH_AD_SSV_POLL_INTERVAL_MS = 500;
 const activityV2Context = new Map();
 
 function createIdempotentKey(prefix = "activity") {
@@ -89,9 +93,6 @@ function rememberActivityV2AdSession(options, taskType, session) {
 
 function reusableActivityV2AdSession(task, now = Date.now()) {
   if (String(task?.state || "") !== "pending_ad") return null;
-  if (!Array.isArray(task?.available_actions) || !task.available_actions.includes("client_complete")) {
-    return null;
-  }
   const session = v2TaskAdSession(task);
   if (!String(session.session_id || "").trim() || String(session.status || "") !== "pending_ad") {
     return null;
@@ -101,6 +102,108 @@ function reusableActivityV2AdSession(task, now = Date.now()) {
   const expiresAt = Date.parse(String(session.expires_at || ""));
   if (!Number.isFinite(expiresAt) || expiresAt <= now) return null;
   return session;
+}
+
+function watchAdSettlementMode(task) {
+  return Array.isArray(task?.available_actions) && task.available_actions.includes(WATCH_AD_SETTLEMENT_CLIENT_COMPLETE)
+    ? WATCH_AD_SETTLEMENT_CLIENT_COMPLETE
+    : WATCH_AD_SETTLEMENT_SSV;
+}
+
+function watchAdSettlementBaseline(task) {
+  const detail = task?.state_detail && typeof task.state_detail === "object" ? task.state_detail : {};
+  const progress = detail.progress && typeof detail.progress === "object" ? detail.progress : {};
+  const lastJoin = detail.last_join && typeof detail.last_join === "object" ? detail.last_join : {};
+  const parsedCount = Number(progress.join_count_today);
+  const parsedTotal = Number(progress.join_count_total);
+  return {
+    baseline_join_count_today: Number.isFinite(parsedCount) ? Math.max(0, Math.trunc(parsedCount)) : 0,
+    baseline_join_count_total: Number.isFinite(parsedTotal) ? Math.max(0, Math.trunc(parsedTotal)) : 0,
+    baseline_last_join_id: String(lastJoin.join_id || "").trim(),
+  };
+}
+
+function watchAdPrepareData(task, session, extra = {}) {
+  return {
+    success: Boolean(session?.session_id),
+    session_id: String(session?.session_id || ""),
+    custom_data: String(session?.custom_data || session?.session_id || ""),
+    expires_at: session?.expires_at || null,
+    settlement_mode: watchAdSettlementMode(task),
+    ...watchAdSettlementBaseline(task),
+    ...extra,
+  };
+}
+
+function watchAdPollOption(value, fallback, maximum) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(maximum, Math.max(0, Math.trunc(parsed)));
+}
+
+async function waitForWatchAdPoll(ms) {
+  if (ms <= 0) return;
+  await new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+}
+
+async function pollWatchAdSSVSettlement(options, baseline) {
+  const attempts = Math.max(1, watchAdPollOption(
+    options.watchAdSSVPollAttempts,
+    WATCH_AD_SSV_POLL_ATTEMPTS,
+    20,
+  ));
+  const intervalMs = watchAdPollOption(
+    options.watchAdSSVPollIntervalMs,
+    WATCH_AD_SSV_POLL_INTERVAL_MS,
+    5_000,
+  );
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const configResult = await fetchActivityV2Config(options);
+    if (configResult?.code === 200 && configResult?.data) {
+      const task = v2TasksByType(configResult.data).get("watch_ad");
+      const current = watchAdSettlementBaseline(task);
+      // Both facts must advance from the prepare-time baseline. Requiring only
+      // last_join would let a historical reward unlock a new spin after reload;
+      // requiring only the count could attribute an unrelated stale join.
+      if (
+        current.baseline_join_count_total > baseline.baseline_join_count_total
+        && current.baseline_last_join_id
+        && current.baseline_last_join_id !== baseline.baseline_last_join_id
+        // The prepared session disappearing proves that the server consumed
+        // this single outstanding watch-ad intent; a different pending session
+        // must never inherit its spin entitlement.
+        && !v2TaskAdSession(task).session_id
+      ) {
+        const detail = task?.state_detail && typeof task.state_detail === "object" ? task.state_detail : {};
+        const lastJoin = detail.last_join && typeof detail.last_join === "object" ? detail.last_join : {};
+        const limits = detail.limits && typeof detail.limits === "object" ? detail.limits : {};
+        return {
+          code: 200,
+          data: {
+            success: true,
+            coin: Number(lastJoin.reward_coin ?? 0),
+            total_coin: Number(configResult.data?.user?.coin_balance ?? 0),
+            message: "",
+            today_watched: current.baseline_join_count_today,
+            remain_count: limits.remaining_today,
+            roulette: null,
+          },
+        };
+      }
+    }
+    if (attempt + 1 < attempts) await waitForWatchAdPoll(intervalMs);
+  }
+
+  return {
+    code: 202,
+    data: {
+      success: false,
+      pending: true,
+      retryable: true,
+      message: "广告奖励正在由服务端确认，请稍后重试",
+    },
+  };
 }
 
 async function fetchActivityV2Config(options = {}) {
@@ -376,13 +479,7 @@ export async function prepareActivityVideo(options = {}) {
   if (pendingSession) {
     return {
       code: 200,
-      data: {
-        success: true,
-        reused: true,
-        session_id: String(pendingSession.session_id),
-        custom_data: String(pendingSession.custom_data || pendingSession.session_id),
-        expires_at: pendingSession.expires_at,
-      },
+      data: watchAdPrepareData(task, pendingSession, { reused: true }),
     };
   }
   const { result } = await executeActivityV2TaskAction(options, "watch_ad", "prepare");
@@ -394,19 +491,22 @@ export async function prepareActivityVideo(options = {}) {
       ? result.data.state.state_detail.ad_session
       : null) ||
     {};
+  let settlementTask = result.data?.state;
+  if (!Array.isArray(settlementTask?.available_actions)) {
+    const refreshed = await fetchActivityV2Config(options);
+    settlementTask = refreshed?.code === 200 ? v2TasksByType(refreshed.data).get("watch_ad") : null;
+  }
+  if (!Array.isArray(settlementTask?.available_actions)) {
+    return { code: 503, data: { success: false }, message: "广告结算状态暂不可用，请重试" };
+  }
   rememberActivityV2AdSession(options, "watch_ad", session);
-  result.data = {
-    success: Boolean(session.session_id),
-    session_id: String(session.session_id || ""),
-    custom_data: String(session.custom_data || session.session_id || ""),
-    expires_at: session.expires_at || null,
-  };
+  result.data = watchAdPrepareData(settlementTask, session);
   return result;
 }
 
 /**
  * 转动转盘获取金币（每日看视频完成后调用，消耗一次转盘机会并由服务端结算本次金币）
- * Activity V2 watch_ad client_complete compatibility action.
+ * Legacy identity uses client_complete; V2 identity confirms the signed AdMob SSV settlement through /config.
  * @param {Object} options - { baseUrl? }
  * @param {{ video_id?: string }} body - 当前后端可不传，默认空字符串
  * @returns {Promise<{ code: number, data?: { success: boolean, coin: number, total_coin: number, message: string, today_watched: number, remain_count: number, roulette?: { daily_max_coins?: number, total_coins?: number, earned_coins: number, remaining_coins: number, next_coin: number, roulette_coins?: number[] } }, message?: string }>}
@@ -415,7 +515,32 @@ export async function prepareActivityVideo(options = {}) {
 export async function postActivityVideo(options = {}, body = {}) {
   const task = await getActivityV2Task(options, "watch_ad");
   const session = v2TaskAdSession(task);
-  let { result } = await executeActivityV2TaskAction(options, "watch_ad", "client_complete", {
+  const settlementMode = String(body.settlement_mode || watchAdSettlementMode(task));
+  if (settlementMode !== WATCH_AD_SETTLEMENT_CLIENT_COMPLETE) {
+    const hasCountBaseline = body.baseline_join_count_today !== undefined && body.baseline_join_count_today !== null;
+    const hasTotalBaseline = body.baseline_join_count_total !== undefined && body.baseline_join_count_total !== null;
+    const hasLastJoinBaseline = Object.prototype.hasOwnProperty.call(body, "baseline_last_join_id");
+    const baselineCount = Number(body.baseline_join_count_today);
+    const baselineTotal = Number(body.baseline_join_count_total);
+    if (
+      !hasCountBaseline || !hasTotalBaseline || !hasLastJoinBaseline
+      || !Number.isFinite(baselineCount) || baselineCount < 0
+      || !Number.isFinite(baselineTotal) || baselineTotal < 0
+    ) {
+      return { code: 400, data: { success: false, pending: false }, message: "广告结算基线无效，请重新观看" };
+    }
+    const sessionId = String(body.session_id || "").trim();
+    if (!sessionId) {
+      return { code: 400, data: { success: false, pending: false }, message: "广告会话无效，请重新观看" };
+    }
+    return pollWatchAdSSVSettlement(options, {
+      baseline_join_count_today: Math.trunc(baselineCount),
+      baseline_join_count_total: Math.trunc(baselineTotal),
+      baseline_last_join_id: String(body.baseline_last_join_id || "").trim(),
+    });
+  }
+
+  const { result } = await executeActivityV2TaskAction(options, "watch_ad", WATCH_AD_SETTLEMENT_CLIENT_COMPLETE, {
     // Tie retries to the prepared server session. The repository settles with
     // the prepare idempotency key, but a stable action key also keeps gateway or
     // lost-response retries semantically identical.

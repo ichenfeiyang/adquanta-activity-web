@@ -7,6 +7,7 @@ test("normalizeCoinRain keeps only server-controlled display state", () => {
   const normalized = normalizeCoinRain({
     enabled: true,
     state: "boost_available",
+    terminal_reason: "",
     duration_seconds: 30,
     display_max_coin: 500,
     base_max_coin: 250,
@@ -18,6 +19,7 @@ test("normalizeCoinRain keeps only server-controlled display state", () => {
   assert.deepEqual(normalized, {
     enabled: true,
     state: "boost_available",
+    terminal_reason: "",
     duration_seconds: 30,
     display_max_coin: 500,
     base_max_coin: 250,
@@ -39,10 +41,12 @@ test("normalizeCoinRain hides disabled or missing configuration", () => {
 test("normalizeCoinRain preserves abandoned as a consumed daily attempt", () => {
   const normalized = normalizeCoinRain({
     enabled: true,
-    state: "abandoned",
+    state: "completed",
+    terminal_reason: "abandoned",
     duration_seconds: 30,
     display_max_coin: 400,
     base_max_coin: 200,
   });
-  assert.equal(normalized.state, "abandoned");
+  assert.equal(normalized.state, "completed");
+  assert.equal(normalized.terminal_reason, "abandoned");
 });

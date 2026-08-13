@@ -124,18 +124,31 @@ function adaptSigninDays(task) {
 
 function adaptSigninTask(task, pageState) {
   const detail = taskStateDetail(task);
+  const progress = taskProgress(task);
+  const days = adaptSigninDays(task);
   const chests = asArray(
     firstValue(detail.chests, pageState.checkin_chests, pageState.checkin?.chests),
   );
+  const compatDetail = asObject(detail.compat_detail);
   return {
     type: "checkin",
     task_id: task.task_id,
     detail: {
-      days: adaptSigninDays(task),
+      days,
       chests,
       state: task.state,
       available_actions: asArray(task.available_actions),
-      ...asObject(detail.compat_detail),
+      ...compatDetail,
+      // The legacy check-in card derives both its x/7 pill and completed-day
+      // styling from continuous_days. V2 exposes the equivalent cycle value
+      // as progress.completed_days.
+      continuous_days: Math.max(
+        0,
+        asNumber(
+          firstValue(progress.completed_days, compatDetail.continuous_days),
+          days.filter((day) => day.received === true).length,
+        ),
+      ),
     },
   };
 }
