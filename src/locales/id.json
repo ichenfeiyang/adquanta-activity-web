@@ -164,7 +164,16 @@
     "submitting": "Mengirim...",
     "submittedTitle": "Masukan Terkirim",
     "submittedDesc": "Terima kasih atas masukan Anda!",
-    "back": "Kembali ke Rewards Center"
+    "back": "Kembali ke Rewards Center",
+    "hidePrompt": "Tidak ingin Rewards Center di layar Beranda?",
+    "hideAction": "Sembunyikan",
+    "hideDialogTitle": "Hapus Rewards Center dari layar Beranda?",
+    "hideDialogDescription": "Ikon Rewards Center akan dihapus secara permanen dari layar Beranda Da Fit. Anda tidak dapat memulihkannya nanti.",
+    "hideRemove": "Hapus",
+    "hideRemoving": "Menghapus...",
+    "hideKeep": "Pertahankan Rewards Center",
+    "hideRemoveSuccess": "Rewards Center telah dihapus dari layar Beranda.",
+    "hideRemoveFailed": "Rewards Center tidak dapat dihapus. Silakan coba lagi."
   },
   "alert": {
     "notice": "Pemberitahuan",

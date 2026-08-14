@@ -164,7 +164,16 @@
     "submitting": "জমা হচ্ছে...",
     "submittedTitle": "মতামত জমা হয়েছে",
     "submittedDesc": "মতামতের জন্য ধন্যবাদ!",
-    "back": "Rewards Center এ ফিরে যান"
+    "back": "Rewards Center এ ফিরে যান",
+    "hidePrompt": "হোম স্ক্রিনে Rewards Center রাখতে চান না?",
+    "hideAction": "লুকিয়ে দিন",
+    "hideDialogTitle": "হোম স্ক্রিন থেকে Rewards Center সরাবেন?",
+    "hideDialogDescription": "Rewards Center আইকনটি Da Fit হোম স্ক্রিন থেকে স্থায়ীভাবে সরিয়ে দেওয়া হবে। পরে এটি আর ফিরিয়ে আনা যাবে না।",
+    "hideRemove": "সরিয়ে দিন",
+    "hideRemoving": "সরানো হচ্ছে...",
+    "hideKeep": "Rewards Center রাখুন",
+    "hideRemoveSuccess": "Rewards Center আপনার হোম স্ক্রিন থেকে সরানো হয়েছে।",
+    "hideRemoveFailed": "Rewards Center সরানো যায়নি। আবার চেষ্টা করুন।"
   },
   "alert": {
     "notice": "নোটিশ",

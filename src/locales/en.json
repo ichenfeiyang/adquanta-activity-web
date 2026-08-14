@@ -164,7 +164,16 @@
     "submitting": "Submitting...",
     "submittedTitle": "Feedback Submitted",
     "submittedDesc": "Thanks for your feedback! We will continue improving the Rewards Center experience based on user suggestions.",
-    "back": "Back to Rewards Center"
+    "back": "Back to Rewards Center",
+    "hidePrompt": "Don’t want Rewards Center on your Home screen?",
+    "hideAction": "Hide it",
+    "hideDialogTitle": "Remove Rewards Center from your Home screen?",
+    "hideDialogDescription": "The Rewards Center icon will be permanently removed from the Da Fit Home screen. You won't be able to restore it later.",
+    "hideRemove": "Remove",
+    "hideRemoving": "Removing...",
+    "hideKeep": "Keep Rewards Center",
+    "hideRemoveSuccess": "Rewards Center has been removed from your Home screen.",
+    "hideRemoveFailed": "Unable to remove Rewards Center. Please try again."
   },
   "alert": {
     "notice": "Notice",

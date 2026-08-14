@@ -164,7 +164,16 @@
     "submitting": "पठाउँदै...",
     "submittedTitle": "प्रतिक्रिया पठाइयो",
     "submittedDesc": "तपाईंको प्रतिक्रियाका लागि धन्यवाद!",
-    "back": "Rewards Center मा फर्कनुहोस्"
+    "back": "Rewards Center मा फर्कनुहोस्",
+    "hidePrompt": "होम स्क्रिनमा Rewards Center चाहनुहुन्न?",
+    "hideAction": "लुकाउनुहोस्",
+    "hideDialogTitle": "होम स्क्रिनबाट Rewards Center हटाउने?",
+    "hideDialogDescription": "Rewards Center आइकन Da Fit को होम स्क्रिनबाट स्थायी रूपमा हटाइनेछ। पछि यसलाई पुनर्स्थापना गर्न सकिने छैन।",
+    "hideRemove": "हटाउनुहोस्",
+    "hideRemoving": "हटाउँदै...",
+    "hideKeep": "Rewards Center राख्नुहोस्",
+    "hideRemoveSuccess": "Rewards Center तपाईंको होम स्क्रिनबाट हटाइएको छ।",
+    "hideRemoveFailed": "Rewards Center हटाउन सकिएन। फेरि प्रयास गर्नुहोस्।"
   },
   "alert": {
     "notice": "सूचना",

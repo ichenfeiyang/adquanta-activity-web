@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { postActivityFeedback } from "./activity-api.js";
+import { postActivityFeedback, postHideRewardsCenter } from "./activity-api.js";
 
 test("postActivityFeedback sends the optional country code", async () => {
   const originalFetch = globalThis.fetch;
@@ -33,6 +33,28 @@ test("postActivityFeedback sends the optional country code", async () => {
       locale: "en",
       country_code: "PK",
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("postHideRewardsCenter authenticates without sending user or device identifiers", async () => {
+  const originalFetch = globalThis.fetch;
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return new Response(JSON.stringify({ code: 200, data: { success: true } }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  try {
+    await postHideRewardsCenter({ token: "activity-token" });
+    assert.match(request.url, /\/api\/v1\/ops\/activity\/rewards-center\/hide$/);
+    assert.equal(request.init.method, "POST");
+    assert.equal(request.init.headers.Authorization, "Bearer activity-token");
+    assert.equal(request.init.body, undefined);
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -164,7 +164,16 @@
     "submitting": "جمع ہو رہا ہے...",
     "submittedTitle": "رائے جمع ہو گئی",
     "submittedDesc": "آپ کی رائے کا شکریہ!",
-    "back": "Rewards Center پر واپس جائیں"
+    "back": "Rewards Center پر واپس جائیں",
+    "hidePrompt": "اپنی ہوم اسکرین پر Rewards Center نہیں چاہتے؟",
+    "hideAction": "اسے چھپائیں",
+    "hideDialogTitle": "Rewards Center کو ہوم اسکرین سے ہٹا دیں؟",
+    "hideDialogDescription": "Rewards Center کا آئیکن Da Fit کی ہوم اسکرین سے مستقل طور پر ہٹا دیا جائے گا۔ آپ اسے بعد میں بحال نہیں کر سکیں گے۔",
+    "hideRemove": "ہٹائیں",
+    "hideRemoving": "ہٹایا جا رہا ہے...",
+    "hideKeep": "Rewards Center برقرار رکھیں",
+    "hideRemoveSuccess": "Rewards Center آپ کی ہوم اسکرین سے ہٹا دیا گیا ہے۔",
+    "hideRemoveFailed": "Rewards Center کو ہٹایا نہیں جا سکا۔ دوبارہ کوشش کریں۔"
   },
   "alert": {
     "notice": "اطلاع",

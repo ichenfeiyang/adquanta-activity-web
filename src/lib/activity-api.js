@@ -270,6 +270,15 @@ export async function postActivityFeedback(options = {}, body = {}) {
   });
 }
 
+/** Permanently remove the Rewards Center entry for the Activity Token UUID. */
+export async function postHideRewardsCenter(options = {}) {
+  return fetchApi("postHideRewardsCenter", `${BaseApiUrl}/api/v1/ops/activity/rewards-center/hide`, {
+    method: "POST",
+    headers: { ...buildAuthHeaders(options) },
+    timeoutMs: 15_000,
+  });
+}
+
 /**
  * 获取话费充值选项
  * GET /api/v1/ops/activity/charges

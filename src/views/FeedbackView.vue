@@ -2,8 +2,14 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import "../assets/feedback.css";
-import { postActivityFeedback } from "../lib/activity-api.js";
+import { getActivityInfo, postActivityFeedback, postHideRewardsCenter } from "../lib/activity-api.js";
 import { FEEDBACK_PAGE_ID } from "../lib/activity-analytics.js";
+import { showToast } from "../lib/activity-alert-ui.js";
+import {
+  getActivityInfoCache,
+  invalidateActivityInfoCache,
+  loadActivityInfoWithSWR,
+} from "../lib/activity-page-cache.js";
 import { requireActivitySession } from "../lib/activity-session.js";
 import { goToActivityCenter, goToFeedbackSuccess } from "../lib/activity-navigation.js";
 import { getActivityLocale } from "../lib/i18n/activity-locale.js";
@@ -20,6 +26,10 @@ const contactEmail = ref("");
 const emailError = ref("");
 const submitting = ref(false);
 const error = ref("");
+const showHideEntry = ref(false);
+const hideDialogOpen = ref(false);
+const hiding = ref(false);
+const hideError = ref("");
 const remaining = computed(() => Math.max(0, 300 - [...content.value].length));
 
 function newRequestId() {
@@ -54,6 +64,58 @@ function track(event, data = {}) {
 }
 function back() {
   goToActivityCenter(router, String(route.query.activity_id || ""));
+}
+
+function applyRewardsCenterHideInfo(data) {
+  showHideEntry.value = data?.rewards_center_hide?.show === true;
+}
+
+async function loadRewardsCenterHideInfo() {
+  if (!session) return;
+  applyRewardsCenterHideInfo(getActivityInfoCache(session.token));
+  await loadActivityInfoWithSWR(session.token, {
+    fetcher: () => getActivityInfo(session.apiOptions),
+    onData: (data) => applyRewardsCenterHideInfo(data),
+  });
+}
+
+function openHideDialog() {
+  hideError.value = "";
+  hideDialogOpen.value = true;
+  track("rewards_center_hide_entry_click", { element_id: "rewards_center_hide_entry" });
+}
+
+function keepRewardsCenter() {
+  if (hiding.value) return;
+  hideDialogOpen.value = false;
+  hideError.value = "";
+  track("rewards_center_hide_modal_keep", { element_id: "rewards_center_hide_keep" });
+}
+
+async function removeRewardsCenter() {
+  if (!session || hiding.value) return;
+  track("rewards_center_hide_remove_click", { element_id: "rewards_center_hide_remove" });
+  hiding.value = true;
+  hideError.value = "";
+  try {
+    const result = await postHideRewardsCenter(session.apiOptions);
+    if (result?.code !== 200 || result?.data?.success !== true) {
+      throw new Error(result?.message || t("feedback.hideRemoveFailed"));
+    }
+    showHideEntry.value = false;
+    hideDialogOpen.value = false;
+    invalidateActivityInfoCache(session.token);
+    showToast(t("feedback.hideRemoveSuccess"), "success");
+    track("rewards_center_hide_remove_success", { element_id: "rewards_center_hide_remove" });
+  } catch (e) {
+    hideError.value = e?.message || t("feedback.hideRemoveFailed");
+    track("rewards_center_hide_remove_fail", {
+      element_id: "rewards_center_hide_remove",
+      reason: hideError.value,
+    });
+  } finally {
+    hiding.value = false;
+  }
 }
 
 async function submit() {
@@ -107,7 +169,10 @@ async function submit() {
   }
 }
 
-onMounted(() => track("page_view"));
+onMounted(() => {
+  track("page_view");
+  void loadRewardsCenterHideInfo();
+});
 </script>
 
 <template>
@@ -183,7 +248,45 @@ onMounted(() => track("page_view"));
         <button class="feedback-submit" type="submit" :disabled="submitting">
           {{ submitting ? t("feedback.submitting") : t("feedback.submit") }}
         </button>
+
+        <div v-if="showHideEntry" class="feedback-hide-entry">
+          <span>{{ t("feedback.hidePrompt") }}</span>
+          <button type="button" class="feedback-hide-link" @click="openHideDialog">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.5 10.5 0 0 1 12 4c5.2 0 8.7 4.5 9.5 5.7a4 4 0 0 1 .5 1.1M6.2 6.2C4.4 7.4 3.1 9 2.5 10a3.7 3.7 0 0 0 0 4C3.3 15.3 6.8 20 12 20a10 10 0 0 0 4.1-.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>{{ t("feedback.hideAction") }}</span>
+          </button>
+        </div>
       </form>
     </main>
+
+    <div v-if="hideDialogOpen" class="feedback-hide-overlay" role="presentation">
+      <section
+        class="feedback-hide-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-hide-title"
+        aria-describedby="feedback-hide-description"
+      >
+        <div class="feedback-hide-dialog-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M13 22h38v27a6 6 0 0 1-6 6H19a6 6 0 0 1-6-6V22Z" fill="#ff5a1f" />
+            <path d="M10 16h44v10H10z" fill="#ff7a32" />
+            <path d="M29 16c-7-2-10-7-7-10 3-3 8 1 10 8 2-7 7-11 10-8 3 3 0 8-7 10" stroke="#ffb33c" stroke-width="5" stroke-linecap="round" />
+            <path d="M28 16h8v39h-8z" fill="#ffc14b" />
+          </svg>
+        </div>
+        <h2 id="feedback-hide-title">{{ t("feedback.hideDialogTitle") }}</h2>
+        <p id="feedback-hide-description">{{ t("feedback.hideDialogDescription") }}</p>
+        <p v-if="hideError" class="feedback-hide-error" role="alert">{{ hideError }}</p>
+        <button type="button" class="feedback-hide-remove" :disabled="hiding" @click="removeRewardsCenter">
+          {{ hiding ? t("feedback.hideRemoving") : t("feedback.hideRemove") }}
+        </button>
+        <button type="button" class="feedback-hide-keep" :disabled="hiding" @click="keepRewardsCenter">
+          {{ t("feedback.hideKeep") }}
+        </button>
+      </section>
+    </div>
   </div>
 </template>

@@ -293,6 +293,126 @@
   cursor: not-allowed;
 }
 
+.feedback-hide-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 28px 8px 4px;
+  color: #4d5568;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.feedback-hide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: #f04a20;
+  font: inherit;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.feedback-hide-link svg {
+  width: 21px;
+  height: 21px;
+}
+
+.feedback-hide-overlay {
+  position: fixed;
+  z-index: 1500;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(13, 14, 18, 0.68);
+  box-sizing: border-box;
+}
+
+.feedback-hide-dialog {
+  width: min(100%, 328px);
+  padding: 24px 24px 22px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.feedback-hide-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 8px;
+  border-radius: 999px;
+  background: #fff7ef;
+}
+
+.feedback-hide-dialog-icon svg {
+  width: 62px;
+  height: 62px;
+}
+
+.feedback-hide-dialog h2 {
+  margin: 4px 0 12px;
+  color: #101116;
+  font-size: 21px;
+  line-height: 1.22;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.feedback-hide-dialog > p {
+  margin: 0;
+  color: #30323a;
+  font-size: 14px;
+  line-height: 1.48;
+}
+
+.feedback-hide-dialog .feedback-hide-error {
+  margin-top: 10px;
+  color: #ce3d20;
+  font-size: 13px;
+}
+
+.feedback-hide-remove,
+.feedback-hide-keep {
+  width: 100%;
+  height: 46px;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feedback-hide-remove {
+  margin-top: 18px;
+  border: 1px solid #ff4c25;
+  background: #fff;
+  color: #f04420;
+}
+
+.feedback-hide-keep {
+  margin-top: 10px;
+  border: 0;
+  background: linear-gradient(90deg, #ff3d00 0%, #f4430c 52%, #ff3d00 100%);
+  color: #fff;
+}
+
+.feedback-hide-remove:disabled,
+.feedback-hide-keep:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .feedback-success {
   min-height: calc(100vh - 72px);
   min-height: calc(100dvh - 72px);
