@@ -16,6 +16,7 @@ import { getActivityLocale } from "../lib/i18n/activity-locale.js";
 import { findSupportedRedeemCountry, getSavedRedeemCountryIso } from "../lib/redeem-country.js";
 import { useI18n } from "../composables/useI18n.js";
 import { assetUrl } from "../lib/asset-url.js";
+import RewardsCenterHideDialog from "../components/RewardsCenterHideDialog.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -82,19 +83,16 @@ async function loadRewardsCenterHideInfo() {
 function openHideDialog() {
   hideError.value = "";
   hideDialogOpen.value = true;
-  track("rewards_center_hide_entry_click", { element_id: "rewards_center_hide_entry" });
 }
 
 function keepRewardsCenter() {
   if (hiding.value) return;
   hideDialogOpen.value = false;
   hideError.value = "";
-  track("rewards_center_hide_modal_keep", { element_id: "rewards_center_hide_keep" });
 }
 
 async function removeRewardsCenter() {
   if (!session || hiding.value) return;
-  track("rewards_center_hide_remove_click", { element_id: "rewards_center_hide_remove" });
   hiding.value = true;
   hideError.value = "";
   try {
@@ -106,13 +104,8 @@ async function removeRewardsCenter() {
     hideDialogOpen.value = false;
     invalidateActivityInfoCache(session.token);
     showToast(t("feedback.hideRemoveSuccess"), "success");
-    track("rewards_center_hide_remove_success", { element_id: "rewards_center_hide_remove" });
   } catch (e) {
     hideError.value = e?.message || t("feedback.hideRemoveFailed");
-    track("rewards_center_hide_remove_fail", {
-      element_id: "rewards_center_hide_remove",
-      reason: hideError.value,
-    });
   } finally {
     hiding.value = false;
   }
@@ -251,7 +244,7 @@ onMounted(() => {
 
         <div v-if="showHideEntry" class="feedback-hide-entry">
           <span>{{ t("feedback.hidePrompt") }}</span>
-          <button type="button" class="feedback-hide-link" @click="openHideDialog">
+          <button id="rewards_center_hide_entry" type="button" class="feedback-hide-link" @click="openHideDialog">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A10.5 10.5 0 0 1 12 4c5.2 0 8.7 4.5 9.5 5.7a4 4 0 0 1 .5 1.1M6.2 6.2C4.4 7.4 3.1 9 2.5 10a3.7 3.7 0 0 0 0 4C3.3 15.3 6.8 20 12 20a10 10 0 0 0 4.1-.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
@@ -261,32 +254,12 @@ onMounted(() => {
       </form>
     </main>
 
-    <div v-if="hideDialogOpen" class="feedback-hide-overlay" role="presentation">
-      <section
-        class="feedback-hide-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="feedback-hide-title"
-        aria-describedby="feedback-hide-description"
-      >
-        <div class="feedback-hide-dialog-icon" aria-hidden="true">
-          <svg viewBox="0 0 64 64" fill="none">
-            <path d="M13 22h38v27a6 6 0 0 1-6 6H19a6 6 0 0 1-6-6V22Z" fill="#ff5a1f" />
-            <path d="M10 16h44v10H10z" fill="#ff7a32" />
-            <path d="M29 16c-7-2-10-7-7-10 3-3 8 1 10 8 2-7 7-11 10-8 3 3 0 8-7 10" stroke="#ffb33c" stroke-width="5" stroke-linecap="round" />
-            <path d="M28 16h8v39h-8z" fill="#ffc14b" />
-          </svg>
-        </div>
-        <h2 id="feedback-hide-title">{{ t("feedback.hideDialogTitle") }}</h2>
-        <p id="feedback-hide-description">{{ t("feedback.hideDialogDescription") }}</p>
-        <p v-if="hideError" class="feedback-hide-error" role="alert">{{ hideError }}</p>
-        <button type="button" class="feedback-hide-remove" :disabled="hiding" @click="removeRewardsCenter">
-          {{ hiding ? t("feedback.hideRemoving") : t("feedback.hideRemove") }}
-        </button>
-        <button type="button" class="feedback-hide-keep" :disabled="hiding" @click="keepRewardsCenter">
-          {{ t("feedback.hideKeep") }}
-        </button>
-      </section>
-    </div>
+    <RewardsCenterHideDialog
+      :visible="hideDialogOpen"
+      :busy="hiding"
+      :error="hideError"
+      @cancel="keepRewardsCenter"
+      @confirm="removeRewardsCenter"
+    />
   </div>
 </template>

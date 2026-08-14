@@ -120,6 +120,10 @@
         "11": {
           "question": "Why can’t an ad load or play?",
           "answer": "Ad availability depends on your network, region and current ad supply. If an ad fails to load, please try again later."
+        },
+        "12": {
+          "question": "How do I hide the Rewards Center from my Home screen?",
+          "answer": "If you don’t want the Rewards Center entry on the Da Fit Home screen, select “Hide it” beside this question. The Rewards Center icon will be permanently removed from the Da Fit Home screen and cannot be restored, so please proceed carefully."
         }
       }
     }

@@ -120,6 +120,10 @@
         "11": {
           "question": "Mengapa iklan tidak dapat dimuat atau diputar?",
           "answer": "Ketersediaan iklan bergantung pada jaringan, wilayah, dan persediaan iklan saat ini. Jika gagal dimuat, silakan coba lagi nanti."
+        },
+        "12": {
+          "question": "Bagaimana cara menyembunyikan Pusat Hadiah dari layar Beranda?",
+          "answer": "Jika Anda tidak ingin pintasan Pusat Hadiah muncul di layar Beranda Da Fit, pilih “Sembunyikan” di sebelah pertanyaan ini. Ikon Pusat Hadiah akan dihapus secara permanen dari layar Beranda Da Fit dan tidak dapat dipulihkan, jadi harap lanjutkan dengan hati-hati."
         }
       }
     }

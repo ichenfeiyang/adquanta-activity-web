@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   ACTIVITY_RULE_FAQS,
   ACTIVITY_RULE_SECTIONS,
   getActivityRuleLocaleKeys,
+  getVisibleActivityRuleFaqs,
 } from "./activity-rules.js";
 
 const LOCALES = ["en", "id", "ur", "bn", "ne"];
@@ -20,10 +21,24 @@ async function loadLocale(locale) {
 
 test("activity rules expose stable, unique sections and FAQ entries", () => {
   assert.equal(ACTIVITY_RULE_SECTIONS.length, 10);
-  assert.equal(ACTIVITY_RULE_FAQS.length, 11);
+  assert.equal(ACTIVITY_RULE_FAQS.length, 12);
   assert.equal(new Set(ACTIVITY_RULE_SECTIONS.map((section) => section.id)).size, ACTIVITY_RULE_SECTIONS.length);
   assert.equal(new Set(ACTIVITY_RULE_FAQS.map((faq) => faq.id)).size, ACTIVITY_RULE_FAQS.length);
   assert.ok(ACTIVITY_RULE_SECTIONS.every((section) => section.titleKey && section.icon));
+});
+
+test("rewards center hide FAQ follows backend availability", () => {
+  assert.equal(getVisibleActivityRuleFaqs(false).length, 11);
+  assert.equal(getVisibleActivityRuleFaqs(undefined).length, 11);
+  assert.equal(getVisibleActivityRuleFaqs(true).length, 12);
+  assert.equal(getVisibleActivityRuleFaqs(true).at(-1)?.id, "faq12");
+});
+
+test("activity rule icons exist in the published public directory", async () => {
+  for (const section of ACTIVITY_RULE_SECTIONS) {
+    const iconUrl = new URL(`../../public/${section.icon}`, import.meta.url);
+    await assert.doesNotReject(access(iconUrl), `${section.id} icon is missing: ${section.icon}`);
+  }
 });
 
 test("activity rules provide complete copy for every supported locale", async () => {

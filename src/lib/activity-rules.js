@@ -83,11 +83,19 @@ export const ACTIVITY_RULE_SECTIONS = [
   },
 ];
 
-export const ACTIVITY_RULE_FAQS = Array.from({ length: 11 }, (_, index) => ({
+export const ACTIVITY_RULE_FAQS = Array.from({ length: 12 }, (_, index) => ({
   id: `faq${index + 1}`,
   questionKey: `rules.faq.items.${index + 1}.question`,
   answerKey: `rules.faq.items.${index + 1}.answer`,
+  actionKey: index === 11 ? "feedback.hideAction" : undefined,
+  requiresRewardsCenterHide: index === 11,
 }));
+
+export function getVisibleActivityRuleFaqs(rewardsCenterHideAvailable) {
+  return ACTIVITY_RULE_FAQS.filter(
+    (faq) => !faq.requiresRewardsCenterHide || rewardsCenterHideAvailable === true,
+  );
+}
 
 export function getActivityRuleLocaleKeys() {
   const sectionKeys = ACTIVITY_RULE_SECTIONS.flatMap((section) => [

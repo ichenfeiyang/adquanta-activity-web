@@ -1,7 +1,7 @@
 <script setup>
-import { nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { assetUrl } from "../lib/asset-url.js";
-import { ACTIVITY_RULE_FAQS, ACTIVITY_RULE_SECTIONS } from "../lib/activity-rules.js";
+import { ACTIVITY_RULE_SECTIONS, getVisibleActivityRuleFaqs } from "../lib/activity-rules.js";
 import { useI18n } from "../composables/useI18n.js";
 
 const props = defineProps({
@@ -9,12 +9,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  hideAvailable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits(["close", "hide"]);
 const { t } = useI18n();
 const dialogRef = ref(null);
 const closeButtonRef = ref(null);
+const visibleFaqs = computed(() => getVisibleActivityRuleFaqs(props.hideAvailable));
 
 let previousBodyOverflow = "";
 let bodyLocked = false;
@@ -201,9 +206,25 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="tc-rules-faq-list">
-                  <details v-for="(faq, faqIndex) in ACTIVITY_RULE_FAQS" :key="faq.id" :open="faqIndex === 0">
+                  <details
+                    v-for="(faq, faqIndex) in visibleFaqs"
+                    :key="faq.id"
+                    :open="faqIndex === 0"
+                    :class="{ 'has-action': faq.actionKey && hideAvailable }"
+                  >
                     <summary>
-                      <span>{{ t(faq.questionKey) }}</span>
+                      <span class="tc-rules-faq-question">
+                        {{ t(faq.questionKey) }}
+                    <button
+                      v-if="faq.actionKey && hideAvailable"
+                      id="rules_faq_hide_entry"
+                      type="button"
+                      class="tc-rules-faq-action"
+                          @click.stop.prevent="emit('hide')"
+                        >
+                          {{ t(faq.actionKey) }}
+                        </button>
+                      </span>
                       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                         <path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
@@ -696,6 +717,25 @@ onBeforeUnmount(() => {
 .tc-rules-faq details > p {
   padding: 0 2px 14px;
   color: #6b5144;
+}
+
+.tc-rules-faq-action {
+  margin-inline-start: 6px;
+  padding: 4px 10px;
+  border: 1px solid #ef6a2c;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #d94f12;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tc-rules-faq-action:focus-visible {
+  outline: 2px solid #ef6a2c;
+  outline-offset: 2px;
 }
 
 .tc-rules-footer {
