@@ -5,31 +5,16 @@ import { ROUTE_NAMES } from "../lib/activity-pages.js";
 import { useLazyActivityPage } from "../composables/useLazyActivityPage.js";
 import { useI18n } from "../composables/useI18n.js";
 import { useRoute, useRouter } from "vue-router";
-import { onMounted, ref } from "vue";
-import { goToFeedback } from "../lib/activity-navigation.js";
+import { goToActivityRules, goToFeedback } from "../lib/activity-navigation.js";
 import { getSavedRedeemCountryIso } from "../lib/redeem-country.js";
 import { ACTIVITY_CENTER_PAGE_ID } from "../lib/activity-analytics.js";
-import { getActivityInfo, postHideRewardsCenter } from "../lib/activity-api.js";
-import {
-  getActivityInfoCache,
-  invalidateActivityInfoCache,
-  loadActivityInfoWithSWR,
-} from "../lib/activity-page-cache.js";
 import { requireActivitySession } from "../lib/activity-session.js";
-import { showToast } from "../lib/activity-alert-ui.js";
 import ActivityLanguageSwitcher from "../components/ActivityLanguageSwitcher.vue";
-import ActivityRulesModal from "../components/ActivityRulesModal.vue";
-import RewardsCenterHideDialog from "../components/RewardsCenterHideDialog.vue";
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const session = requireActivitySession(route, { router });
-const rulesVisible = ref(false);
-const hideAvailable = ref(false);
-const hideDialogOpen = ref(false);
-const hiding = ref(false);
-const hideError = ref("");
+requireActivitySession(route, { router });
 
 function openFeedback() {
   window.ActivityBridgeHelper?.trackEvent?.("rewards_feedback_entry_click", {
@@ -51,60 +36,8 @@ function openRules() {
       element_name: "Rules",
     })?.catch?.(() => {});
   } catch (_) {}
-  rulesVisible.value = true;
+  void goToActivityRules(router, String(route.query.activity_id || ""));
 }
-
-function closeRules() {
-  rulesVisible.value = false;
-}
-
-function applyRewardsCenterHideInfo(data) {
-  hideAvailable.value = data?.rewards_center_hide?.show === true;
-}
-
-async function loadRewardsCenterHideInfo() {
-  if (!session) return;
-  applyRewardsCenterHideInfo(getActivityInfoCache(session.token));
-  await loadActivityInfoWithSWR(session.token, {
-    fetcher: () => getActivityInfo(session.apiOptions),
-    onData: (data) => applyRewardsCenterHideInfo(data),
-  });
-}
-
-function openHideDialog() {
-  hideError.value = "";
-  hideDialogOpen.value = true;
-}
-
-function keepRewardsCenter() {
-  if (hiding.value) return;
-  hideDialogOpen.value = false;
-  hideError.value = "";
-}
-
-async function removeRewardsCenter() {
-  if (!session || hiding.value) return;
-  hiding.value = true;
-  hideError.value = "";
-  try {
-    const result = await postHideRewardsCenter(session.apiOptions);
-    if (result?.code !== 200 || result?.data?.success !== true) {
-      throw new Error(result?.message || t("feedback.hideRemoveFailed"));
-    }
-    hideAvailable.value = false;
-    hideDialogOpen.value = false;
-    invalidateActivityInfoCache(session.token);
-    showToast(t("feedback.hideRemoveSuccess"), "success");
-  } catch (error) {
-    hideError.value = error?.message || t("feedback.hideRemoveFailed");
-  } finally {
-    hiding.value = false;
-  }
-}
-
-onMounted(() => {
-  void loadRewardsCenterHideInfo();
-});
 
 useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
   logTag: "ActivityCenter",
@@ -270,7 +203,6 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
             <button
               type="button"
               class="tc-rules-entry"
-              aria-haspopup="dialog"
               @click="openRules"
             >
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -326,20 +258,6 @@ useLazyActivityPage(ROUTE_NAMES.ACTIVITY_CENTER, {
       </section>
     </main>
   </div>
-
-  <ActivityRulesModal
-    :visible="rulesVisible"
-    :hide-available="hideAvailable"
-    @close="closeRules"
-    @hide="openHideDialog"
-  />
-  <RewardsCenterHideDialog
-    :visible="hideDialogOpen"
-    :busy="hiding"
-    :error="hideError"
-    @cancel="keepRewardsCenter"
-    @confirm="removeRewardsCenter"
-  />
 
   <div id="tc-coin-rain-overlay" class="tc-coin-rain-overlay" style="display:none;">
     <button id="tc-coin-rain-leave" type="button" class="tc-coin-rain-leave" :aria-label="t('common.close')">×</button>

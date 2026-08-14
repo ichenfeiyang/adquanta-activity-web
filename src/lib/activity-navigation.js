@@ -38,6 +38,13 @@ export function goToActivityCenter(router, activityId) {
   });
 }
 
+export function goToActivityRules(router, activityId) {
+  return router.push({
+    name: ROUTE_NAMES.ACTIVITY_RULES,
+    query: activityCenterQuery(activityId),
+  });
+}
+
 export function goldCoinsExchangeQuery(activityId, options = {}) {
   return compactQuery({
     ...activityCenterQuery(activityId),

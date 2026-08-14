@@ -2,6 +2,7 @@ import { t } from "./i18n/activity-locale.js";
 
 export const ROUTE_NAMES = {
   ACTIVITY_CENTER: "activity-center",
+  ACTIVITY_RULES: "activity-rules",
   GOLD_COINS_EXCHANGE: "gold-coins-exchange",
   TOPUP_STATUS: "topup-status",
   FEEDBACK: "feedback",
@@ -10,6 +11,7 @@ export const ROUTE_NAMES = {
 
 export const PAGE_TITLE_KEYS = {
   [ROUTE_NAMES.ACTIVITY_CENTER]: "pages.activityCenter",
+  [ROUTE_NAMES.ACTIVITY_RULES]: "rules.title",
   [ROUTE_NAMES.GOLD_COINS_EXCHANGE]: "pages.goldCoinsExchange",
   [ROUTE_NAMES.TOPUP_STATUS]: "pages.topupStatus",
   [ROUTE_NAMES.FEEDBACK]: "pages.feedback",

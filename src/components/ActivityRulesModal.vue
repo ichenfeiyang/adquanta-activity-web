@@ -13,6 +13,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  standalone: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["close", "hide"]);
@@ -65,7 +69,7 @@ function scrollToSection(sectionId) {
 watch(
   () => props.visible,
   async (visible) => {
-    if (visible) {
+    if (visible && !props.standalone) {
       if (typeof document !== "undefined") {
         returnFocusElement = document.activeElement;
         document.addEventListener("keydown", onDocumentKeydown);
@@ -93,14 +97,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="standalone">
     <Transition name="tc-rules-fade">
-      <div v-if="visible" class="tc-rules-overlay" @click.self="close">
+      <div
+        v-if="visible"
+        class="tc-rules-overlay"
+        :class="{ 'is-standalone': standalone }"
+        @click.self="!standalone && close()"
+      >
         <section
           ref="dialogRef"
           class="tc-rules-dialog"
-          role="dialog"
-          aria-modal="true"
+          :role="standalone ? 'main' : 'dialog'"
+          :aria-modal="standalone ? undefined : 'true'"
           :aria-label="t('rules.ariaLabel')"
         >
           <button
@@ -269,6 +278,33 @@ onBeforeUnmount(() => {
   background: #fffaf6;
   box-shadow: 0 28px 80px rgba(24, 12, 4, 0.42);
   outline: none;
+}
+
+.tc-rules-overlay.is-standalone {
+  position: relative;
+  z-index: auto;
+  display: block;
+  min-height: 100dvh;
+  padding: 0;
+  background: #fffaf6;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.tc-rules-overlay.is-standalone .tc-rules-dialog {
+  width: min(100%, 720px);
+  min-height: 100dvh;
+  max-height: none;
+  margin: 0 auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tc-rules-overlay.is-standalone .tc-rules-scroll {
+  max-height: none;
+  overflow: visible;
 }
 
 .tc-rules-scroll {

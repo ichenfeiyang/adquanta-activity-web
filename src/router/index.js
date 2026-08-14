@@ -25,6 +25,12 @@ const router = createRouter({
       component: ActivityCenterView,
     },
     {
+      path: '/activity-rules',
+      name: ROUTE_NAMES.ACTIVITY_RULES,
+      meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.ACTIVITY_RULES] },
+      component: () => import('../views/ActivityRulesView.vue'),
+    },
+    {
       path: '/gold-coins-exchange',
       name: ROUTE_NAMES.GOLD_COINS_EXCHANGE,
       meta: { titleKey: PAGE_TITLE_KEYS[ROUTE_NAMES.GOLD_COINS_EXCHANGE] },

@@ -306,7 +306,8 @@
 }
 
 .feedback-hide-link {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: 21px auto 21px;
   align-items: center;
   gap: 7px;
   padding: 2px 4px;
@@ -318,6 +319,12 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+.feedback-hide-link::after {
+  width: 21px;
+  height: 21px;
+  content: "";
 }
 
 .feedback-hide-link svg {
