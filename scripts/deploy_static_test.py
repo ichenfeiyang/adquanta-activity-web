@@ -57,10 +57,29 @@ class DeployStaticTest(unittest.TestCase):
         self.assertEqual(client.calls[0]["ContentType"], "text/html")
         self.assertEqual(client.calls[0]["CacheControl"], "no-cache")
 
-    def test_non_html_assets_use_long_lived_cache(self):
+    def test_vite_hashed_assets_use_long_lived_cache(self):
         self.assertEqual(
-            deploy_static.get_cache_control(Path("assets/app.123.js")),
+            deploy_static.get_cache_control(Path("assets/app-Bx7kP0aQ.js")),
             "public, max-age=31536000, immutable",
+        )
+
+    def test_fixed_path_public_files_require_revalidation(self):
+        for relative_path in (
+            "ActivityBridgeHelper.js",
+            "icons/gold_coin.svg",
+            "images/coin-rain-card-art.png",
+            "favicon.svg",
+        ):
+            with self.subTest(relative_path=relative_path):
+                self.assertEqual(
+                    deploy_static.get_cache_control(Path(relative_path)),
+                    "no-cache",
+                )
+
+    def test_unhashed_assets_require_revalidation(self):
+        self.assertEqual(
+            deploy_static.get_cache_control(Path("assets/app.js")),
+            "no-cache",
         )
 
     def test_rejects_invalid_addressing_style(self):

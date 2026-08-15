@@ -81,7 +81,7 @@ VITE_ACTIVITY_API_BASE_URL=https://service-dev.aiwriter.today
 
 | Header | 建议值 |
 |--------|--------|
-| `Cache-Control` | `index.html`: `no-cache`；`assets/*`: `public, max-age=31536000, immutable` |
+| `Cache-Control` | `index.html` 和固定路径资源：`no-cache`；`assets/*` 中带 Vite 内容哈希的资源：`public, max-age=31536000, immutable` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
 | `X-Content-Type-Options` | `nosniff` |
 | `X-Frame-Options` | `SAMEORIGIN` 或 CSP `frame-ancestors 'self'` |

@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import mimetypes
 import os
+import re
 from pathlib import Path
 from typing import Iterator
 
@@ -32,6 +33,9 @@ CONTENT_TYPE_MAP = {
     ".otf": "font/otf",
 }
 VALID_ADDRESSING_STYLES = {"auto", "path", "virtual"}
+VITE_HASHED_ASSET_PATTERN = re.compile(
+    r"^assets/(?:.+/)*[^/]+-[A-Za-z0-9_-]{8,}\.[^/]+$"
+)
 
 
 def get_env(name: str) -> str:
@@ -96,11 +100,10 @@ def guess_content_type(path: Path) -> str:
 
 
 def get_cache_control(path: Path) -> str:
-    return (
-        "no-cache"
-        if path.suffix.lower() == ".html"
-        else "public, max-age=31536000, immutable"
-    )
+    relative_key = path.as_posix().lstrip("/")
+    if VITE_HASHED_ASSET_PATTERN.fullmatch(relative_key):
+        return "public, max-age=31536000, immutable"
+    return "no-cache"
 
 
 def build_object_key(key_prefix: str, relative_key: str) -> str:
@@ -130,7 +133,7 @@ def upload_file(
 ) -> str:
     object_key = build_object_key(key_prefix, relative_key)
     content_type = guess_content_type(path)
-    cache_control = get_cache_control(path)
+    cache_control = get_cache_control(Path(relative_key))
 
     with path.open("rb") as file_obj:
         s3_client.put_object(

@@ -55,7 +55,7 @@ R2 API Token 应只授予目标测试 Bucket 的 Object Read & Write 权限，�
 - 上传脚本：`scripts/deploy_static.py`
 - `master` 使用 TOS 的 virtual-hosted addressing。
 - `test` 使用 R2 的 path-style addressing，Region 固定为 `auto`。
-- HTML 使用 `Cache-Control: no-cache`，其他静态文件使用一年 immutable 缓存。
+- 仅 `assets/` 下带 Vite 内容哈希的资源使用一年 immutable 缓存；HTML、固定路径 JS、图标和图片等可变文件使用 `Cache-Control: no-cache`。
 - 所有资源成功上传后才上传 `index.html`，避免发布到一半时切换入口。
 - 发布脚本不会清空 Bucket，历史 hash 资源建议使用对象存储 Lifecycle 定期清理。
 - 同一仓库、同一分支的部署串行执行，避免连续合并互相覆盖。
