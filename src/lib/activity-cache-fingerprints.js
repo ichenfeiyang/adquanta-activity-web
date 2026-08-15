@@ -45,7 +45,7 @@ export function fingerprintChargeRecords(data) {
   return normalizeRecordsForFingerprint(data)
     .map(
       (record) =>
-        `${record.business_id ?? record.distributor_ref ?? ""}:${record.status ?? record.processing_state ?? ""}:${record.amount ?? record.coin_cost ?? ""}`,
+        `${record.business_id ?? record.distributor_ref ?? ""}:${record.status ?? record.processing_state ?? ""}:${record.amount ?? record.coin_cost ?? ""}:${record.failure_reason_code ?? ""}`,
     )
     .join("|");
 }

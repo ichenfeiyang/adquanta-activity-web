@@ -6,7 +6,8 @@ import { authFailedMessage } from "./activity-messages.js";
 import { t } from "./i18n/activity-locale.js";
 import { formatPhoneDisplay } from "./redeem-country.js";
 import {
-  extractTopupStatusFromApi,
+  extractTopupStatusResponse,
+  getTopupFailureDescriptionKey,
   mergeTopupStatusDetails,
   resolveTopupStatusDetails,
 } from "./topup-status-preview.js";
@@ -23,7 +24,7 @@ function normalizeStatus(statusRaw = "pending") {
   return "pending";
 }
 
-function statusView(status) {
+function statusView(status, failureReasonCode = "") {
   if (status === "success") {
     return {
       title: t("topup.successTitle"),
@@ -34,7 +35,7 @@ function statusView(status) {
   if (status === "failed") {
     return {
       title: t("topup.failedTitle"),
-      desc: t("topup.failedDesc"),
+      desc: t(getTopupFailureDescriptionKey(failureReasonCode)),
       icon: "✕",
     };
   }
@@ -103,9 +104,9 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
 
   let details = resolveTopupStatusDetails(distributorRef, readQueryValue, businessId);
 
-  const renderByStatus = (statusRaw) => {
+  const renderByStatus = (statusRaw, failureReasonCode = details.failureReasonCode) => {
     const normalized = normalizeStatus(statusRaw);
-    const ui = statusView(normalized);
+    const ui = statusView(normalized, failureReasonCode);
     if (elements.rootEl) elements.rootEl.setAttribute("data-status", normalized);
     if (elements.titleEl) elements.titleEl.textContent = ui.title;
     if (elements.descEl) elements.descEl.textContent = ui.desc;
@@ -144,9 +145,8 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
   async function fetchAndApplyStatus() {
     const res = await getChargeStatus(apiOptions, distributorRef);
     if (isCancelled()) return null;
-    if (res?.code !== 200 || res?.data?.success !== true) return null;
-
-    const apiDetails = extractTopupStatusFromApi(res.data);
+    const apiDetails = extractTopupStatusResponse(res);
+    if (!apiDetails) return null;
     details = mergeTopupStatusDetails(details, apiDetails);
     renderDetails();
     return apiDetails;
@@ -162,7 +162,7 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
 
   if (isCancelled()) return;
 
-  let currentStatus = renderByStatus(apiDetails?.status || statusFromQuery);
+  let currentStatus = renderByStatus(apiDetails?.status || statusFromQuery, apiDetails?.failure_reason_code);
 
   while (!isCancelled() && currentStatus === "pending") {
     await sleep(4000);
@@ -178,7 +178,7 @@ async function bootstrapTopupStatusPage({ route, router, isCancelled = () => fal
 
     const nextStatus = normalizeStatus(apiDetails.status || "");
     if (nextStatus !== currentStatus) {
-      currentStatus = renderByStatus(nextStatus);
+      currentStatus = renderByStatus(nextStatus, apiDetails.failure_reason_code);
     }
   }
 }

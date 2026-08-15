@@ -1,5 +1,11 @@
 const STORAGE_KEY = "topup_status_preview_v1";
 const TTL_MS = 30 * 60_000;
+const TOPUP_FAILURE_REASON_CODES = new Set([
+  "invalid_phone_number",
+  "product_unavailable",
+  "number_not_supported",
+  "provider_temporarily_unavailable",
+]);
 
 function readStore() {
   try {
@@ -98,6 +104,7 @@ export function saveTopupStatusPreview(distributorRef, preview = {}) {
       operator: String(preview.operator || ""),
       amount_label: String(preview.amount_label || ""),
       send_value: String(preview.send_value || ""),
+      failure_reason_code: normalizeTopupFailureReasonCode(preview.failure_reason_code || preview.failureReasonCode),
       storedAt: Date.now(),
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(store));
@@ -138,7 +145,26 @@ export function resolveTopupStatusDetails(distributorRef, readQueryValue, altern
       "-",
     phoneNumber: pickPreviewOrQuery(preview, readQueryValue, "phone_number"),
     operator: pickPreviewOrQuery(preview, readQueryValue, "operator") || "-",
+    failureReasonCode: normalizeTopupFailureReasonCode(
+      pickPreviewOrQuery(preview, readQueryValue, "failure_reason_code"),
+    ),
   };
+}
+
+export function normalizeTopupFailureReasonCode(value) {
+  const code = String(value || "").trim().toLowerCase();
+  return TOPUP_FAILURE_REASON_CODES.has(code) ? code : "unknown";
+}
+
+export function getTopupFailureDescriptionKey(value) {
+  const reasonCode = normalizeTopupFailureReasonCode(value);
+  const keys = {
+    invalid_phone_number: "topup.failureReasons.invalidPhoneNumber",
+    product_unavailable: "topup.failureReasons.productUnavailable",
+    number_not_supported: "topup.failureReasons.numberNotSupported",
+    provider_temporarily_unavailable: "topup.failureReasons.providerTemporarilyUnavailable",
+  };
+  return keys[reasonCode] || "topup.failedDesc";
 }
 
 export function extractTopupStatusFromApi(data) {
@@ -150,7 +176,15 @@ export function extractTopupStatusFromApi(data) {
     amount_label: buildAmountLabel(data),
     send_value: pickField(data, "send_value", "sendValue", "receive_value", "receiveValue"),
     status: pickField(data, "status", "processing_state"),
+    failure_reason_code: normalizeTopupFailureReasonCode(
+      pickField(data, "failure_reason_code", "failureReasonCode"),
+    ),
   };
+}
+
+export function extractTopupStatusResponse(response) {
+  if (response?.code !== 200 || !response?.data) return null;
+  return extractTopupStatusFromApi(response.data);
 }
 
 export function mergeTopupStatusDetails(local, api) {
@@ -160,6 +194,9 @@ export function mergeTopupStatusDetails(local, api) {
     amountLabel: firstNonEmpty(api.amount_label, api.send_value, local.amountLabel) || local.amountLabel || "-",
     phoneNumber: firstNonEmpty(api.phone_number, local.phoneNumber),
     operator: firstNonEmpty(api.operator, local.operator) || local.operator || "-",
+    failureReasonCode: normalizeTopupFailureReasonCode(
+      firstNonEmpty(api.failure_reason_code, local.failureReasonCode),
+    ),
   };
 }
 

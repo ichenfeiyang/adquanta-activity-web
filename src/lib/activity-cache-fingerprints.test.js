@@ -85,3 +85,12 @@ test("fingerprintChargeRecords supports records payloads", () => {
 
   assert.match(fingerprintChargeRecords(payload), /a1:pending:10/);
 });
+
+test("fingerprintChargeRecords tracks recharge failure reasons", () => {
+  const first = { records: [{ business_id: "a1", status: "failed", amount: 10 }] };
+  const second = {
+    records: [{ business_id: "a1", status: "failed", amount: 10, failure_reason_code: "invalid_phone_number" }],
+  };
+
+  assert.notEqual(fingerprintChargeRecords(first), fingerprintChargeRecords(second));
+});

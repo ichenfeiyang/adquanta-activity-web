@@ -208,6 +208,22 @@ test("check-in chest dialogs provide copy for every supported locale", async () 
   }
 });
 
+test("topup failure reasons provide copy for every supported locale", async () => {
+  const keys = [
+    "topup.failureReasons.invalidPhoneNumber",
+    "topup.failureReasons.productUnavailable",
+    "topup.failureReasons.numberNotSupported",
+    "topup.failureReasons.providerTemporarilyUnavailable",
+  ];
+  for (const locale of ["en", "id", "ur", "bn", "ne"]) {
+    await initActivityLocale({ locale, force: true });
+    for (const key of keys) {
+      assert.notEqual(t(key), key, `${locale} is missing ${key}`);
+      assert.notEqual(t(key).trim(), "", `${locale} has empty ${key}`);
+    }
+  }
+});
+
 test("coin rain flow provides PRD dialog copy for every supported locale", async () => {
   const keys = [
     "center.coinRainUpTo",

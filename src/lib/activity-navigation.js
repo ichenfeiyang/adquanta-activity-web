@@ -84,6 +84,7 @@ export function goToTopupStatus(router, payload = {}) {
       business_id: businessId,
       distributor_ref: distributorRef,
       status: payload.status || "pending",
+      failure_reason_code: payload.failure_reason_code || payload.failureReasonCode || "",
       activity_id: payload.activity_id || payload.activityId || "",
     }),
   });

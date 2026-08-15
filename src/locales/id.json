@@ -455,6 +455,12 @@
     "successDesc": "Permintaan Anda telah diproses.",
     "failedTitle": "Isi Ulang Gagal",
     "failedDesc": "Isi ulang tidak selesai. Silakan coba lagi nanti.",
+    "failureReasons": {
+      "invalidPhoneNumber": "Periksa nomor ponsel lalu coba lagi.",
+      "productUnavailable": "Pilihan isi ulang ini sedang tidak tersedia. Silakan pilih pilihan lain.",
+      "numberNotSupported": "Nomor ponsel atau operator ini belum didukung.",
+      "providerTemporarilyUnavailable": "Layanan isi ulang sedang tidak tersedia. Silakan coba lagi nanti."
+    },
     "transactionId": "ID Transaksi",
     "amount": "Nominal",
     "mobileNumber": "Nomor Ponsel",

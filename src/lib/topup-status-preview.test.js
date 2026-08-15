@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   __resetTopupStatusPreviewForTests,
   extractTopupStatusFromApi,
+  extractTopupStatusResponse,
+  getTopupFailureDescriptionKey,
   getTopupStatusPreview,
   mergeTopupStatusDetails,
   resolveTopupStatusDetails,
@@ -110,6 +112,28 @@ test("extractTopupStatusFromApi maps common response fields", () => {
   assert.equal(extracted?.phone_number, "918801384326");
   assert.equal(extracted?.operator, "Airtel");
   assert.equal(extracted?.amount_label, "10 INR");
+});
+
+test("extractTopupStatusResponse accepts a failed business result", () => {
+  const extracted = extractTopupStatusResponse({
+    code: 200,
+    data: {
+      success: false,
+      status: "failed",
+      failure_reason_code: "invalid_phone_number",
+    },
+  });
+
+  assert.equal(extracted?.status, "failed");
+  assert.equal(extracted?.failure_reason_code, "invalid_phone_number");
+});
+
+test("topup failure copy uses only supported reason codes", () => {
+  assert.equal(
+    getTopupFailureDescriptionKey("product_unavailable"),
+    "topup.failureReasons.productUnavailable",
+  );
+  assert.equal(getTopupFailureDescriptionKey("provider-secret"), "topup.failedDesc");
 });
 
 test("saveTopupStatusPreview prunes expired entries", () => {

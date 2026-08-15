@@ -94,6 +94,7 @@ export const redeemHistoryMethods = {
       business_id,
       distributor_ref: record.distributor_ref ?? record.distributorRef ?? business_id,
       status: String(record.status || record.processing_state || "pending"),
+      failure_reason_code: record.failure_reason_code ?? record.failureReasonCode ?? "",
       amount_label: getRecordAmountLabel(record) || buildAmountLabel(record),
       send_value: record.send_value ?? record.sendValue ?? "",
       phone_number: getRecordPhone(record),

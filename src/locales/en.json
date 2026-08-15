@@ -455,6 +455,12 @@
     "successDesc": "Your request has been processed.",
     "failedTitle": "Recharge Failed",
     "failedDesc": "The recharge did not complete. Please try again later.",
+    "failureReasons": {
+      "invalidPhoneNumber": "Please check the mobile number and try again.",
+      "productUnavailable": "This recharge option is currently unavailable. Please choose another option.",
+      "numberNotSupported": "This mobile number or operator is not currently supported.",
+      "providerTemporarilyUnavailable": "Recharge is temporarily unavailable. Please try again later."
+    },
     "transactionId": "Transaction ID",
     "amount": "Amount",
     "mobileNumber": "Mobile Number",
